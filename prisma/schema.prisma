@@ -73,6 +73,7 @@ model User {
   resumes                Resume[]
   sessions               Session[]
   entitlements           Entitlement[]
+  events                 Event[]
 
   @@map("users")
 }
@@ -209,6 +210,22 @@ model Entitlement {
   @@index([userId])
   @@index([status, endsAt])
   @@map("entitlements")
+}
+
+// Product analytics (src/lib/track.ts). userId is set null when the user deletes their
+// account, so funnel counts survive without pointing at anyone. props never holds
+// resume text or contact details: timings, counts, outcomes, token usage.
+model Event {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  props     Json?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([name, createdAt])
+  @@index([userId, name, createdAt])
+  @@map("events")
 }
 
 // Processed Stripe webhook events, for idempotency.

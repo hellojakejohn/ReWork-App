@@ -17,6 +17,7 @@ import { extractNumbers, normalizeSpace } from '@/lib/resume-text'
 import { describeFacts, hasUnsupported, unsupportedFacts } from '@/lib/text-facts'
 import { isNonAnswer, type EvidenceAnswer, type EvidenceItem, type EvidenceRewrite } from '@/lib/evidence-shared'
 import type { ParsedResume } from '@/types/parsed-resume'
+import { recordUsage } from '@/lib/ai-usage'
 
 export * from '@/lib/evidence-shared'
 
@@ -118,7 +119,10 @@ export class EvidenceError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly userMessage: string
+    public readonly userMessage: string,
+    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
+    // response was unusable. Goes on the ai_error event.
+    public readonly kind: string = 'bad_output'
   ) {
     super(message)
     this.name = 'EvidenceError'
@@ -129,7 +133,7 @@ let defaultClient: OpenAI | null = null
 function getClient(): OpenAI {
   if (!process.env.OPENAI_API_KEY) {
     console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
-    throw new EvidenceError('OPENAI_API_KEY is not configured', 503, "The evidence interview is temporarily unavailable, we're on it.")
+    throw new EvidenceError('OPENAI_API_KEY is not configured', 503, "The evidence interview is temporarily unavailable, we're on it.", 'not_configured')
   }
   defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return defaultClient
@@ -157,8 +161,9 @@ async function structured<T>(options: EvidenceOptions, name: string, schema: obj
     })
   } catch (error) {
     const classified = classifyAIError(error, 'The evidence interview')
-    throw new EvidenceError(String((error as Error)?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage)
+    throw new EvidenceError(String((error as Error)?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage, classified.kind)
   }
+  recordUsage(completion, model)
   const content = completion.choices[0]?.message?.content
   if (!content || completion.choices[0]?.finish_reason === 'length') {
     throw new EvidenceError('Empty or truncated model response', 502, 'Something went wrong. Please try again.')

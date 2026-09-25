@@ -7,6 +7,7 @@ import OpenAI from 'openai'
 import type { TailorInput, TailorOutput } from '@/types/tailor'
 import { readSkillGroups } from '@/lib/master-resume'
 import { classifyAIError } from '@/lib/ai-errors'
+import { recordUsage } from '@/lib/ai-usage'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyRecord = Record<string, any>
@@ -285,7 +286,10 @@ export class TailorError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly userMessage: string
+    public readonly userMessage: string,
+    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
+    // response was unusable. Goes on the ai_error event.
+    public readonly kind: string = 'bad_output'
   ) {
     super(message)
     this.name = 'TailorError'
@@ -296,7 +300,7 @@ let defaultClient: OpenAI | null = null
 function getClient(): OpenAI {
   if (!process.env.OPENAI_API_KEY) {
     console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
-    throw new TailorError('OPENAI_API_KEY is not configured', 503, "Tailoring is temporarily unavailable, we're on it.")
+    throw new TailorError('OPENAI_API_KEY is not configured', 503, "Tailoring is temporarily unavailable, we're on it.", 'not_configured')
   }
   defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return defaultClient
@@ -327,8 +331,9 @@ export async function callTailorModel(
     })
   } catch (error: any) {
     const classified = classifyAIError(error, 'Tailoring')
-    throw new TailorError(String(error?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage)
+    throw new TailorError(String(error?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage, classified.kind)
   }
+  recordUsage(completion, model)
 
   const choice = completion.choices[0]
   if (choice?.message?.refusal) {

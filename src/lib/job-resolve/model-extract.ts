@@ -4,6 +4,7 @@ import { getOpenAI } from '@/lib/openai'
 import type { PageMeta } from './html-text'
 import { cleanLines } from './html-text'
 import type { ResolvedJob } from './types'
+import { recordUsage } from '@/lib/ai-usage'
 
 const MAX_PAGE_CHARS = 14_000
 
@@ -49,6 +50,7 @@ ${meta.mainText.slice(0, MAX_PAGE_CHARS)}`,
       },
     ],
   })
+  recordUsage(completion, jobExtractModel())
   const content = completion.choices[0]?.message?.content
   if (!content) throw new Error('Empty model response')
   const data = JSON.parse(content) as { isJobPosting: boolean; title: string; company: string; location: string; description: string }
