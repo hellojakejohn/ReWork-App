@@ -192,6 +192,7 @@ export function OneFlow() {
       onParsed={(m) => {
         upsertMaster(m)
         setResumeConfirmed(false)
+        setApplication(null) // the old result belongs to a different resume
       }}
       onSaved={upsertMaster}
       onSelect={selectMaster}

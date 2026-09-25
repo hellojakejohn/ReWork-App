@@ -7,7 +7,7 @@ import { TEMPLATES, type TemplateId } from "@/lib/resume-templates"
 import type { FactGuardWarning } from "@/types/tailor"
 import { decideChange, type ApplicationDetailDTO } from "./api"
 import { ResumeDocument } from "./resume-document"
-import { Card, CardHeader, ErrorNote, PrimaryButton, SecondaryButton } from "./ui"
+import { Card, CardHeader, ErrorNote, SecondaryButton, primaryButtonClass } from "./ui"
 
 type Tab = "preview" | "changes" | "keywords" | "warnings"
 
@@ -61,7 +61,9 @@ export function ResultCard({
   }
 
   const { keywords, warnings, changes } = application
-  const newlyCovered = keywords.presentAfter.filter((k) => !keywords.presentBefore.includes(k))
+  // Older results didn't store what the master covered; don't mark everything as new.
+  const knowsBefore = keywords.presentBefore.length > 0 || application.coverageBefore === 0
+  const newlyCovered = knowsBefore ? keywords.presentAfter.filter((k) => !keywords.presentBefore.includes(k)) : []
   const downloadHref = `/api/resumes/${application.resumeId}/download?applicationId=${application.id}&template=${template}`
 
   const tabs: { id: Tab; label: string; count?: number; mobileOnly?: boolean }[] = [
@@ -208,10 +210,8 @@ export function ResultCard({
             <SecondaryButton onClick={onAnotherJob}>
               Tailor for another job <ArrowRight className="h-3.5 w-3.5" />
             </SecondaryButton>
-            <a href={downloadHref}>
-              <PrimaryButton>
-                <Download className="h-4 w-4" /> Download PDF
-              </PrimaryButton>
+            <a href={downloadHref} className={primaryButtonClass}>
+              <Download className="h-4 w-4" /> Download PDF
             </a>
           </div>
         }
@@ -245,10 +245,8 @@ export function ResultCard({
             <SecondaryButton className="flex-1" onClick={onAnotherJob}>
               Another job
             </SecondaryButton>
-            <a href={downloadHref} className="flex-1">
-              <PrimaryButton className="w-full">
-                <Download className="h-4 w-4" /> PDF
-              </PrimaryButton>
+            <a href={downloadHref} className={cn(primaryButtonClass, "flex-1")}>
+              <Download className="h-4 w-4" /> PDF
             </a>
           </div>
         </div>

@@ -67,6 +67,9 @@ export function CardFooter({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/5 px-5 py-3">{children}</div>
 }
 
+export const primaryButtonClass =
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+
 export function PrimaryButton({
   children,
   loading,
@@ -77,10 +80,7 @@ export function PrimaryButton({
     <button
       {...props}
       disabled={props.disabled || loading}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
+      className={cn(primaryButtonClass, className)}
     >
       {loading && <Loader2 className="h-4 w-4 animate-spin" />}
       {children}

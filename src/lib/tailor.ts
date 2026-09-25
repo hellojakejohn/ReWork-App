@@ -359,11 +359,10 @@ function mergeSkills(masterSkills: unknown, tailored: string[]): unknown {
       kept.forEach((s) => placed.add(s.toLowerCase()))
       return { group: g.group, items: kept }
     })
+    // Skills fact-guard allowed because they appear elsewhere in the resume (bullets,
+    // project tech, certifications) go in an unlabeled group rather than a wrong one.
     const extra = tailored.filter((s) => !placed.has(s.toLowerCase()))
-    if (extra.length > 0) {
-      if (result.length === 0) result.push({ group: '', items: [] })
-      result[0].items.push(...extra)
-    }
+    if (extra.length > 0) result.push({ group: '', items: extra })
     return result.filter((g) => g.items.length > 0)
   }
   if (!masterSkills || typeof masterSkills !== 'object' || Array.isArray(masterSkills)) {
@@ -417,7 +416,9 @@ export function applyTailorOutput(master: MasterResume, input: TailorInput, clea
     return {
       ...clone(project),
       id,
-      description: tailored.description,
+      // Parsed resumes keep project text in bullets; don't let the model add a description
+      // the master never had.
+      description: str(project.description) ? tailored.description : '',
       achievements: tailored.bullets.map((b) => b.text),
     }
   })

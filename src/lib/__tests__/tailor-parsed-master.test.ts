@@ -52,7 +52,7 @@ function output(): TailorOutput {
       },
     ],
     education: [{ id: 'edu_1', degree: 'Solidity Bootcamp', institution: 'Metana', graduationYear: '2025' }],
-    projects: [{ id: 'proj_1', name: 'Vesting Vault', description: '', bullets: [{ text: 'Wrote a Foundry-tested vesting contract with 100% coverage', reason: 'Tooling' }] }],
+    projects: [{ id: 'proj_1', name: 'Vesting Vault', description: 'A token vesting vault for teams', bullets: [{ text: 'Wrote a Foundry-tested vesting contract with 100% coverage', reason: 'Tooling' }] }],
     skills: ['Docker', 'AWS Certified Cloud Practitioner', 'TypeScript', 'Kubernetes'],
   }
 }
@@ -93,12 +93,14 @@ describe('applyTailorOutput with skill groups', () => {
     expect(tailored.skills).toEqual([
       { group: 'Languages', items: ['TypeScript'] },
       { group: 'Tools', items: ['Docker'] },
-      // the certification was allowed as a skill; it goes into the first group
-    ].map((g, i) => (i === 0 ? { ...g, items: [...g.items, 'AWS Certified Cloud Practitioner'] } : g)))
+      { group: '', items: ['AWS Certified Cloud Practitioner'] },
+    ])
     const view = masterToParsed(tailored)
     expect(view.certifications).toEqual(parsed.certifications)
     expect(view.contact).toEqual(parsed.contact)
     expect(view.experience[0].bullets).toEqual(['Integrated Stripe billing end to end', 'Built an AI resume app with Next.js'])
+    // The master project had no description, so the model's one is not added as a bullet.
+    expect(view.projects[0].bullets).toEqual(['Wrote a Foundry-tested vesting contract with 100% coverage'])
   })
 })
 

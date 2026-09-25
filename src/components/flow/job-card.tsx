@@ -33,14 +33,18 @@ export function JobCard({
   const [pasteNote, setPasteNote] = useState("")
   const request = useRef(0)
 
-  // "Tailor for another job" clears the job: start over at the URL box.
+  // Follow the parent: "Tailor for another job" clears the job (start over at the URL
+  // box); reopening a tailored resume from Recent sets it.
   useEffect(() => {
+    setEditing(false)
+    setError("")
+    setPasteNote("")
     if (job === null) {
       setDraft(EMPTY)
       setMode("url")
-      setEditing(false)
-      setError("")
-      setPasteNote("")
+    } else {
+      setDraft(job)
+      setMode("fetched")
     }
   }, [job])
 
