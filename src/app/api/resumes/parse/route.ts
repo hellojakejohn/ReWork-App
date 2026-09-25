@@ -1,5 +1,5 @@
 // POST /api/resumes/parse
-//   multipart/form-data { file }   (PDF or DOCX, max 10MB)
+//   multipart/form-data { file }   (PDF or DOCX, max 4 MB, see INPUT_LIMITS)
 //   application/json { text }      (pasted resume)
 // Either may carry `replaces: <resumeId>`: the new master becomes the active one and the
 // old one is hidden (kept, listed in Manage resumes, deletable).
@@ -12,7 +12,10 @@ import type { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
-import { FREE_MAX_MASTER_RESUMES, masterResumeLimitFor } from '@/lib/plans'
+import { FREE_MAX_MASTER_RESUMES, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, masterResumeLimitFor } from '@/lib/plans'
+import { checkDailyCeiling } from '@/lib/daily-ceiling'
+import { collectUsage, usageProps } from '@/lib/ai-usage'
+import { msSince, track } from '@/lib/track'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { incrementResumeCount } from '@/lib/resume-count'
 import { generateStorageKey, uploadToStorage } from '@/lib/storage'
@@ -24,8 +27,6 @@ import { ndjsonResponse } from '@/lib/ndjson'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const MAX_BYTES = 10 * 1024 * 1024
-const MAX_TEXT_CHARS = 30_000
 const PDF = 'application/pdf'
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
@@ -53,10 +54,17 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  const ceiling = await checkDailyCeiling(userId, 'parse')
+  if (!ceiling.allowed) {
+    await track('limit_hit', { kind: 'daily_parse' }, userId)
+    return NextResponse.json({ error: ceiling.message }, { status: 429 })
+  }
+
   const masterLimit = masterResumeLimitFor((await getAccess(userId)).isPro)
   if (masterLimit !== Infinity) {
     const active = await prisma.resume.count({ where: { userId, isActive: true } })
     if (active >= masterLimit) {
+      await track('limit_hit', { kind: 'master_resumes' }, userId)
       return NextResponse.json(
         {
           error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one in Manage resumes (account menu) to add another, or go Pro for unlimited.`,
@@ -80,7 +88,7 @@ export async function POST(request: NextRequest) {
       if (typeof replacesValue === 'string' && replacesValue) replaces = replacesValue
       if (!(value instanceof File)) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
       file = value
-      if (file.size > MAX_BYTES) return NextResponse.json({ error: 'That file is over 10MB.' }, { status: 400 })
+      if (file.size > INPUT_LIMITS.resumeFileBytes) return NextResponse.json({ error: INPUT_LIMIT_MESSAGES.resumeFile }, { status: 413 })
       const kind = kindOf(file)
       if (!kind) {
         return NextResponse.json({ error: 'Upload a PDF or DOCX (older .doc files: save as PDF first), or paste your resume text.' }, { status: 400 })
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest) {
       const body = await request.json()
       const text = typeof body?.text === 'string' ? body.text : ''
       if (typeof body?.replaces === 'string' && body.replaces) replaces = body.replaces
-      if (text.length > MAX_TEXT_CHARS) return NextResponse.json({ error: 'That text is too long. Paste just your resume.' }, { status: 400 })
+      if (text.length > INPUT_LIMITS.resumeTextChars) return NextResponse.json({ error: INPUT_LIMIT_MESSAGES.resumeText }, { status: 413 })
       input = { kind: 'text', text }
     }
   } catch {
@@ -98,10 +106,14 @@ export async function POST(request: NextRequest) {
   }
 
   return ndjsonResponse(async (send) => {
+    const start = Date.now()
+    const { run, usage } = collectUsage(() => parseResume(input, { onStage: (stage) => send({ type: 'stage', stage }) }))
     let result
     try {
-      result = await parseResume(input, { onStage: (stage) => send({ type: 'stage', stage }) })
+      result = await run
     } catch (error) {
+      const kind = error instanceof ResumeParseError ? error.kind : 'unexpected'
+      await track('resume_parsed', { ok: false, ms: msSince(start), source: input.kind, kind, ...usageProps(usage()) }, userId)
       if (error instanceof ResumeParseError) {
         console.error('[parse] failed:', error.message)
         send({ type: 'error', status: error.status, error: error.userMessage })
@@ -109,6 +121,7 @@ export async function POST(request: NextRequest) {
       }
       throw error
     }
+    await track('resume_parsed', { ok: true, ms: msSince(start), source: input.kind, needsReview: result.needsReview.length, ...usageProps(usage()) }, userId)
 
     send({ type: 'stage', stage: 'saving' })
 

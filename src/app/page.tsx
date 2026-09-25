@@ -1,591 +1,320 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+// Landing page. A server component on purpose: no animation libraries, no client JS of
+// its own (except the one-line "account deleted" notice), so it paints fast on mobile.
+// Every number comes from src/lib/plans.ts.
+import type { Metadata } from "next"
 import Link from "next/link"
-import { useState, useEffect, useRef } from "react"
-import {
-  FileText,
-  Download,
-  Target,
-  Clock,
-  ArrowRight,
-  CheckCircle,
-  Upload,
-  Zap,
-  Sparkles,
-  Menu,
-  X
-} from "lucide-react"
-import { Logo } from "@/components/ui/logo"
-import { FREE_FEATURES, FREE_TAILORS_PER_MONTH, PASS_DAYS, PRICING, PRO_FEATURES } from "@/lib/plans"
+import { ArrowRight, Briefcase, Check, FileText, FileUp, ListChecks, MessageSquareText, ShieldCheck, Sparkles, X } from "lucide-react"
+import { SiteHeader } from "@/components/site/site-header"
+import { SiteFooter } from "@/components/site/site-footer"
+import { DeletedNotice } from "@/components/site/deleted-notice"
+import { LANDING_EXAMPLE as EX } from "@/components/site/landing-example"
+import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
+import { CONTACT_EMAIL, FREE_FEATURES, FREE_TAILORS_PER_MONTH, PASS_DAYS, PRICING, PRO_FEATURES } from "@/lib/plans"
+
+const TITLE = "ReWork: tailor your resume to any job in under a minute. Nothing made up."
+const DESCRIPTION = `Upload your resume, paste a job link, get a tailored resume and cover letter. Every rewrite is fact-checked against your real resume. ${FREE_TAILORS_PER_MONTH} free tailors a month, no card.`
+
+export const metadata: Metadata = {
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: { ...OG_DEFAULTS, title: TITLE, description: DESCRIPTION, url: "/" },
+  twitter: { ...TWITTER_DEFAULTS, title: TITLE, description: DESCRIPTION },
+}
+
+const STEPS = [
+  {
+    icon: FileUp,
+    title: "Upload your resume",
+    body: "PDF, Word, or pasted text. We read it once and check every detail against your file, so you only fix what's wrong.",
+  },
+  {
+    icon: Briefcase,
+    title: "Paste a job link",
+    body: "Greenhouse, Lever, Ashby, Workday and most company career pages fill in on their own. Anything else, paste the text.",
+  },
+  {
+    icon: FileText,
+    title: "Get your tailored resume + cover letter",
+    body: "Rewritten for that job, with a reason for every change. Keep or revert each bullet, then download a PDF.",
+  },
+]
+
+const PRO_DETAILS = [
+  { icon: Sparkles, title: "Unlimited tailoring", body: `Tailor for every job you apply to, not ${FREE_TAILORS_PER_MONTH} a month.` },
+  { icon: MessageSquareText, title: "Cover letters", body: "One per job, in your tone, fact-checked the same way as your resume." },
+  { icon: ShieldCheck, title: "Evidence interview", body: "We ask for your real numbers, then rewrite your weakest bullets using only your answers." },
+  { icon: ListChecks, title: "Tracker + Word export", body: "Track every application, and download .docx files for portals that prefer Word." },
+]
+
+const FAQ: { q: string; a: React.ReactNode }[] = [
+  {
+    q: "Is anything made up?",
+    a: (
+      <>
+        No. After every rewrite a fact guard compares the result with your resume: numbers, employers, titles, dates, tools and credentials. Anything
+        your resume doesn’t support is removed or flagged, and every changed bullet comes with the reason for the change so you can keep it or
+        revert it. When a bullet needs a number, the evidence interview asks you for it instead of guessing.
+      </>
+    ),
+  },
+  {
+    q: "Does it work with applicant tracking systems (ATS)?",
+    a: (
+      <>
+        The templates are single-column with standard section headings, and PDFs contain real, selectable text. Pro adds Word downloads built from
+        plain paragraphs, with no tables or text boxes, which is what application portals parse most reliably. We don’t promise an &quot;ATS
+        score&quot;; nobody honestly can.
+      </>
+    ),
+  },
+  {
+    q: "What happens to my data?",
+    a: (
+      <>
+        Your resumes and results are stored in our database so they&apos;re there when you come back. Resume and job text is sent to OpenAI&apos;s API
+        to do the rewriting; under OpenAI&apos;s API policy it isn&apos;t used to train their models. We never sell it or share it with employers.
+        You can download everything or delete your account any time from Settings. Details in the <Link href="/privacy">privacy policy</Link>.
+      </>
+    ),
+  },
+  {
+    q: "Which job sites work?",
+    a: (
+      <>
+        Links from Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages fill in automatically. LinkedIn,
+        Indeed, Glassdoor and ZipRecruiter block apps from reading their pages, so for those, copy the job description and paste it in.
+      </>
+    ),
+  },
+  {
+    q: "Can I cancel anytime? What about refunds?",
+    a: (
+      <>
+        Yes. {PRICING.monthly.name} cancels in one click from the billing portal, and you keep Pro until the end of the month you paid for. The{" "}
+        {PRICING.pass.name} never renews, so there&apos;s nothing to cancel. Refunds: ask within 7 days of any payment and we&apos;ll refund it, except
+        a {PRICING.pass.name} you&apos;ve already used. See the <Link href="/terms">terms</Link> or email {CONTACT_EMAIL}.
+      </>
+    ),
+  },
+]
+
+const container = "mx-auto max-w-5xl px-4"
+const h2 = "text-2xl font-bold tracking-tight text-white sm:text-3xl"
 
 export default function HomePage() {
-  const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const heroRef = useRef<HTMLDivElement>(null)
-
-  // Client-side mount check
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  // Mouse tracking for interactive effects (only after mount)
-  useEffect(() => {
-    if (!isMounted) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX / window.innerWidth * 100, y: e.clientY / window.innerHeight * 100 })
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [isMounted])
-
-  // Load animation trigger (only after mount)
-  useEffect(() => {
-    if (!isMounted) return
-    setTimeout(() => setIsLoaded(true), 100)
-  }, [isMounted])
-
-  // Magnetic button effect
-  const handleCtaMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const button = e.currentTarget
-    const rect = button.getBoundingClientRect()
-    const x = e.clientX - rect.left - rect.width / 2
-    const y = e.clientY - rect.top - rect.height / 2
-
-    button.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px) scale(1.05)`
-  }
-
-  const handleCtaMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const button = e.currentTarget
-    button.style.transform = 'translate(0, 0) scale(1)'
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-black relative overflow-hidden bg-dots">
-      {/* Floating Particles Background - Only render on client */}
-      {isMounted && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(30)].map((_, i) => {
-            const animations = ['float-up-slow', 'float-diagonal', 'float-side', 'float-wobble'];
-            const sizes = ['w-1 h-1', 'w-1.5 h-1.5', 'w-2 h-2', 'w-0.5 h-0.5'];
-            const animation = animations[i % animations.length];
-            const size = sizes[i % sizes.length];
+    <div className="min-h-screen bg-slate-950 text-slate-300">
+      <DeletedNotice />
+      <SiteHeader />
 
-            return (
-              <div
-                key={i}
-                className={`absolute ${size} bg-white/30 rounded-full`}
-                style={{
-                  left: `${(i * 13 + 10) % 90 + 5}%`,
-                  top: `${(i * 17 + 15) % 80 + 10}%`,
-                  animation: `${animation} ${8 + (i % 5) * 2}s ease-in-out infinite`,
-                  animationDelay: `${(i * 0.5) % 5}s`
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
-      {/* Dynamic Gradient Mesh Background - Only render on client */}
-      {isMounted && (
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          style={{
-            background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(59, 130, 246, 0.1) 0%, transparent 50%)`
-          }}
-        />
-      )}
-
-      <div className="relative z-10">
-        {/* Enhanced Header with Glassmorphism */}
-        <header className="border-b border-white/10 backdrop-blur-xl bg-slate-900/30 sticky top-0 z-50">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/" className="flex items-center space-x-2 group">
-                <Logo size="xs" variant="simple" showBadge={false} className="group-hover:scale-110 transition-all duration-300" />
-                <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 group-hover:scale-105 transition-transform duration-300">ReWork</span>
-              </Link>
-
-              {/* Navigation Links - responsive */}
-              <div className="hidden md:flex items-center space-x-6">
-                <a
-                  href="#how-it-works"
-                  className="text-gray-300 hover:text-white transition-colors duration-200 font-medium"
-                >
-                  How It Works
-                </a>
-                <a
-                  href="#pricing"
-                  className="text-gray-300 hover:text-white transition-colors duration-200 font-medium"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  Pricing
-                </a>
-                <Link
-                  href="/auth/signin"
-                  className="px-4 py-2 text-gray-300 hover:text-white border border-gray-600 hover:border-gray-400 rounded-md transition-all duration-200 font-medium hover:bg-white/5"
-                >
-                  Login
-                </Link>
-                <Link href="/auth/signin">
-                  <Button
-                    className="bg-emerald-500 text-white hover:bg-emerald-400 border-0 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 font-semibold px-6"
-                  >
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Mobile Navigation */}
-              <div className="md:hidden flex items-center gap-2">
-                <Link href="/auth/signin">
-                  <Button
-                    size="sm"
-                    className="bg-emerald-500 text-white hover:bg-emerald-400 border-0 transition-all duration-300 font-semibold"
-                  >
-                    Get Started
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="text-white hover:bg-white/10"
-                >
-                  {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-slate-900/95 backdrop-blur-xl border-b border-white/10">
-            <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
-              <a
-                href="#how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-300 hover:text-white transition-colors duration-200 font-medium py-2"
-              >
-                How It Works
-              </a>
-              <a
-                href="#pricing"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-                  setMobileMenuOpen(false);
-                }}
-                className="text-gray-300 hover:text-white transition-colors duration-200 font-medium py-2"
-              >
-                Pricing
-              </a>
+      <main>
+        {/* Hero */}
+        <section className="bg-gradient-to-b from-slate-900 to-slate-950">
+          <div className={`${container} py-16 text-center sm:py-24`}>
+            <h1 className="mx-auto max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
+              Tailor your resume to any job in under a minute. <span className="text-emerald-400">Nothing made up.</span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300">
+              Upload your resume once, paste a job link, and get a resume and cover letter written for that job. Every rewrite is checked against what
+              you actually wrote. No invented metrics, no fake skills.
+            </p>
+            <div className="mt-8 flex flex-col items-center gap-3">
               <Link
                 href="/auth/signin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-gray-300 hover:text-white transition-colors duration-200 font-medium py-2"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 text-lg font-semibold text-slate-950 hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
               >
-                Login
+                Get started free <ArrowRight className="h-5 w-5" aria-hidden />
               </Link>
+              <p className="text-sm text-slate-400">{FREE_TAILORS_PER_MONTH} free tailors a month, no card</p>
             </div>
           </div>
-        )}
+        </section>
 
-        {/* Main Hero and Content */}
-        <main className="container mx-auto px-4 py-12 md:py-24">
-          {/* Revolutionary Hero Section */}
-          <div ref={heroRef} className="text-center mb-20 relative">
-            {/* Ultra-Premium AI Badge */}
-            <div className={`mb-8 transition-all duration-1000 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              <Badge className="bg-gradient-to-r from-gray-700/30 to-gray-600/30 text-gray-200 border border-gray-400/40 px-6 py-3 hover:from-gray-700/40 hover:to-gray-600/40 hover:border-gray-400/60 hover:scale-105 transition-all duration-300 backdrop-blur-sm relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-gray-400/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                <span className="relative z-10 flex items-center gap-2 font-medium">
-                  <span className="text-white animate-pulse">✦</span>
-                  Upload • Optimize • Dominate
-                  <span className="text-gray-300 animate-bounce text-xs">●</span>
-                </span>
-              </Badge>
+        {/* How it works */}
+        <section id="how-it-works" className="scroll-mt-16 py-16">
+          <div className={container}>
+            <h2 className={`${h2} text-center`}>How it works</h2>
+            <ol className="mt-10 grid gap-4 md:grid-cols-3">
+              {STEPS.map((step, i) => (
+                <li key={step.title} className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-300">
+                      {i + 1}
+                    </span>
+                    <step.icon className="h-5 w-5 text-slate-300" aria-hidden />
+                  </div>
+                  <h3 className="mt-4 font-semibold text-white">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-300">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Before / after */}
+        <section className="border-y border-white/5 bg-slate-900/50 py-16">
+          <div className={container}>
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h2 className={h2}>What a tailor looks like</h2>
+              <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-slate-300">
+                Example
+              </span>
             </div>
+            <p className="mt-3 max-w-3xl text-slate-300">
+              {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already on the left.
+            </p>
 
-            {/* Revolutionary Animated Title */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-10 leading-tight tracking-tight relative overflow-visible">
-              <div
-                className={`transition-all duration-1000 delay-200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-              >
-                <span
-                  className="hover:scale-105 transition-transform duration-300 inline-block"
-                  style={isMounted ? {
-                    backgroundImage: `linear-gradient(45deg,
-                      hsl(0, 0%, ${75 + mousePosition.x * 0.1}%) 0%,
-                      hsl(0, 0%, ${80 + mousePosition.y * 0.05}%) 25%,
-                      hsl(0, 0%, ${85 + mousePosition.x * 0.05}%) 50%,
-                      hsl(0, 0%, ${80 + mousePosition.y * 0.1}%) 75%,
-                      hsl(0, 0%, ${75 + mousePosition.x * 0.08}%) 100%)`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  } : {
-                    backgroundImage: 'linear-gradient(45deg, hsl(0, 0%, 75%) 0%, hsl(0, 0%, 85%) 50%, hsl(0, 0%, 90%) 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}
-                >
-                  smart tech,
-                </span>
-                <br />
-                <span className="text-slate-300 hover:text-slate-100 hover:scale-105 transition-all duration-300 inline-block mr-3">for</span>
-                <span
-                  className="hover:scale-105 transition-transform duration-300 inline-block"
-                  style={isMounted ? {
-                    backgroundImage: `linear-gradient(45deg,
-                      hsl(0, 0%, ${70 + mousePosition.x * 0.1}%) 0%,
-                      hsl(0, 0%, ${75 + mousePosition.y * 0.08}%) 50%,
-                      hsl(0, 0%, ${70 + mousePosition.x * 0.05}%) 100%)`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  } : {
-                    backgroundImage: 'linear-gradient(45deg, hsl(0, 0%, 70%) 0%, hsl(0, 0%, 75%) 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text'
-                  }}
-                >
-                  smarter jobs
-                </span>
+            <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60">
+              <div className="grid grid-cols-1 border-b border-white/10 text-xs font-semibold uppercase tracking-wider text-slate-400 md:grid-cols-2">
+                <div className="px-5 py-3">Your resume</div>
+                <div className="hidden px-5 py-3 md:block">Tailored</div>
               </div>
-            </h1>
-
-            {/* Enhanced Description with Staggered Animation */}
-            <div className="max-w-3xl mx-auto mb-14">
-              <p className={`text-xl md:text-2xl text-slate-200 mb-4 font-medium hover:text-white transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '400ms' }}>
-                Transform your resume in seconds with revolutionary optimization.
-              </p>
-            </div>
-
-            {/* Magnetic CTA Button */}
-            <div className={`flex flex-col sm:flex-row gap-6 justify-center items-center mb-8 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '800ms' }}>
-              <Link href="/auth/signin">
-                <button
-                  onMouseMove={handleCtaMouseMove}
-                  onMouseLeave={handleCtaMouseLeave}
-                  className="relative px-8 py-4 text-lg font-semibold text-black bg-white rounded-lg overflow-hidden group transition-all duration-300 hover:shadow-xl hover:shadow-white/25 hover:scale-105"
-                >
-                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-                  <div className="relative z-10 flex items-center gap-2">
-                    Get Started Free
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+              {[{ before: EX.summary.before, after: EX.summary.after, why: "Summary leads with what this job needs." }, ...EX.bullets].map((row) => (
+                <div key={row.before} className="grid grid-cols-1 border-b border-white/5 last:border-b-0 md:grid-cols-2">
+                  <p className="px-5 py-4 text-sm leading-relaxed text-slate-400">{row.before}</p>
+                  <div className="px-5 pb-4 md:py-4">
+                    <p className="text-sm leading-relaxed text-white">{row.after}</p>
+                    <p className="mt-1 text-xs text-emerald-300">Why: {row.why}</p>
                   </div>
-                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12"></div>
-                </button>
-              </Link>
+                </div>
+              ))}
+              <div className="grid gap-4 border-t border-white/10 bg-slate-900/60 px-5 py-4 text-sm md:grid-cols-2">
+                <p className="flex items-start gap-2 text-slate-200">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" aria-hidden />
+                  <span>Fact check passed: {EX.factsKept.join(", ")} all come from the original.</span>
+                </p>
+                <p className="flex items-start gap-2 text-slate-300">
+                  <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" aria-hidden />
+                  <span>In the posting but not in the resume, so not added: {EX.notAdded.join(", ")}.</span>
+                </p>
+              </div>
             </div>
+          </div>
+        </section>
 
-            {/* Badge under CTA */}
-            <div className={`transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '1000ms' }}>
-              <Badge className="bg-gradient-to-r from-emerald-900/30 to-blue-900/30 text-emerald-300 border border-emerald-500/30 px-4 py-2 text-sm">
-                {FREE_TAILORS_PER_MONTH} Free Tailored Resumes per Month • No Credit Card Required
-              </Badge>
+        {/* What Pro adds */}
+        <section className="py-16">
+          <div className={container}>
+            <h2 className={h2}>What Pro adds</h2>
+            <p className="mt-3 max-w-2xl text-slate-300">Free covers a few applications a month. Pro is for an active search.</p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              {PRO_DETAILS.map((item) => (
+                <div key={item.title} className="flex gap-4 rounded-xl border border-white/10 bg-slate-800/40 p-5">
+                  <item.icon className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" aria-hidden />
+                  <div>
+                    <h3 className="font-semibold text-white">{item.title}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-300">{item.body}</p>
+                  </div>
+                </div>
+              ))}
             </div>
+          </div>
+        </section>
 
-            {/* Floating Particles Animation */}
-            {isMounted && [...Array(3)].map((_, i) => (
-              <div
-                key={`hero-particle-${i}`}
-                className="absolute w-64 h-64 opacity-10 rounded-full blur-3xl"
-                style={{
-                  background: `radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%)`,
-                  left: `${20 + i * 30}%`,
-                  top: `${-10 + i * 20}%`,
-                  animation: `floatGradient ${20 + i * 5}s ease-in-out infinite`,
-                  animationDelay: `${i * 2}s`
-                }}
+        {/* Pricing */}
+        <section id="pricing" className="scroll-mt-16 border-y border-white/5 bg-slate-900/50 py-16">
+          <div className={container}>
+            <h2 className={`${h2} text-center`}>Pricing</h2>
+            <p className="mx-auto mt-3 max-w-xl text-center text-slate-300">Start free. Pay by the month, or once for a single job hunt.</p>
+            <div className="mt-10 grid gap-4 lg:grid-cols-3">
+              <PlanCard name="Free" price="$0" period="forever" features={FREE_FEATURES} cta="Get started free" note="No card needed." />
+              <PlanCard
+                name={PRICING.monthly.name}
+                price={PRICING.monthly.amount}
+                period={PRICING.monthly.period}
+                features={PRO_FEATURES}
+                cta="Start free, upgrade anytime"
+                note={PRICING.monthly.cadence}
+                highlight
               />
-            ))}
+              <PlanCard
+                name={PRICING.pass.name}
+                price={PRICING.pass.amount}
+                period={`one-time, ${PASS_DAYS} days`}
+                features={[`Everything in Pro for ${PASS_DAYS} days`, ...PRO_FEATURES.slice(1)]}
+                cta="Start free, upgrade anytime"
+                note={PRICING.pass.cadence}
+              />
+            </div>
           </div>
+        </section>
 
-          {/* Why It Works - 3 Premium Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-24">
-            <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 hover:border-gray-700 hover:shadow-2xl hover:shadow-white/5 transition-all duration-500 hover:scale-[1.02] group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <CardHeader className="relative z-10">
-                <Target className="w-12 h-12 text-blue-400 mb-4 group-hover:scale-110 transition-transform duration-300" />
-                <CardTitle className="text-xl text-white group-hover:text-blue-300 transition-colors duration-300">AI-Powered Matching</CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <p className="text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
-                  Advanced AI analyzes job descriptions and optimizes your resume for maximum ATS compatibility and keyword matching.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 hover:border-gray-700 hover:shadow-2xl hover:shadow-white/5 transition-all duration-500 hover:scale-[1.02] group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <CardHeader className="relative z-10">
-                <Clock className="w-12 h-12 text-green-400 mb-4 group-hover:scale-110 transition-transform duration-300" />
-                <CardTitle className="text-xl text-white group-hover:text-green-300 transition-colors duration-300">Instant Results</CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <p className="text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
-                  Transform your resume in seconds, not hours. Get professional results with just a few clicks.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 hover:border-gray-700 hover:shadow-2xl hover:shadow-white/5 transition-all duration-500 hover:scale-[1.02] group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <CardHeader className="relative z-10">
-                <Zap className="w-12 h-12 text-purple-400 mb-4 group-hover:scale-110 transition-transform duration-300" />
-                <CardTitle className="text-xl text-white group-hover:text-purple-300 transition-colors duration-300">Stand Out</CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <p className="text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
-                  Professional templates and smart formatting ensure your resume looks exceptional and passes ATS filters.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* How It Works Section */}
-          <div id="how-it-works" className="mb-24 scroll-mt-20">
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
-              Three Steps to Your Perfect Resume
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-              {[
-                { icon: Upload, title: "Upload", description: "Drop your existing resume or start from scratch" },
-                { icon: Sparkles, title: "Optimize", description: "AI enhances content and matches job requirements" },
-                { icon: Download, title: "Download", description: "Get your polished, ATS-ready resume instantly" }
-              ].map((step, index) => (
-                <div key={index} className="text-center group hover:scale-105 transition-all duration-300">
-                  <div className="mx-auto w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center mb-4 border border-gray-700 group-hover:border-gray-600 group-hover:shadow-lg group-hover:shadow-white/10 transition-all duration-300">
-                    <step.icon className="w-10 h-10 text-white group-hover:scale-110 transition-transform duration-300" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-blue-300 transition-colors duration-300">{step.title}</h3>
-                  <p className="text-slate-400 group-hover:text-slate-300 transition-colors duration-300">{step.description}</p>
-                </div>
+        {/* FAQ */}
+        <section className="py-16">
+          <div className="mx-auto max-w-3xl px-4">
+            <h2 className={h2}>Questions</h2>
+            <div className="mt-6 divide-y divide-white/10 rounded-xl border border-white/10">
+              {FAQ.map((item) => (
+                <details key={item.q} className="group px-5 py-4 [&_a]:text-emerald-300 [&_a]:underline">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-white">
+                    {item.q}
+                    <span className="text-slate-400 transition-transform group-open:rotate-45" aria-hidden>
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-300">{item.a}</p>
+                </details>
               ))}
             </div>
-          </div>
-
-          {/* Ultra-Modern Feature Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-24">
-            <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-xl hover:shadow-white/5 hover:scale-[1.02] relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-transparent pointer-events-none"></div>
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-2xl text-white mb-2">
-                  Why ReWork Works
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="space-y-4 text-base text-slate-300">
-                  {[
-                    "AI optimization that actually improves your chances",
-                    "Job-specific keyword optimization for better matching",
-                    "ATS-friendly formatting that gets past screening systems",
-                    "Professional results in seconds, not hours",
-                    "Perfect preview-to-PDF consistency every time"
-                  ].map((feature, index) => (
-                    <div key={index} className="flex items-start gap-3 hover:bg-slate-800/30 p-3 rounded-lg transition-all duration-300 hover:scale-[1.02] group/item">
-                      <CheckCircle className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0 group-hover/item:text-emerald-400 transition-colors" />
-                      <span className="group-hover/item:text-slate-200 transition-colors duration-300">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-xl hover:shadow-white/5 hover:scale-[1.02] relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-transparent pointer-events-none"></div>
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-2xl text-white mb-2">
-                  Perfect For
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="space-y-6">
-                  <div className="group/item hover:bg-slate-800/30 p-4 rounded-lg transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-2">
-                      <FileText className="w-5 h-5 text-blue-400" />
-                      <span className="font-semibold text-white group-hover/item:text-blue-300 transition-colors">Job Seekers</span>
-                    </div>
-                    <p className="text-slate-400 text-sm group-hover/item:text-slate-300 transition-colors">Stand out from hundreds of applicants with optimized resumes</p>
-                  </div>
-                  <div className="group/item hover:bg-slate-800/30 p-4 rounded-lg transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Zap className="w-5 h-5 text-purple-400" />
-                      <span className="font-semibold text-white group-hover/item:text-purple-300 transition-colors">Career Changers</span>
-                    </div>
-                    <p className="text-slate-400 text-sm group-hover/item:text-slate-300 transition-colors">Highlight transferable skills and pivot your experience effectively</p>
-                  </div>
-                  <div className="group/item hover:bg-slate-800/30 p-4 rounded-lg transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Target className="w-5 h-5 text-green-400" />
-                      <span className="font-semibold text-white group-hover/item:text-green-300 transition-colors">Professionals</span>
-                    </div>
-                    <p className="text-slate-400 text-sm group-hover/item:text-slate-300 transition-colors">Keep your resume updated and optimized for new opportunities</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Pricing Section */}
-          <div id="pricing" className="mt-32 mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-lg text-slate-400 text-center mb-12 max-w-2xl mx-auto">
-              Start free and upgrade when you're ready. No hidden fees, no surprises.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-6xl mx-auto px-4 md:px-8">
-              {/* Free Tier */}
-              <Card className="bg-gray-900/50 backdrop-blur-xl border-gray-800 hover:border-gray-700 transition-all duration-300 hover:shadow-xl hover:shadow-white/5 hover:scale-[1.02] relative overflow-hidden flex flex-col">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-800/20 to-transparent pointer-events-none"></div>
-                <CardHeader className="relative z-10">
-                  <CardTitle className="text-2xl text-white mb-2">Free</CardTitle>
-                  <div className="text-3xl font-bold text-white">$0<span className="text-lg font-normal text-gray-400">/month</span></div>
-                </CardHeader>
-                <CardContent className="relative z-10 space-y-4 flex-1 flex flex-col">
-                  <div className="space-y-3 flex-1">
-                    {[
-                      ...FREE_FEATURES.map((text) => ({ text, included: true }))
-                    ].map((feature, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        {feature.included ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                        ) : (
-                          <div className="w-5 h-5 text-gray-600 flex-shrink-0 flex items-center justify-center">
-                            <span className="text-lg leading-none">×</span>
-                          </div>
-                        )}
-                        <span className={feature.included ? "text-gray-300" : "text-gray-600 line-through"}>
-                          {feature.text}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <Link href="/auth/signin" className="block mt-auto">
-                    <Button className="w-full bg-white/10 text-white hover:bg-white/20 border border-gray-700 hover:border-gray-600">
-                      Get Started Free
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              {/* Pro Tier */}
-              <Card className="bg-gradient-to-br from-gray-900 to-gray-800 backdrop-blur-xl border-emerald-800/50 hover:border-emerald-700/50 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10 hover:scale-[1.02] relative overflow-hidden flex flex-col">
-                <div className="absolute top-0 right-4 bg-emerald-500 text-black text-xs font-bold px-3 py-1 rounded-b-lg">POPULAR</div>
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 to-transparent pointer-events-none"></div>
-                <CardHeader className="relative z-10">
-                  <CardTitle className="text-2xl text-white mb-2">Pro</CardTitle>
-                  <div className="text-3xl font-bold text-white">{PRICING.monthly.amount}<span className="text-lg font-normal text-gray-400">{PRICING.monthly.period}</span></div>
-                  <p className="text-sm text-gray-400 mt-1">or {PRICING.pass.amount} one-time for a {PASS_DAYS}-day Job Hunt Pass</p>
-                </CardHeader>
-                <CardContent className="relative z-10 space-y-4">
-                  <div className="space-y-3">
-                    {PRO_FEATURES.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                        <span className="text-gray-300">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Link href="/pricing" className="block mt-auto">
-                    <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500 border-0 hover:shadow-lg hover:shadow-emerald-500/25">
-                      See Pro options
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Before/After Comparison Section */}
-          <div className="mt-32 mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 text-white">
-              See the Difference AI Makes
-            </h2>
-            <p className="text-lg text-slate-400 text-center mb-12 max-w-2xl mx-auto">
-              Real examples of how ReWork transforms generic bullets into powerful achievements
-            </p>
-            <div className="space-y-8 max-w-5xl mx-auto">
-              {[
-                {
-                  before: "Handled customer complaints and resolved issues",
-                  after: "Resolved 150+ customer escalations monthly, achieving 96% satisfaction rating and reducing churn by 23%"
-                },
-                {
-                  before: "Built websites for clients using modern technologies",
-                  after: "Architected and delivered 14 client web applications using React and Node.js, generating $2.1M in combined client revenue"
-                },
-                {
-                  before: "Managed social media accounts for the company",
-                  after: "Grew company social presence from 2K to 47K followers across 3 platforms, driving 340% increase in organic lead generation"
-                }
-              ].map((example, index) => (
-                <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-center">
-                  <Card className="bg-gray-900/50 backdrop-blur-xl border-red-900/30 hover:border-red-800/50 transition-all duration-300 p-6">
-                    <div className="text-xs font-semibold text-red-400 uppercase tracking-wider mb-2">Before</div>
-                    <p className="text-gray-300">{example.before}</p>
-                  </Card>
-                  <div className="hidden md:flex items-center justify-center">
-                    <div className="bg-gradient-to-r from-red-500 to-emerald-500 p-3 rounded-full">
-                      <ArrowRight className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <Card className="bg-gray-900/50 backdrop-blur-xl border-emerald-900/30 hover:border-emerald-800/50 transition-all duration-300 p-6">
-                    <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">After AI Optimization</div>
-                    <p className="text-white font-medium">{example.after}</p>
-                  </Card>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-
-        {/* Ultra-Modern Footer */}
-        <footer className="border-t border-white/10 backdrop-blur-xl bg-slate-900/30 mt-24 hover:border-white/20 transition-colors duration-500">
-          <div className="container mx-auto px-4 py-12 text-center">
-            <p className="text-slate-400 hover:text-slate-300 transition-colors duration-300 cursor-default mb-4">
-              © 2026 ReWork • Professional Resume Optimization Platform
-            </p>
-            <div className="flex justify-center items-center gap-6 text-sm">
+            <div className="mt-12 text-center">
               <Link
-                href="/terms"
-                className="text-slate-400 hover:text-white transition-colors duration-300"
+                href="/auth/signin"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
               >
-                Terms of Service
+                Tailor your first resume <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <div className="w-px h-4 bg-white/20"></div>
-              <Link
-                href="/privacy"
-                className="text-slate-400 hover:text-white transition-colors duration-300"
-              >
-                Privacy Policy
-              </Link>
-              <div className="w-px h-4 bg-white/20"></div>
-              <a
-                href="mailto:support@rework.solutions"
-                className="text-slate-400 hover:text-white transition-colors duration-300"
-              >
-                Contact
-              </a>
             </div>
           </div>
-        </footer>
-      </div>
+        </section>
+      </main>
+
+      <SiteFooter />
+    </div>
+  )
+}
+
+function PlanCard({
+  name,
+  price,
+  period,
+  features,
+  cta,
+  note,
+  highlight = false,
+}: {
+  name: string
+  price: string
+  period: string
+  features: string[]
+  cta: string
+  note: string
+  highlight?: boolean
+}) {
+  return (
+    <div className={`flex flex-col rounded-xl border p-6 ${highlight ? "border-emerald-500/50 bg-emerald-500/5" : "border-white/10 bg-slate-800/40"}`}>
+      <h3 className="font-semibold text-white">{name}</h3>
+      <p className="mt-2 text-3xl font-bold text-white">
+        {price}
+        <span className="ml-1 text-sm font-normal text-slate-400">{period}</span>
+      </p>
+      <ul className="mt-5 flex-1 space-y-2">
+        {features.map((f) => (
+          <li key={f} className="flex items-start gap-2 text-sm text-slate-200">
+            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" aria-hidden />
+            {f}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 text-xs text-slate-400">{note}</p>
+      <Link
+        href="/auth/signin"
+        className={`mt-3 block rounded-lg px-4 py-2.5 text-center text-sm font-semibold ${
+          highlight ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "border border-white/20 text-white hover:bg-white/10"
+        }`}
+      >
+        {cta}
+      </Link>
     </div>
   )
 }

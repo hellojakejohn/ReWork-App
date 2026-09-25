@@ -13,6 +13,7 @@ import { masterToParsed } from '@/lib/master-resume'
 import { ResumePdf } from '@/lib/resume-pdf'
 import { isTemplateId } from '@/lib/resume-templates'
 import { DOCX_MIME, resumeDocxBuffer } from '@/lib/resume-docx'
+import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 
@@ -32,6 +33,7 @@ export async function GET(
   const template = isTemplateId(templateParam) ? templateParam : 'classic'
   const format = request.nextUrl.searchParams.get('format') === 'docx' ? 'docx' : 'pdf'
   if (format === 'docx' && !canExportWord((await getAccess(session.user.id)).isPro)) {
+    await track('limit_hit', { kind: 'word_export' }, session.user.id)
     return new NextResponse(WORD_EXPORT_UPSELL, { status: 402 })
   }
 
@@ -59,6 +61,7 @@ export async function GET(
   if (format === 'docx') {
     try {
       const buffer = await resumeDocxBuffer(parsed)
+      await track('download', { format, doc: 'resume', tailored: !!applicationId }, session.user.id)
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
           'Content-Type': DOCX_MIME,
@@ -74,6 +77,7 @@ export async function GET(
   try {
     const buffer = await renderToBuffer(React.createElement(ResumePdf, { resume: parsed, template }) as never)
     const filename = `${baseName}.pdf`
+    await track('download', { format, doc: 'resume', template, tailored: !!applicationId }, session.user.id)
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'application/pdf',

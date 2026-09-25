@@ -7,7 +7,7 @@
 4. Ask what we're working on today
 
 ## Project Structure
-- `src/app/` - Next.js app router pages + API routes
+- `src/app/` - Next.js app router pages + API routes (`(app)/` route group = pages that need a session)
 - `src/components/` - React components
 - `src/lib/` - Utilities (storage.ts, openai.ts, prisma.ts)
 - `src/types/` - TypeScript definitions
@@ -26,6 +26,10 @@
 - `src/lib/tracker.ts` + `src/components/tracker/` - application tracker at `/dashboard/tracker`
 - `src/lib/plans.ts` - every plan limit and all pricing copy; `src/lib/tailor-quota.ts` meters tailors and cover letters
 - `src/lib/storage.ts` - Supabase Storage (was S3)
+- `src/lib/track.ts` + `src/lib/ai-usage.ts` - analytics events and per-call OpenAI token usage; `src/lib/admin-analytics.ts` feeds `/admin`
+- `src/lib/daily-ceiling.ts` - per-user daily ceilings (Pro included), counted from events
+- `src/lib/account.ts` - Download my data / Delete my account (Stripe cancel first)
+- `src/app/page.tsx` + `src/components/site/` - landing, legal pages, public header/footer (no auth JS); session pages live in `src/app/(app)/`
 - `prisma/schema.prisma` - Database schema
 
 ## Environment

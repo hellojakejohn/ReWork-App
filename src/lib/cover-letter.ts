@@ -11,6 +11,7 @@ import { normalizeSpace, tailorInputText } from '@/lib/resume-text'
 import { describeFacts, dropUnsupportedSentences, hasUnsupported, splitSentences, unsupportedFacts } from '@/lib/text-facts'
 import type { TailorInput } from '@/types/tailor'
 import type { CoverLetterTone, CoverLetterWarning, StoredCoverLetter } from '@/lib/cover-letter-shared'
+import { recordUsage } from '@/lib/ai-usage'
 
 export * from '@/lib/cover-letter-shared'
 
@@ -275,7 +276,10 @@ export class CoverLetterError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly userMessage: string
+    public readonly userMessage: string,
+    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
+    // response was unusable. Goes on the ai_error event.
+    public readonly kind: string = 'bad_output'
   ) {
     super(message)
     this.name = 'CoverLetterError'
@@ -286,7 +290,7 @@ let defaultClient: OpenAI | null = null
 function getClient(): OpenAI {
   if (!process.env.OPENAI_API_KEY) {
     console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
-    throw new CoverLetterError('OPENAI_API_KEY is not configured', 503, "Cover letters are temporarily unavailable, we're on it.")
+    throw new CoverLetterError('OPENAI_API_KEY is not configured', 503, "Cover letters are temporarily unavailable, we're on it.", 'not_configured')
   }
   defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return defaultClient
@@ -312,8 +316,9 @@ async function callModel(client: OpenAI, model: string, prompt: string): Promise
     })
   } catch (error) {
     const classified = classifyAIError(error, 'Cover letters')
-    throw new CoverLetterError(String((error as Error)?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage)
+    throw new CoverLetterError(String((error as Error)?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage, classified.kind)
   }
+  recordUsage(completion, model)
   const choice = completion.choices[0]
   if (choice?.message?.refusal) {
     throw new CoverLetterError(`Model refused: ${choice.message.refusal}`, 422, 'The AI declined to write this letter. Check the job description and try again.')

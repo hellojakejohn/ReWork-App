@@ -188,3 +188,22 @@ export async function downloadFromStorage(key: string): Promise<Buffer | null> {
     return null
   }
 }
+/**
+ * Account deletion: removes every file under the user's folder plus any keys the
+ * database knows about. Never throws; returns how many were removed and any error.
+ */
+export async function deleteUserFiles(userId: string, knownKeys: string[]): Promise<{ deleted: number; error?: string }> {
+  try {
+    const bucket = getSupabase().storage.from(BUCKET_NAME)
+    const prefix = `users/${userId}/resumes`
+    const keys = new Set(knownKeys.filter(Boolean))
+    const { data: listed, error: listError } = await bucket.list(prefix, { limit: 1000 })
+    for (const file of listed ?? []) keys.add(`${prefix}/${file.name}`)
+    if (keys.size === 0) return { deleted: 0, ...(listError ? { error: listError.message } : {}) }
+    const { data, error } = await bucket.remove([...keys])
+    if (error) throw error
+    return { deleted: data?.length ?? 0, ...(listError ? { error: listError.message } : {}) }
+  } catch (error) {
+    return { deleted: 0, error: error instanceof Error ? error.message : String(error) }
+  }
+}

@@ -9,6 +9,7 @@ import {
   refundPassFromCharge,
   syncSubscription,
 } from '@/lib/stripe-sync'
+import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -73,6 +74,10 @@ async function handleEvent(stripe: Stripe, event: Stripe.Event): Promise<void> {
         if (subId) await syncSubscription(stripe, subId, { userId })
       } else if (session.mode === 'payment') {
         await grantPassFromCheckout(stripe, session)
+      }
+      // A delayed payment method completes checkout unpaid, then sends async_payment_succeeded.
+      if (session.payment_status !== 'unpaid') {
+        await track('checkout_completed', { offer: session.metadata?.offer ?? session.mode, amount: session.amount_total ?? null }, userId)
       }
       return
     }

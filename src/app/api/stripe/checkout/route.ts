@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PRICING, isOfferId } from '@/lib/plans'
 import { currentChainEnd } from '@/lib/entitlements'
+import { track } from '@/lib/track'
 import { subscriptionTrialEnd } from '@/lib/entitlement-rules'
 import {
   BLOCKING_SUB_STATUSES,
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
         : { payment_intent_data: { metadata } }),
     })
 
+    await track('checkout_started', { offer: offer.id }, user.id)
     return NextResponse.json({ url: checkout.url })
   } catch (error) {
     console.error('Error creating checkout session:', error)

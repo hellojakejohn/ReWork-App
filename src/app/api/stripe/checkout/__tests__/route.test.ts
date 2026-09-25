@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   session: { user: { id: 'user_1', email: 'j@x.io' } } as unknown,
   passEnd: null as Date | null,
   sessionsCreate: vi.fn(async (params: Record<string, unknown>) => ({ url: 'https://checkout.stripe.test/s', params })),
+  eventCreate: vi.fn(async () => ({})),
 }))
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => mocks.session) }))
@@ -16,6 +17,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findUnique: vi.fn(async () => ({ id: 'user_1', email: 'j@x.io', stripeCustomerId: 'cus_1' })), update: vi.fn() },
     entitlement: { findFirst: vi.fn(async () => null) },
+    event: { create: mocks.eventCreate },
   },
 }))
 vi.mock('@/lib/entitlements', () => ({ currentChainEnd: vi.fn(async () => mocks.passEnd) }))
@@ -93,5 +95,11 @@ describe('POST /api/stripe/checkout', () => {
     const params = mocks.sessionsCreate.mock.calls[0][0] as Record<string, unknown>
     expect(params.mode).toBe('payment')
     expect(params).not.toHaveProperty('subscription_data')
+  })
+
+  it('records checkout_started with the offer', async () => {
+    mocks.eventCreate.mockClear()
+    await checkout('pass')
+    expect(mocks.eventCreate).toHaveBeenCalledWith({ data: { name: 'checkout_started', userId: 'user_1', props: { offer: 'pass' } } })
   })
 })

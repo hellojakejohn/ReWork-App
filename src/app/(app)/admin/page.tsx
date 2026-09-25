@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { AnalyticsPanel } from '@/components/admin/analytics-panel'
 
 interface User {
   id: string
@@ -99,8 +100,10 @@ export default function AdminPage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-white">Admin Dashboard</h1>
+      <AnalyticsPanel />
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+        <h2 className="text-xl font-bold mb-4 text-white">Users</h2>
         
         <div className="grid grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg border">

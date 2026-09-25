@@ -5,6 +5,7 @@ import { Link2, Loader2, MapPin, Pencil } from "lucide-react"
 import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, PrimaryButton, SecondaryButton, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
+import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
 
 type Mode = "url" | "fetching" | "fetched" | "paste"
 
@@ -12,7 +13,12 @@ const EMPTY: JobDraft = { url: "", title: "", company: "", location: "", descrip
 const MIN_DESCRIPTION = 50
 
 export function jobIsValid(job: JobDraft): boolean {
-  return !!job.title.trim() && !!job.company.trim() && job.description.trim().length >= MIN_DESCRIPTION
+  return (
+    !!job.title.trim() &&
+    !!job.company.trim() &&
+    job.description.trim().length >= MIN_DESCRIPTION &&
+    job.description.length <= INPUT_LIMITS.jobDescriptionChars
+  )
 }
 
 export function JobCard({
@@ -105,6 +111,7 @@ export function JobCard({
           onChange={(e) => set({ description: e.target.value })}
         />
       </label>
+      {draft.description.length > INPUT_LIMITS.jobDescriptionChars && <ErrorNote>{INPUT_LIMIT_MESSAGES.jobDescription}</ErrorNote>}
     </div>
   )
 
@@ -176,7 +183,13 @@ export function JobCard({
                 <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">{draft.description.slice(0, 1200)}</p>
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-slate-900 to-transparent" />
               </div>
-              {!valid && <ErrorNote>The description looks too short. Edit it to paste the full posting.</ErrorNote>}
+              {!valid && (
+                <ErrorNote>
+                  {draft.description.length > INPUT_LIMITS.jobDescriptionChars
+                    ? INPUT_LIMIT_MESSAGES.jobDescription
+                    : "The description looks too short. Edit it to paste the full posting."}
+                </ErrorNote>
+              )}
             </div>
           ))}
       </CardBody>

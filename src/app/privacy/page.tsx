@@ -1,247 +1,182 @@
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import type { Metadata } from "next"
+import Link from "next/link"
+import { LegalPage, Section } from "@/components/site/legal-page"
+import { CONTACT_EMAIL } from "@/lib/plans"
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "What ReWork collects, who processes it, how long it's kept, and how to download or delete it.",
+  alternates: { canonical: "/privacy" },
+}
+
+const mail = <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-gray-900 to-black">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-slate-900/30 backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <Link
-            href="/"
-            className="inline-flex items-center text-slate-300 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to ReWork
-          </Link>
-        </div>
-      </div>
+    <LegalPage
+      title="Privacy Policy"
+      summary={
+        <ul className="list-disc space-y-1 pl-5">
+          <li>ReWork is run by one person, Jakob Johnson, in Saint Paul, Minnesota.</li>
+          <li>We store your resume, the jobs you tailor for, and what we write for you, so you can come back to it.</li>
+          <li>Resume and job text is sent to OpenAI’s API to do the rewriting. OpenAI doesn’t use API data to train its models.</li>
+          <li>We don’t sell your data, show ads, or share your resume with employers.</li>
+          <li>You can download everything or delete your account any time from Settings, Your data.</li>
+        </ul>
+      }
+    >
+      <Section title="Who we are">
+        <p>
+          ReWork (rework.hellojakejohn.com) is operated by Jakob Johnson, an individual based in Saint Paul, Minnesota, USA (&quot;we&quot;, &quot;us&quot;). Questions
+          about your data go to {mail}.
+        </p>
+      </Section>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-4">Privacy Policy</h1>
-            <p className="text-slate-300">
-              Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
+      <Section title="What we collect">
+        <ul>
+          <li>
+            <strong>Your Google account basics.</strong> When you sign in with Google we get your name, email address, profile picture URL and
+            Google account ID. We don’t request access to Gmail, Drive, Contacts or anything else in your Google account.
+          </li>
+          <li>
+            <strong>Resumes you upload or paste.</strong> The original file, the text we extract from it, and the structured version (roles,
+            bullets, education, skills) that you can edit.
+          </li>
+          <li>
+            <strong>Jobs you tailor for.</strong> The job link you paste, and the job title, company, location and description we read from it or
+            that you paste.
+          </li>
+          <li>
+            <strong>What we generate for you.</strong> Tailored resumes, cover letters, and your answers in the evidence interview.
+          </li>
+          <li>
+            <strong>Your application tracker.</strong> Status, notes and follow-up dates you enter.
+          </li>
+          <li>
+            <strong>Billing status.</strong> If you pay, Stripe handles your card. We store your Stripe customer ID, which plan you have and when it
+            ends. We never see or store your card number.
+          </li>
+          <li>
+            <strong>Usage events.</strong> Which features you used and when, how long they took, whether they failed, and how many AI tokens they
+            used. These never contain your resume or job text.
+          </li>
+          <li>
+            <strong>Page views.</strong> Vercel Web Analytics counts page views without cookies and without identifying you.
+          </li>
+          <li>
+            <strong>Server logs.</strong> Our host (Vercel) keeps standard request logs, such as IP address, browser and time, for a short period.
+          </li>
+          <li>
+            <strong>Feedback</strong> you send us through the app or by email.
+          </li>
+        </ul>
+      </Section>
 
-          <div className="prose prose-slate prose-invert max-w-none">
-            <div className="space-y-8">
-              {/* Introduction */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">Introduction</h2>
-                <p className="text-slate-300 leading-relaxed">
-                  ReWork ("we," "our," or "us") respects your privacy and is committed to protecting your personal information.
-                  This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our
-                  AI-powered resume optimization service.
-                </p>
-              </section>
+      <Section title="How we use it">
+        <ul>
+          <li>To run the service: read your resume, tailor it to a job, check the result against your original, write cover letters, and keep your history and tracker.</li>
+          <li>To handle billing and plan limits.</li>
+          <li>To find and fix problems, prevent abuse, and understand which parts of the product people use.</li>
+          <li>To reply when you contact us.</li>
+        </ul>
+        <p>
+          We don’t sell your data, we don’t use it for advertising, and we don’t share your resume with employers or recruiters. We don’t use your
+          resume to train AI models.
+        </p>
+      </Section>
 
-              {/* 1. Information We Collect */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">1. Information We Collect</h2>
+      <Section title="Who processes it for us">
+        <p>These companies handle data on our behalf, only to provide their service to us:</p>
+        <ul>
+          <li>
+            <strong>Supabase</strong>: our database and file storage, hosted on AWS in the US (Oregon, us-west-2). Your resumes, tailored versions,
+            cover letters, tracker and account live here.
+          </li>
+          <li>
+            <strong>Vercel</strong>: hosts the website and API, keeps request logs, and provides cookieless page-view analytics.
+          </li>
+          <li>
+            <strong>OpenAI</strong>: when you parse a resume, tailor, write a cover letter, run the evidence interview or fetch some job pages, the
+            relevant text is sent to OpenAI’s API to generate the result. Under OpenAI’s API data policy, data sent through the API is not used to
+            train their models. OpenAI may keep API data for a limited time to monitor for abuse, under its own policy (see{" "}
+            <a href="https://openai.com/policies/privacy-policy/" rel="noopener noreferrer">OpenAI’s privacy policy</a>).
+          </li>
+          <li>
+            <strong>Stripe</strong>: payments, receipts, subscriptions and the billing portal. Stripe is responsible for your card details.
+          </li>
+          <li>
+            <strong>Google</strong>: sign-in.
+          </li>
+        </ul>
+        <p>
+          When you paste a job link, our server fetches that page (or the job board’s public API) to read the posting. The job site sees a request
+          from our server, not from you.
+        </p>
+      </Section>
 
-                <h3 className="text-xl font-semibold text-white mb-3 mt-6">Personal Information</h3>
-                <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
-                  <li><strong>Account Information:</strong> Name, email address from Google OAuth</li>
-                  <li><strong>Resume Content:</strong> Personal details, work experience, education, skills</li>
-                  <li><strong>Job Information:</strong> Job descriptions and application details you provide</li>
-                </ul>
+      <Section title="How long we keep it, and deleting it">
+        <ul>
+          <li>We keep your data while your account exists, so your resumes and history are there when you come back.</li>
+          <li>
+            Deleting a single resume removes it from your account. Tailored versions you already made from it keep their own copy until you delete
+            them or your account.
+          </li>
+          <li>
+            <strong>Deleting your account</strong> (Settings, Your data, Delete my account) cancels any Pro subscription, deletes your uploaded
+            files, and deletes your account, resumes, tailored versions, cover letters, tracker and feedback from our database right away. Database
+            backups held by Supabase age out on their normal schedule.
+          </li>
+          <li>Usage events are kept after account deletion with the link to you removed, so they can’t be tied back to you.</li>
+          <li>Stripe keeps records of past payments, as payment processors are required to.</li>
+        </ul>
+      </Section>
 
-                <h3 className="text-xl font-semibold text-white mb-3 mt-6">Usage Information</h3>
-                <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
-                  <li><strong>Service Usage:</strong> Features used, resumes created, optimizations performed</li>
-                  <li><strong>Technical Data:</strong> IP address, browser type, device information</li>
-                  <li><strong>Session Data:</strong> Login sessions and authentication tokens</li>
-                </ul>
-              </section>
+      <Section title="Your choices and rights">
+        <ul>
+          <li>
+            <strong>Download your data</strong>: Settings, Your data, Download my data gives you a JSON file of everything in your account.
+          </li>
+          <li>
+            <strong>Correct it</strong>: edit your resume in the app any time.
+          </li>
+          <li>
+            <strong>Delete it</strong>: delete resumes one at a time, or your whole account.
+          </li>
+          <li>For anything else, including questions under privacy laws where you live, email {mail}. We’ll answer within 30 days.</li>
+        </ul>
+      </Section>
 
-              {/* 2. How We Use Your Information */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">2. How We Use Your Information</h2>
-                <p className="text-slate-300 leading-relaxed mb-4">
-                  We use your information to:
-                </p>
-                <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
-                  <li>Provide AI-powered resume optimization services</li>
-                  <li>Authenticate your account and maintain your session</li>
-                  <li>Store and retrieve your resume data and job applications</li>
-                  <li>Process payments through Stripe (Pro plan)</li>
-                  <li>Send service-related communications and updates</li>
-                  <li>Improve our AI algorithms and service quality</li>
-                  <li>Ensure compliance with our Terms of Service</li>
-                </ul>
-              </section>
+      <Section title="Cookies and local storage">
+        <p>
+          We use one essential cookie to keep you signed in, plus the cookies Google and Stripe set during sign-in and checkout. Your browser’s
+          local storage remembers small preferences like your resume template and avatar color. We don’t use advertising or cross-site tracking
+          cookies.
+        </p>
+      </Section>
 
-              {/* 3. Information Sharing and Third Parties */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">3. Information Sharing and Third Parties</h2>
-                <p className="text-slate-300 leading-relaxed mb-4">
-                  We work with the following third-party services:
-                </p>
+      <Section title="Security">
+        <p>
+          Traffic is encrypted with HTTPS. Uploaded files are kept in a private storage bucket, and database access is limited to our server. No
+          system is perfectly secure; if we learn of a breach that affects your data, we’ll tell you by email.
+        </p>
+      </Section>
 
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">OpenAI</h4>
-                    <p className="text-slate-300">
-                      Your resume content and job descriptions are processed by OpenAI's GPT models to generate
-                      optimized resume content. OpenAI has committed to not using customer data to train their models.
-                    </p>
-                  </div>
+      <Section title="Children">
+        <p>ReWork isn’t meant for anyone under 16, and we don’t knowingly collect data from them.</p>
+      </Section>
 
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Google OAuth</h4>
-                    <p className="text-slate-300">
-                      We use Google OAuth for secure authentication. We only receive your name and email address.
-                    </p>
-                  </div>
+      <Section title="Changes">
+        <p>
+          If we change this policy, we’ll update the date at the top. If a change affects how we use data you’ve already given us, we’ll email you
+          before it takes effect.
+        </p>
+      </Section>
 
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Stripe</h4>
-                    <p className="text-slate-300">
-                      Payment processing for Pro subscriptions. Stripe handles all payment data securely.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Supabase</h4>
-                    <p className="text-slate-300">
-                      Database and file storage provider. All data is encrypted in transit and at rest.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-lg font-semibold text-white">Vercel</h4>
-                    <p className="text-slate-300">
-                      Hosting platform for our application. Standard web hosting logs may be collected.
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* 4. Data Storage and Security */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">4. Data Storage and Security</h2>
-                <div className="space-y-4">
-                  <p className="text-slate-300 leading-relaxed">
-                    <strong>Encryption:</strong> All data is encrypted in transit using HTTPS and at rest in our database.
-                  </p>
-                  <p className="text-slate-300 leading-relaxed">
-                    <strong>Access Control:</strong> Only authorized personnel have access to your data, and only when necessary
-                    for service operations or support.
-                  </p>
-                  <p className="text-slate-300 leading-relaxed">
-                    <strong>Data Location:</strong> Your data is stored in secure data centers in the United States.
-                  </p>
-                </div>
-              </section>
-
-              {/* 5. Data Retention */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">5. Data Retention</h2>
-                <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
-                  <li><strong>Active Accounts:</strong> We retain your data while your account is active</li>
-                  <li><strong>Deleted Accounts:</strong> Data is permanently deleted within 30 days of account deletion</li>
-                  <li><strong>Legal Requirements:</strong> We may retain certain data longer if required by law</li>
-                  <li><strong>Backup Data:</strong> Backup copies are securely deleted within 90 days</li>
-                </ul>
-              </section>
-
-              {/* 6. Your Rights and Choices */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">6. Your Rights and Choices</h2>
-                <p className="text-slate-300 leading-relaxed mb-4">
-                  You have the following rights regarding your personal information:
-                </p>
-                <ul className="list-disc list-inside text-slate-300 space-y-2 ml-4">
-                  <li><strong>Access:</strong> Request a copy of your personal data</li>
-                  <li><strong>Correction:</strong> Update or correct your information through your account settings</li>
-                  <li><strong>Deletion:</strong> Delete your account and all associated data</li>
-                  <li><strong>Export:</strong> Download your resume data in standard formats</li>
-                  <li><strong>Portability:</strong> Transfer your data to another service</li>
-                </ul>
-                <p className="text-slate-300 leading-relaxed mt-4">
-                  To exercise these rights, use the account settings in your dashboard or contact us at{' '}
-                  <a href="mailto:privacy@rework.solutions" className="text-emerald-400 hover:text-emerald-300 underline">
-                    privacy@rework.solutions
-                  </a>
-                </p>
-              </section>
-
-              {/* 7. Cookies and Tracking */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">7. Cookies and Tracking</h2>
-                <p className="text-slate-300 leading-relaxed">
-                  We use session cookies to maintain your login state and provide core functionality. These are essential
-                  cookies required for the service to function. We do not use tracking cookies or third-party analytics.
-                  You can manage cookies through your browser settings.
-                </p>
-              </section>
-
-              {/* 8. International Users */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">8. International Users</h2>
-                <p className="text-slate-300 leading-relaxed">
-                  ReWork is operated from the United States. If you are accessing our service from outside the United States,
-                  please be aware that your information may be transferred to, stored, and processed in the United States
-                  where our servers are located and our central database is operated.
-                </p>
-              </section>
-
-              {/* 9. Children's Privacy */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">9. Children's Privacy</h2>
-                <p className="text-slate-300 leading-relaxed">
-                  Our service is not directed to individuals under the age of 18. We do not knowingly collect personal
-                  information from children under 18. If we become aware that a child under 18 has provided us with
-                  personal information, we will take steps to delete such information.
-                </p>
-              </section>
-
-              {/* 10. Changes to Privacy Policy */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">10. Changes to This Privacy Policy</h2>
-                <p className="text-slate-300 leading-relaxed">
-                  We may update this Privacy Policy from time to time. We will notify you of any material changes by
-                  email or through a notice on our website. Your continued use of the service after such changes
-                  constitutes acceptance of the updated Privacy Policy.
-                </p>
-              </section>
-
-              {/* 11. Contact Us */}
-              <section>
-                <h2 className="text-2xl font-semibold text-white mb-4">11. Contact Us</h2>
-                <p className="text-slate-300 leading-relaxed">
-                  If you have any questions about this Privacy Policy or our data practices, please contact us at:
-                </p>
-                <div className="mt-4 text-slate-300">
-                  <p>Email: <a href="mailto:privacy@rework.solutions" className="text-emerald-400 hover:text-emerald-300 underline">privacy@rework.solutions</a></p>
-                  <p>General Support: <a href="mailto:support@rework.solutions" className="text-emerald-400 hover:text-emerald-300 underline">support@rework.solutions</a></p>
-                </div>
-              </section>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-white/10 bg-slate-900/30 mt-16">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="text-center text-slate-400 text-sm">
-            <p>© 2026 ReWork. All rights reserved.</p>
-            <div className="mt-2 space-x-6">
-              <Link href="/terms" className="hover:text-white transition-colors">
-                Terms of Service
-              </Link>
-              <Link href="mailto:support@rework.solutions" className="hover:text-white transition-colors">
-                Contact
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Section title="Contact">
+        <p>
+          Jakob Johnson, Saint Paul, Minnesota, USA. Email {mail}. See also the <Link href="/terms">Terms of Service</Link>.
+        </p>
+      </Section>
+    </LegalPage>
   )
 }

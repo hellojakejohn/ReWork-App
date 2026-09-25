@@ -13,6 +13,7 @@ import { classifyAIError } from '@/lib/ai-errors'
 import { validateParsedResume } from '@/lib/parse-validate'
 import { cleanSourceText, extractDocxText, extractPdfText } from '@/lib/resume-source-text'
 import type { ParseResult, ParsedResume } from '@/types/parsed-resume'
+import { recordUsage } from '@/lib/ai-usage'
 
 export const DEFAULT_PARSE_MODEL = 'gpt-4o'
 
@@ -26,7 +27,10 @@ export class ResumeParseError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly userMessage: string
+    public readonly userMessage: string,
+    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
+    // response was unusable. Goes on the ai_error event.
+    public readonly kind: string = 'bad_output'
   ) {
     super(message)
     this.name = 'ResumeParseError'
@@ -142,7 +146,7 @@ async function sourceTextFor(input: ParseInput): Promise<string> {
     return cleanSourceText(input.text)
   } catch (error) {
     console.error('[parse-resume] text extraction failed:', error)
-    throw new ResumeParseError(`Text extraction failed: ${String((error as Error)?.message)}`, 422, PARSE_FAILED_MESSAGE)
+    throw new ResumeParseError(`Text extraction failed: ${String((error as Error)?.message)}`, 422, PARSE_FAILED_MESSAGE, 'unreadable_file')
   }
 }
 
@@ -161,11 +165,12 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
       422,
       input.kind === 'text'
         ? 'That text is too short to be a resume. Paste the whole thing.'
-        : "We couldn't find any text in that file (it may be a scan or an image). Paste your resume text instead."
+        : "We couldn't find any text in that file (it may be a scan or an image). Paste your resume text instead.",
+      'too_short'
     )
   }
   if (sourceText.length > MAX_SOURCE_CHARS) {
-    throw new ResumeParseError('Source text too long', 413, 'That resume is too long for us to read. Try a shorter version.')
+    throw new ResumeParseError('Source text too long', 413, 'That resume is too long for us to read. Try a shorter version.', 'too_long')
   }
 
   options.onStage?.('reading')
@@ -198,8 +203,9 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
   } catch (error) {
     const classified = classifyAIError(error, 'Resume reading')
     const userMessage = classified.kind === 'rate_limit' || classified.kind === 'unavailable' ? PARSE_FAILED_MESSAGE : classified.userMessage
-    throw new ResumeParseError(`Parse model call failed: ${String((error as Error)?.message)}`, classified.status, userMessage)
+    throw new ResumeParseError(`Parse model call failed: ${String((error as Error)?.message)}`, classified.status, userMessage, classified.kind)
   }
+  recordUsage(completion, model)
 
   const choice = completion.choices[0]
   const raw = choice?.message?.content
@@ -219,7 +225,7 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
   const empty =
     resume.experience.length === 0 && resume.education.length === 0 && resume.projects.length === 0 && !resume.summary && resume.skills.length === 0
   if (empty) {
-    throw new ResumeParseError('Parsed resume has no content', 422, PARSE_FAILED_MESSAGE)
+    throw new ResumeParseError('Parsed resume has no content', 422, PARSE_FAILED_MESSAGE, 'empty')
   }
 
   return { resume, needsReview, sourceText, model: completion.model || model }

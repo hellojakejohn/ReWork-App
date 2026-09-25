@@ -9,6 +9,7 @@ import { toMasterDTO } from '@/lib/master-dto'
 import { applyRewrites, candidateForBullet, guardRewrite, isNonAnswer, readStoredEvidence, type EvidenceRewrite } from '@/lib/evidence'
 import { normalizeSpace } from '@/lib/resume-text'
 import { evidenceContext } from '../shared'
+import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { resume: next, applied } = applyRewrites(resume, checked)
+  await track('evidence_completed', { accepted: body.accepted.length, applied }, ctx.userId)
   if (applied === 0) {
     return NextResponse.json({ success: true, applied: 0, master: toMasterDTO(ctx.resume) })
   }

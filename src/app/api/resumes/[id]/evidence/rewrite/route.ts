@@ -7,6 +7,8 @@ import { prisma } from '@/lib/prisma'
 import { masterToParsed } from '@/lib/master-resume'
 import { candidateForBullet, EvidenceError, mergeEvidence, rewriteWithEvidence, type EvidenceAnswer, type EvidenceItem } from '@/lib/evidence'
 import { evidenceContext } from '../shared'
+import { collectUsage, usageProps } from '@/lib/ai-usage'
+import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -60,10 +62,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     data: { evidence: mergeEvidence(ctx.resume.evidence, answers) as unknown as Prisma.InputJsonValue },
   })
 
+  const { run, usage } = collectUsage(() => rewriteWithEvidence(items, answers))
   try {
-    const rewrites = await rewriteWithEvidence(items, answers)
+    const rewrites = await run
+    await track('ai_usage', { feature: 'evidence_rewrite', ...usageProps(usage()) }, ctx.userId)
     return NextResponse.json({ success: true, rewrites })
   } catch (error) {
+    await track('ai_error', { feature: 'evidence', kind: error instanceof EvidenceError ? error.kind : 'unexpected', ...usageProps(usage()) }, ctx.userId)
     if (error instanceof EvidenceError) {
       console.error('❌ Evidence rewrite error:', error.message)
       return NextResponse.json({ success: false, error: `${error.userMessage} Your answers are saved.` }, { status: error.status })

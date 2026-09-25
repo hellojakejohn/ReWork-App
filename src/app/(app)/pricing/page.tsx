@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { CheckCircle } from "lucide-react"
@@ -9,14 +8,11 @@ import { Button } from "@/components/ui/button"
 import { FREE_FEATURES, PASS_DAYS, PRICING } from "@/lib/plans"
 import { NO_ACCESS } from "@/lib/entitlement-rules"
 import { AccessSummary, OfferCards } from "@/components/billing/offer-cards"
+import { SiteFooter } from "@/components/site/site-footer"
 
 export default function PricingPage() {
   const { data: session, status } = useSession()
   const access = session ? session.user.access ?? NO_ACCESS : null
-
-  useEffect(() => {
-    document.title = "Pricing - ReWork"
-  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-black text-white">
@@ -71,7 +67,12 @@ export default function PricingPage() {
 
           <OfferCards access={status === "loading" ? NO_ACCESS : access} returnTo="/pricing" />
         </div>
+        <p className="mt-10 text-center text-sm text-slate-400">
+          Cancel {PRICING.monthly.name} anytime from the billing portal. Refunds within 7 days on request, except a {PRICING.pass.name} you&apos;ve
+          already used. <Link href="/terms" className="underline hover:text-white">Terms</Link>
+        </p>
       </main>
+      <SiteFooter />
     </div>
   )
 }

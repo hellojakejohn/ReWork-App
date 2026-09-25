@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useDropzone } from "react-dropzone"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { AlertTriangle, FileText, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react"
 import { summarizeResume } from "@/lib/master-resume"
 import { hasContent } from "@/lib/master-dto"
 import type { ParsedResume } from "@/types/parsed-resume"
+import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
 import { deleteMaster, parseResumeInput, saveMaster, type EvidenceFocus, type MasterResumeDTO } from "./api"
 import { ResumeEditor } from "./resume-editor"
 import { EvidenceInterview } from "./evidence-interview"
@@ -55,6 +57,8 @@ export function ResumeCard({
   request?: ResumeCardRequest | null
   isPro: boolean
 }) {
+  const { data: session } = useSession()
+  const firstName = session?.user?.name?.trim().split(/\s+/)[0] ?? ""
   const [mode, setMode] = useState<Mode>(active ? "summary" : "new")
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState("")
@@ -130,12 +134,12 @@ export function ResumeCard({
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024,
+    maxSize: INPUT_LIMITS.resumeFileBytes,
     noClick: true,
     disabled: mode !== "new",
     onDrop: (accepted, rejected) => {
       if (accepted[0]) void parse(accepted[0])
-      else if (rejected[0]) setError(rejected[0].errors[0]?.code === "file-too-large" ? "That file is over 10MB." : "Upload a PDF or DOCX, or paste your resume text.")
+      else if (rejected[0]) setError(rejected[0].errors[0]?.code === "file-too-large" ? INPUT_LIMIT_MESSAGES.resumeFile : "That file type won't work. Upload a PDF or DOCX, or paste your resume text.")
     },
   })
 
@@ -183,6 +187,11 @@ export function ResumeCard({
           onBack={active && mode !== "parsing" ? () => { setReplacing(null); setMode("summary") } : undefined}
         />
         <CardBody className="flex flex-col gap-4">
+          {masters.length === 0 && mode === "new" && (
+            <p className="text-sm text-emerald-300">
+              Welcome{firstName ? `, ${firstName}` : ""}. Start with your resume, then paste a job link. {isPro ? "" : `You have ${FREE_TAILORS_PER_MONTH} free tailors this month.`}
+            </p>
+          )}
           {mode === "parsing" ? (
             <div className="space-y-5">
               <p className="flex items-center gap-2 text-sm text-slate-300">
@@ -213,7 +222,7 @@ export function ResumeCard({
                   <Upload className="h-8 w-8 text-slate-400" />
                   <div>
                     <p className="text-base font-medium text-slate-100">Drop your resume here</p>
-                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 10MB.</p>
+                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 4 MB.</p>
                   </div>
                 </div>
               ) : (
@@ -225,8 +234,12 @@ export function ResumeCard({
                     onChange={(e) => setPasteText(e.target.value)}
                     autoFocus
                   />
+                  {pasteText.length > INPUT_LIMITS.resumeTextChars && <ErrorNote>{INPUT_LIMIT_MESSAGES.resumeText}</ErrorNote>}
                   <div className="flex justify-end">
-                    <PrimaryButton disabled={pasteText.trim().length < 80} onClick={() => void parse(pasteText)}>
+                    <PrimaryButton
+                      disabled={pasteText.trim().length < 80 || pasteText.length > INPUT_LIMITS.resumeTextChars}
+                      onClick={() => void parse(pasteText)}
+                    >
                       Read my resume
                     </PrimaryButton>
                   </div>

@@ -9,7 +9,10 @@ import { coverageReport } from '@/lib/keyword-coverage';
 import { buildChanges } from '@/lib/tailor-changes';
 import { getTailorQuota, incrementTailorCount } from '@/lib/tailor-quota';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
-import { FREE_TAILORS_PER_MONTH, PRICING } from '@/lib/plans';
+import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, PRICING } from '@/lib/plans';
+import { checkDailyCeiling } from '@/lib/daily-ceiling';
+import { collectUsage, usageProps } from '@/lib/ai-usage';
+import { msSince, track } from '@/lib/track';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
 import { evidenceFacts } from '@/lib/evidence-shared';
@@ -49,7 +52,10 @@ export async function POST(
   const actualJobDescription = description || jobDescription;
 
   if (!jobTitle || !actualCompanyName || !actualJobDescription) {
-    return NextResponse.json({ error: 'Missing required job information' }, { status: 400 });
+    return NextResponse.json({ error: 'Add the job title, company and description first.' }, { status: 400 });
+  }
+  if (typeof actualJobDescription !== 'string' || actualJobDescription.length > INPUT_LIMITS.jobDescriptionChars) {
+    return NextResponse.json({ error: INPUT_LIMIT_MESSAGES.jobDescription, success: false }, { status: 413 });
   }
 
   const resume = await prisma.resume.findUnique({
@@ -58,7 +64,7 @@ export async function POST(
   });
 
   if (!resume || !resume.isActive) {
-    return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
+    return NextResponse.json({ error: "We couldn't find that resume. Reload the page and pick it again." }, { status: 404 });
   }
   if (resume.user.email !== session.user.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -74,9 +80,16 @@ export async function POST(
     });
   }
 
+  const ceiling = await checkDailyCeiling(userId, 'tailor');
+  if (!ceiling.allowed) {
+    await track('limit_hit', { kind: 'daily_tailor' }, userId);
+    return NextResponse.json({ success: false, error: ceiling.message }, { status: 429 });
+  }
+
   // Enforce the monthly limit BEFORE spending an OpenAI call
   const quota = await getTailorQuota(userId);
   if (!quota.allowed) {
+    await track('limit_hit', { kind: 'tailor' }, userId);
     return NextResponse.json({
       success: false,
       error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Go Pro for unlimited tailoring: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
@@ -109,14 +122,24 @@ export async function POST(
     send({ type: 'stage', stage: 'reading' });
     send({ type: 'stage', stage: 'rewriting' });
 
-    let modelResult;
-    try {
-      modelResult = await callTailorModel(
+    const start = Date.now();
+    const { run: modelRun, usage } = collectUsage(() =>
+      callTailorModel(
         input,
         { title: jobTitle, company: actualCompanyName, description: actualJobDescription, location },
         { extraContext, contextTags: Array.isArray(contextTags) ? contextTags : undefined }
-      );
+      )
+    );
+    let modelResult;
+    try {
+      modelResult = await modelRun;
     } catch (error) {
+      await track('ai_error', {
+        feature: 'tailor',
+        kind: error instanceof TailorError ? error.kind : 'unexpected',
+        status: error instanceof TailorError ? error.status : 500,
+        ...usageProps(usage())
+      }, userId);
       if (error instanceof TailorError) {
         console.error('❌ Tailor model error:', error.message);
         send({ type: 'error', status: error.status, error: error.userMessage });
@@ -196,6 +219,14 @@ export async function POST(
 
     // Count only after the result is saved. Re-tailoring counts too.
     await incrementTailorCount(userId);
+    await track('tailored', {
+      ms: msSince(start),
+      coverageBefore: coverage.master.score,
+      coverageAfter: coverage.tailored.score,
+      warnings: warnings.length,
+      retailor: !!existingApplication,
+      ...usageProps(usage())
+    }, userId);
     await prisma.resume.update({
       where: { id: resumeId },
       data: { lastOptimized: new Date() }
@@ -222,12 +253,12 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Tailoring error:', error);
-    return NextResponse.json({ error: 'Failed to tailor resume', success: false }, { status: 500 });
+    return NextResponse.json({ error: "Tailoring failed. Please try again; this didn't count toward your limit.", success: false }, { status: 500 });
   }
   const result = final as StreamEvent | null;
   if (!result || result.type !== 'done') {
     return NextResponse.json(
-      { error: result?.type === 'error' ? result.error : 'Failed to tailor resume', success: false },
+      { error: result?.type === 'error' ? result.error : "Tailoring failed. Please try again; this didn't count toward your limit.", success: false },
       { status: result?.type === 'error' ? result.status : 500 }
     );
   }
