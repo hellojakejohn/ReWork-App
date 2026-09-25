@@ -19,10 +19,11 @@ export function middleware(request: NextRequest) {
   const isLandingPage = request.nextUrl.pathname === '/'
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard')
 
-  // If user looks signed in and hits the landing page, send them to the dashboard.
+  // If user looks signed in and hits the landing page, send them to the dashboard,
+  // unless they asked for it (account menu -> Home links to /?home=1).
   // We intentionally don't redirect away from /auth/signin on cookie presence: a stale
   // cookie (expired/deleted DB session) would loop signin -> dashboard -> signin.
-  if (hasSession && isLandingPage) {
+  if (hasSession && isLandingPage && !request.nextUrl.searchParams.has('home')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
