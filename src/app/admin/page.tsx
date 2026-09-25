@@ -35,9 +35,8 @@ export default function AdminPage() {
       return
     }
 
-    // Simple admin check - you can set ADMIN_EMAIL in your .env file
-    const adminEmails = ['hellojakejohn@gmail.com', 'jakobmjohnson9@gmail.com']
-    if (!adminEmails.includes(session.user?.email || '')) {
+    // Allowlist lives in ADMIN_EMAILS on the server; the session carries the result.
+    if (!session.user?.isAdmin) {
       router.push('/')
       return
     }
@@ -56,6 +55,27 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const compPro = async (user: User) => {
+    const input = window.prompt(`Comp Pro for ${user.email}. How many days?`, '30')
+    if (input === null) return
+    const days = Number(input)
+    if (!Number.isInteger(days) || days < 1 || days > 3650) {
+      window.alert('Enter a whole number of days between 1 and 3650.')
+      return
+    }
+    const response = await fetch(`/api/admin/users/${user.id}/comp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days })
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      window.alert(data.error || 'Comp failed')
+      return
+    }
+    await fetchUsers()
   }
 
   const exportUsers = async () => {
@@ -93,7 +113,7 @@ export default function AdminPage() {
           </div>
           <div className="bg-white p-4 rounded-lg border">
             <div className="text-2xl font-bold">{stats.premium}</div>
-            <div className="text-sm text-gray-600">Premium Users</div>
+            <div className="text-sm text-gray-600">Pro Users</div>
           </div>
           <div className="bg-white p-4 rounded-lg border">
             <div className="text-2xl font-bold">{stats.totalResumes}</div>
@@ -131,6 +151,9 @@ export default function AdminPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Last Active
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -161,6 +184,14 @@ export default function AdminPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {new Date(user.lastActiveAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <button
+                    onClick={() => compPro(user)}
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Comp Pro for N days
+                  </button>
                 </td>
               </tr>
             ))}
