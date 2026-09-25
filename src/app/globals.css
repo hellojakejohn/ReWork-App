@@ -495,3 +495,8 @@ html {
     );
   background-size: 32px 32px;
 }
+/* Legal pages: readable lists and links without a typography plugin. */
+.legal ul { list-style: disc; padding-left: 1.25rem; }
+.legal li + li { margin-top: 0.4rem; }
+.legal a { color: rgb(110 231 183); text-decoration: underline; text-underline-offset: 3px; }
+.legal strong { color: white; font-weight: 600; }
