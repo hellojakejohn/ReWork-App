@@ -14,12 +14,17 @@
 - `prisma/` - Database schema
 
 ## Key Files
-- `src/components/flow/` - the whole app UI: one page at `/dashboard` (Resume -> Job -> Tailor -> Result cards)
+- `src/components/flow/` - the whole app UI: one page at `/dashboard` (Resume -> Job -> Tailor -> Result cards). New features go inside these cards, not new multi-step pages.
 - `src/lib/parse-resume.ts` + `src/lib/parse-validate.ts` - resume parsing (PDF file input + text, strict schema) and the "is it in the file?" validator. No fallback parser.
 - `src/lib/master-resume.ts` - parsed shape <-> Resume row structured fields
 - `src/lib/tailor.ts`, `src/lib/fact-guard.ts`, `src/lib/tailor-changes.ts` - tailoring, fact checks, per-bullet accept/revert
 - `src/lib/job-resolve/` - job URL resolver chain (ATS APIs -> JSON-LD -> page + model -> needsPaste)
-- `src/lib/resume-pdf.tsx` - Classic/Modern PDF templates
+- `src/lib/resume-pdf.tsx` - Classic/Modern PDF templates (resume + cover letter)
+- `src/lib/resume-docx.ts` - Word export (Classic structure, ATS-safe: no tables/text boxes)
+- `src/lib/cover-letter.ts` + `src/lib/text-facts.ts` - cover letters and the prose fact guard
+- `src/lib/evidence.ts` - evidence interview (questions, answer-only rewrites, apply to master)
+- `src/lib/tracker.ts` + `src/components/tracker/` - application tracker at `/dashboard/tracker`
+- `src/lib/plans.ts` - every plan limit and all pricing copy; `src/lib/tailor-quota.ts` meters tailors and cover letters
 - `src/lib/storage.ts` - Supabase Storage (was S3)
 - `prisma/schema.prisma` - Database schema
 
