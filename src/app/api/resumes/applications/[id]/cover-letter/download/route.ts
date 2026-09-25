@@ -13,6 +13,7 @@ import { CoverLetterPdf } from '@/lib/resume-pdf'
 import { coverLetterDocxBuffer, DOCX_MIME } from '@/lib/resume-docx'
 import { isTemplateId } from '@/lib/resume-templates'
 import { readStoredCoverLetter } from '@/lib/cover-letter-shared'
+import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params
   const format = request.nextUrl.searchParams.get('format') === 'docx' ? 'docx' : 'pdf'
   if (format === 'docx' && !canExportWord((await getAccess(session.user.id)).isPro)) {
+    await track('limit_hit', { kind: 'word_export' }, session.user.id)
     return new NextResponse(WORD_EXPORT_UPSELL, { status: 402 })
   }
   const templateParam = request.nextUrl.searchParams.get('template')
@@ -47,6 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       format === 'docx'
         ? await coverLetterDocxBuffer(resume, letter.text)
         : Buffer.from(await renderToBuffer(React.createElement(CoverLetterPdf, { resume, template, text: letter.text }) as never))
+    await track('download', { format, doc: 'cover_letter' }, session.user.id)
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': format === 'docx' ? DOCX_MIME : 'application/pdf',

@@ -11,6 +11,42 @@ export const FREE_TRACKER_APPLICATIONS = 10
 // at once so nobody uses uploads as a free parsing API.
 export const FREE_MAX_MASTER_RESUMES = 5
 
+// Per-user daily ceilings for everyone, Pro included. Pro is "unlimited" for a person
+// applying to jobs; these only stop scripts from running up the OpenAI bill. Counted per
+// UTC day from the events table (src/lib/daily-ceiling.ts).
+export const DAILY_CEILINGS = {
+  tailor: 40,
+  coverLetter: 40,
+  parse: 60,
+} as const
+export type DailyCeilingKind = keyof typeof DAILY_CEILINGS
+
+const DAILY_NOUN: Record<DailyCeilingKind, string> = {
+  tailor: 'tailored resumes',
+  coverLetter: 'cover letters',
+  parse: 'resume uploads',
+}
+
+export function dailyCeilingMessage(kind: DailyCeilingKind): string {
+  return `You've reached today's limit of ${DAILY_CEILINGS[kind]} ${DAILY_NOUN[kind]}. It resets at midnight UTC. If you really need more today, email ${CONTACT_EMAIL}.`
+}
+
+// Hard input caps. Checked on the server; the client checks the same numbers first so
+// people get the message before an upload.
+export const INPUT_LIMITS = {
+  resumeFileBytes: 5 * 1024 * 1024,
+  resumeTextChars: 30_000,
+  jobDescriptionChars: 20_000,
+} as const
+
+export const INPUT_LIMIT_MESSAGES = {
+  resumeFile: 'That file is over 5 MB. Try exporting a smaller PDF, or paste your resume text instead.',
+  resumeText: 'That text is over 30,000 characters, which is longer than any resume. Paste just your resume.',
+  jobDescription: 'That job description is over 20,000 characters. Paste just the role, responsibilities and requirements.',
+} as const
+
+export const CONTACT_EMAIL = 'hellojakejohn@gmail.com'
+
 // Days of Pro a Job Hunt Pass buys. Buying another while one is active stacks.
 export const PASS_DAYS = 30
 

@@ -8,6 +8,8 @@ import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 import { UnsafeUrlError, assertSafeUrl, safeFetch } from '@/lib/safe-fetch';
 import { resolveJob, type FetchedPage } from '@/lib/job-resolve';
 import { extractJobWithModel } from '@/lib/job-resolve/model-extract';
+import { collectUsage, usageProps } from '@/lib/ai-usage';
+import { msSince, track } from '@/lib/track';
 
 export const runtime = 'nodejs';
 
@@ -60,17 +62,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message === 'Invalid URL' ? "That doesn't look like a link." : message, success: false }, { status: 400 });
   }
 
-  try {
-    const result = await resolveJob(validated.href, {
+  const userId = session.user.id ?? null;
+  const start = Date.now();
+  const { run, usage } = collectUsage(() =>
+    resolveJob(validated.href, {
       fetchPage,
       extractWithModel: process.env.OPENAI_API_KEY ? extractJobWithModel : undefined
-    });
+    })
+  );
+  try {
+    const result = await run;
     if (!result.ok) {
+      await track('job_fetched', { ok: false, resolver: 'needsPaste', reason: result.reason, ms: msSince(start), ...usageProps(usage()) }, userId);
       return NextResponse.json({ success: false, needsPaste: true, reason: result.reason, message: result.message });
     }
+    await track('job_fetched', { ok: true, resolver: result.job.source, ms: msSince(start), ...usageProps(usage()) }, userId);
     return NextResponse.json({ success: true, job: result.job });
   } catch (error) {
     console.error('❌ Job URL resolve error:', error);
+    await track('job_fetched', { ok: false, resolver: 'needsPaste', reason: 'error', ms: msSince(start), ...usageProps(usage()) }, userId);
     return NextResponse.json({
       success: false,
       needsPaste: true,

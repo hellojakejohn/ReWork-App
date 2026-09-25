@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import { getAccess } from "@/lib/entitlements"
 import { isAdminEmail } from "@/lib/admin"
+import { track } from "@/lib/track"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -63,6 +64,12 @@ export const authOptions: NextAuthOptions = {
         session.user.isAdmin = isAdminEmail(session.user.email)
       }
       return session
+    },
+  },
+  events: {
+    // The adapter created the row on first Google sign-in.
+    createUser: async ({ user }) => {
+      await track('signed_up', { provider: 'google' }, user.id)
     },
   },
   session: {

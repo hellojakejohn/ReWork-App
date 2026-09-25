@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
 import { canUseEvidenceInterview, PRICING } from '@/lib/plans'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
+import { track } from '@/lib/track'
 
 export async function evidenceContext(resumeId: string, { rateLimit = false } = {}) {
   const session = await getServerSession(authOptions)
@@ -19,6 +20,7 @@ export async function evidenceContext(resumeId: string, { rateLimit = false } = 
   }
   const access = await getAccess(userId)
   if (!canUseEvidenceInterview(access.isPro)) {
+    await track('limit_hit', { kind: 'evidence' }, userId)
     return {
       error: NextResponse.json(
         {

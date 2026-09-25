@@ -6,7 +6,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
-import { FREE_TRACKER_APPLICATIONS, PRICING, trackerLimitFor } from '@/lib/plans'
+import { FREE_TRACKER_APPLICATIONS, INPUT_LIMITS, PRICING, trackerLimitFor } from '@/lib/plans'
+import { track } from '@/lib/track'
 import { toTrackerCard } from '@/lib/application-dto'
 
 const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
   const access = await getAccess(userId)
   const limit = trackerLimitFor(access.isPro)
   if (Number.isFinite(limit) && (await prisma.jobApplication.count({ where: { userId } })) >= limit) {
+    await track('limit_hit', { kind: 'tracker' }, userId)
     return NextResponse.json(
       {
         error: `Free accounts can track up to ${FREE_TRACKER_APPLICATIONS} applications. Go Pro to track every job: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
       resumeId: resume.id,
       jobTitle: title,
       company,
-      jobDescription: clip(body?.description, 30_000),
+      jobDescription: clip(body?.description, INPUT_LIMITS.jobDescriptionChars),
       jobUrl: /^https?:\/\//i.test(url) ? url : null,
       keywords: [],
       status: 'DRAFT',

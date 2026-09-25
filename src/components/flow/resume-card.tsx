@@ -7,6 +7,7 @@ import { AlertTriangle, FileText, Plus, RefreshCw, Sparkles, Trash2, Upload } fr
 import { summarizeResume } from "@/lib/master-resume"
 import { hasContent } from "@/lib/master-dto"
 import type { ParsedResume } from "@/types/parsed-resume"
+import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
 import { deleteMaster, parseResumeInput, saveMaster, type EvidenceFocus, type MasterResumeDTO } from "./api"
 import { ResumeEditor } from "./resume-editor"
 import { EvidenceInterview } from "./evidence-interview"
@@ -130,12 +131,12 @@ export function ResumeCard({
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024,
+    maxSize: INPUT_LIMITS.resumeFileBytes,
     noClick: true,
     disabled: mode !== "new",
     onDrop: (accepted, rejected) => {
       if (accepted[0]) void parse(accepted[0])
-      else if (rejected[0]) setError(rejected[0].errors[0]?.code === "file-too-large" ? "That file is over 10MB." : "Upload a PDF or DOCX, or paste your resume text.")
+      else if (rejected[0]) setError(rejected[0].errors[0]?.code === "file-too-large" ? INPUT_LIMIT_MESSAGES.resumeFile : "That file type won't work. Upload a PDF or DOCX, or paste your resume text.")
     },
   })
 
@@ -213,7 +214,7 @@ export function ResumeCard({
                   <Upload className="h-8 w-8 text-slate-400" />
                   <div>
                     <p className="text-base font-medium text-slate-100">Drop your resume here</p>
-                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 10MB.</p>
+                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 5 MB.</p>
                   </div>
                 </div>
               ) : (
@@ -225,8 +226,12 @@ export function ResumeCard({
                     onChange={(e) => setPasteText(e.target.value)}
                     autoFocus
                   />
+                  {pasteText.length > INPUT_LIMITS.resumeTextChars && <ErrorNote>{INPUT_LIMIT_MESSAGES.resumeText}</ErrorNote>}
                   <div className="flex justify-end">
-                    <PrimaryButton disabled={pasteText.trim().length < 80} onClick={() => void parse(pasteText)}>
+                    <PrimaryButton
+                      disabled={pasteText.trim().length < 80 || pasteText.length > INPUT_LIMITS.resumeTextChars}
+                      onClick={() => void parse(pasteText)}
+                    >
                       Read my resume
                     </PrimaryButton>
                   </div>

@@ -15,6 +15,9 @@ import { getCoverLetterQuota, incrementCoverLetterCount, quotaDTO } from '@/lib/
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { FREE_COVER_LETTERS_PER_MONTH, PRICING } from '@/lib/plans'
 import { toApplicationDetail } from '@/lib/application-dto'
+import { checkDailyCeiling } from '@/lib/daily-ceiling'
+import { collectUsage, usageProps } from '@/lib/ai-usage'
+import { msSince, track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -63,8 +66,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
   }
 
+  const ceiling = await checkDailyCeiling(userId, 'coverLetter')
+  if (!ceiling.allowed) {
+    await track('limit_hit', { kind: 'daily_cover_letter' }, userId)
+    return NextResponse.json({ success: false, error: ceiling.message }, { status: 429 })
+  }
+
   const quota = await getCoverLetterQuota(userId)
   if (!quota.allowed) {
+    await track('limit_hit', { kind: 'cover_letter' }, userId)
     return NextResponse.json(
       {
         success: false,
@@ -79,9 +89,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const master = (application.originalContent ?? {}) as MasterResume
   const tailored = masterToParsed(application.optimizedStructured as Record<string, unknown>)
 
-  let letter: StoredCoverLetter
-  try {
-    letter = await generateCoverLetter({
+  const start = Date.now()
+  const { run, usage } = collectUsage(() =>
+    generateCoverLetter({
       master: buildTailorInput(master),
       tailoredText: resumeText(application.optimizedStructured),
       candidateName: tailored.contact.fullName,
@@ -89,7 +99,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       tone,
       extraFacts: evidenceFacts(application.resume.evidence),
     })
+  )
+  let letter: StoredCoverLetter
+  try {
+    letter = await run
   } catch (error) {
+    await track(
+      'ai_error',
+      {
+        feature: 'cover_letter',
+        kind: error instanceof CoverLetterError ? error.kind : 'unexpected',
+        status: error instanceof CoverLetterError ? error.status : 500,
+        ...usageProps(usage()),
+      },
+      userId
+    )
     if (error instanceof CoverLetterError) {
       console.error('❌ Cover letter error:', error.message)
       return NextResponse.json({ success: false, error: error.userMessage }, { status: error.status })
@@ -103,6 +127,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     data: { coverLetter: letter as unknown as Prisma.InputJsonValue, coverLetterUpdatedAt: new Date() },
   })
   await incrementCoverLetterCount(userId)
+  await track('cover_letter_generated', { ms: msSince(start), tone, ...usageProps(usage()) }, userId)
 
   return NextResponse.json({
     success: true,
