@@ -1,5 +1,5 @@
 // POST /api/resumes/parse
-//   multipart/form-data { file }   (PDF or DOCX, max 5 MB)
+//   multipart/form-data { file }   (PDF or DOCX, max 4 MB, see INPUT_LIMITS)
 //   application/json { text }      (pasted resume)
 // Either may carry `replaces: <resumeId>`: the new master becomes the active one and the
 // old one is hidden (kept, listed in Manage resumes, deletable).

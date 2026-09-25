@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useDropzone } from "react-dropzone"
+import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { AlertTriangle, FileText, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react"
 import { summarizeResume } from "@/lib/master-resume"
 import { hasContent } from "@/lib/master-dto"
 import type { ParsedResume } from "@/types/parsed-resume"
-import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
+import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
 import { deleteMaster, parseResumeInput, saveMaster, type EvidenceFocus, type MasterResumeDTO } from "./api"
 import { ResumeEditor } from "./resume-editor"
 import { EvidenceInterview } from "./evidence-interview"
@@ -56,6 +57,8 @@ export function ResumeCard({
   request?: ResumeCardRequest | null
   isPro: boolean
 }) {
+  const { data: session } = useSession()
+  const firstName = session?.user?.name?.trim().split(/\s+/)[0] ?? ""
   const [mode, setMode] = useState<Mode>(active ? "summary" : "new")
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState("")
@@ -184,6 +187,11 @@ export function ResumeCard({
           onBack={active && mode !== "parsing" ? () => { setReplacing(null); setMode("summary") } : undefined}
         />
         <CardBody className="flex flex-col gap-4">
+          {masters.length === 0 && mode === "new" && (
+            <p className="text-sm text-emerald-300">
+              Welcome{firstName ? `, ${firstName}` : ""}. Start with your resume, then paste a job link. {isPro ? "" : `You have ${FREE_TAILORS_PER_MONTH} free tailors this month.`}
+            </p>
+          )}
           {mode === "parsing" ? (
             <div className="space-y-5">
               <p className="flex items-center gap-2 text-sm text-slate-300">
@@ -214,7 +222,7 @@ export function ResumeCard({
                   <Upload className="h-8 w-8 text-slate-400" />
                   <div>
                     <p className="text-base font-medium text-slate-100">Drop your resume here</p>
-                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 5 MB.</p>
+                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 4 MB.</p>
                   </div>
                 </div>
               ) : (

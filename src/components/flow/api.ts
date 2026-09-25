@@ -30,9 +30,21 @@ export interface JobDraft {
 
 export type Failure = { ok: false; error: string; status: number; upgradeRequired?: boolean }
 
+// When the platform answers instead of our route (no JSON body), say what happened.
+const PLATFORM_ERRORS: Record<number, string> = {
+  413: "That's too large to send. Try a smaller file, or paste the text instead.",
+  429: "You're going a bit fast. Wait a minute and try again.",
+  504: "That took too long on our side. Please try again.",
+}
+
 async function failure(res: Response, fallback: string): Promise<Failure> {
   const data = await res.json().catch(() => ({}))
-  return { ok: false, status: res.status, error: data.error || data.message || fallback, upgradeRequired: !!data.upgradeRequired }
+  return {
+    ok: false,
+    status: res.status,
+    error: data.error || data.message || PLATFORM_ERRORS[res.status] || fallback,
+    upgradeRequired: !!data.upgradeRequired,
+  }
 }
 
 const NETWORK: Failure = { ok: false, status: 0, error: "Can't reach ReWork. Check your connection and try again." }

@@ -32,15 +32,16 @@ export function dailyCeilingMessage(kind: DailyCeilingKind): string {
 }
 
 // Hard input caps. Checked on the server; the client checks the same numbers first so
-// people get the message before an upload.
+// people get the message before an upload. The file cap is 4 MB, not 5: Vercel rejects
+// function request bodies over 4.5 MB before our code runs, with a non-JSON error.
 export const INPUT_LIMITS = {
-  resumeFileBytes: 5 * 1024 * 1024,
+  resumeFileBytes: 4 * 1024 * 1024,
   resumeTextChars: 30_000,
   jobDescriptionChars: 20_000,
 } as const
 
 export const INPUT_LIMIT_MESSAGES = {
-  resumeFile: 'That file is over 5 MB. Try exporting a smaller PDF, or paste your resume text instead.',
+  resumeFile: 'That file is over 4 MB. Try exporting a smaller PDF, or paste your resume text instead.',
   resumeText: 'That text is over 30,000 characters, which is longer than any resume. Paste just your resume.',
   jobDescription: 'That job description is over 20,000 characters. Paste just the role, responsibilities and requirements.',
 } as const

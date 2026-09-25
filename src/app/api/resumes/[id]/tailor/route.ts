@@ -52,7 +52,7 @@ export async function POST(
   const actualJobDescription = description || jobDescription;
 
   if (!jobTitle || !actualCompanyName || !actualJobDescription) {
-    return NextResponse.json({ error: 'Missing required job information' }, { status: 400 });
+    return NextResponse.json({ error: 'Add the job title, company and description first.' }, { status: 400 });
   }
   if (typeof actualJobDescription !== 'string' || actualJobDescription.length > INPUT_LIMITS.jobDescriptionChars) {
     return NextResponse.json({ error: INPUT_LIMIT_MESSAGES.jobDescription, success: false }, { status: 413 });
@@ -64,7 +64,7 @@ export async function POST(
   });
 
   if (!resume || !resume.isActive) {
-    return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
+    return NextResponse.json({ error: "We couldn't find that resume. Reload the page and pick it again." }, { status: 404 });
   }
   if (resume.user.email !== session.user.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -253,12 +253,12 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Tailoring error:', error);
-    return NextResponse.json({ error: 'Failed to tailor resume', success: false }, { status: 500 });
+    return NextResponse.json({ error: "Tailoring failed. Please try again; this didn't count toward your limit.", success: false }, { status: 500 });
   }
   const result = final as StreamEvent | null;
   if (!result || result.type !== 'done') {
     return NextResponse.json(
-      { error: result?.type === 'error' ? result.error : 'Failed to tailor resume', success: false },
+      { error: result?.type === 'error' ? result.error : "Tailoring failed. Please try again; this didn't count toward your limit.", success: false },
       { status: result?.type === 'error' ? result.status : 500 }
     );
   }
