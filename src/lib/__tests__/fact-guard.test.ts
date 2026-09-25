@@ -147,7 +147,7 @@ describe('factGuard', () => {
     expect(cleaned.roles[0].bullets[1].text).toBe('Built a React dashboard used by 40 internal analysts')
     const numberWarnings = warnings.filter((w) => w.type === 'new_number')
     expect(numberWarnings).toHaveLength(1)
-    expect(numberWarnings[0].message).toContain('50000')
+    expect(numberWarnings[0].message).toContain('$50k')
   })
 
   it('flags a percentage the master never claimed', () => {

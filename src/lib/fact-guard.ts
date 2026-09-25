@@ -16,7 +16,7 @@ import type {
   TailorOutputProject,
   TailorOutputRole,
 } from '@/types/tailor'
-import { containsTerm, extractNumberTokens, normalizeSpace, tailorInputText } from '@/lib/resume-text'
+import { containsTerm, extractNumbers, extractNumberTokens, normalizeSpace, tailorInputText } from '@/lib/resume-text'
 
 const MAX_KEYWORDS = 20
 
@@ -24,8 +24,11 @@ function sameText(a: string, b: string): boolean {
   return normalizeSpace(a).toLowerCase() === normalizeSpace(b).toLowerCase()
 }
 
+/** Numbers (as written) in `text` that don't appear anywhere in the master. */
 function newNumbers(text: string, masterNumbers: Set<string>): string[] {
-  return extractNumberTokens(text).filter((token) => !masterNumbers.has(token))
+  return extractNumbers(text)
+    .filter((n) => !masterNumbers.has(n.token))
+    .map((n) => n.raw)
 }
 
 function words(text: string): Set<string> {

@@ -28,28 +28,33 @@ const MULTIPLIERS: Record<string, number> = { k: 1e3, m: 1e6, mm: 1e6, b: 1e9, b
 const NUMBER_RE = /(?<![A-Za-z0-9.])(\$\s?)?(\d+(?:,\d{3})*(?:\.\d+)?)(\s?%|(?:k|mm|m|bn|b|x)(?![A-Za-z]))?/gi
 
 /**
- * Pull numeric tokens out of text, normalized so "$1.2M" and "$1,200,000" compare equal.
- * Percent and multiplier ("3x") markers are part of the token: "50%" is a different claim
- * than "50 people". Dollar signs are ignored.
+ * Pull numbers out of text. `token` is normalized so "$1.2M" and "$1,200,000" compare
+ * equal; `raw` is what was written, for messages. Percent and multiplier ("3x") markers
+ * are part of the token: "50%" is a different claim than "50 people". Dollar signs are
+ * ignored.
  */
-export function extractNumberTokens(text: string): string[] {
+export function extractNumbers(text: string): { raw: string; token: string }[] {
   // Collapse dates to their year first, otherwise "2021-05" would whitelist "5".
   const withoutMonths = text
     .replace(/\b((?:19|20)\d{2})[-/.](?:0?[1-9]|1[0-2])\b/g, '$1')
     .replace(/\b(?:0?[1-9]|1[0-2])[-/]((?:19|20)\d{2})\b/g, '$1')
-  const tokens: string[] = []
+  const numbers: { raw: string; token: string }[] = []
   for (const match of withoutMonths.matchAll(NUMBER_RE)) {
-    const raw = match[2].replace(/,/g, '')
+    const digits = match[2].replace(/,/g, '')
     const suffix = (match[3] || '').trim().toLowerCase()
-    let value = parseFloat(raw)
+    let value = parseFloat(digits)
     if (Number.isNaN(value)) continue
     let marker = ''
     if (suffix === '%') marker = '%'
     else if (suffix === 'x') marker = 'x'
     else if (suffix in MULTIPLIERS) value = value * MULTIPLIERS[suffix]
-    tokens.push(`${Number(value.toPrecision(12))}${marker}`)
+    numbers.push({ raw: match[0].trim(), token: `${Number(value.toPrecision(12))}${marker}` })
   }
-  return tokens
+  return numbers
+}
+
+export function extractNumberTokens(text: string): string[] {
+  return extractNumbers(text).map((n) => n.token)
 }
 
 /** Every string in the master resume we send to the model, flattened. */
