@@ -8,6 +8,7 @@ import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, MoreHoriz
 import { cn } from "@/lib/utils"
 import { TRACKER_COLUMNS, columnOf, type TrackerColumn } from "@/lib/tracker"
 import type { TemplateId } from "@/lib/resume-templates"
+import { WORD_EXPORT_UPSELL } from "@/lib/plans"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +35,11 @@ export function TrackerCard({
   onMove,
   onSave,
   onDelete,
+  isPro,
+  onUpgrade,
 }: {
+  isPro: boolean
+  onUpgrade: (reason: string) => void
   app: TrackerCardDTO
   template: TemplateId
   dragging?: boolean
@@ -50,6 +55,17 @@ export function TrackerCard({
   const resume = `/api/resumes/${app.resumeId}/download?applicationId=${app.id}&template=${template}`
   const letter = `/api/resumes/applications/${app.id}/cover-letter/download?template=${template}`
   const menuItem = "cursor-pointer text-slate-200 focus:bg-white/10 focus:text-white"
+  const word = (href: string, text: string) =>
+    isPro ? (
+      <DropdownMenuItem asChild className={menuItem}>
+        <a href={href}><Download className="mr-2 h-4 w-4" /> {text}</a>
+      </DropdownMenuItem>
+    ) : (
+      <DropdownMenuItem className={menuItem} onSelect={() => onUpgrade(WORD_EXPORT_UPSELL)}>
+        <Download className="mr-2 h-4 w-4" /> {text}
+        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-semibold uppercase text-emerald-300">Pro</span>
+      </DropdownMenuItem>
+    )
   // Links inside a draggable card: don't let a click start a drag.
   const stop = { onPointerDown: (e: React.PointerEvent) => e.stopPropagation(), onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation() }
 
@@ -71,17 +87,13 @@ export function TrackerCard({
                 <DropdownMenuItem asChild className={menuItem}>
                   <a href={resume}><FileText className="mr-2 h-4 w-4" /> Resume PDF</a>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className={menuItem}>
-                  <a href={`${resume}&format=docx`}><Download className="mr-2 h-4 w-4" /> Resume Word</a>
-                </DropdownMenuItem>
+                {word(`${resume}&format=docx`, "Resume Word")}
                 {app.hasCoverLetter && (
                   <>
                     <DropdownMenuItem asChild className={menuItem}>
                       <a href={`${letter}&format=pdf`}><FileText className="mr-2 h-4 w-4" /> Cover letter PDF</a>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className={menuItem}>
-                      <a href={`${letter}&format=docx`}><Download className="mr-2 h-4 w-4" /> Cover letter Word</a>
-                    </DropdownMenuItem>
+                    {word(`${letter}&format=docx`, "Cover letter Word")}
                   </>
                 )}
                 <DropdownMenuSeparator className="bg-white/10" />

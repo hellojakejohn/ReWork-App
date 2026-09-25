@@ -25,7 +25,10 @@ import {
   FREE_COVER_LETTERS_PER_MONTH,
   FREE_TAILORS_PER_MONTH,
   FREE_TRACKER_APPLICATIONS,
+  canExportWord,
   canUseEvidenceInterview,
+  FREE_FEATURES,
+  PRO_FEATURES,
   coverLetterLimitFor,
   trackerLimitFor,
 } from '@/lib/plans'
@@ -42,6 +45,13 @@ describe('plan limits', () => {
     expect(trackerLimitFor(true)).toBe(Infinity)
     expect(canUseEvidenceInterview(false)).toBe(false)
     expect(canUseEvidenceInterview(true)).toBe(true)
+    expect(canExportWord(false)).toBe(false)
+    expect(canExportWord(true)).toBe(true)
+  })
+
+  it('pricing copy states the same limits', () => {
+    expect(FREE_FEATURES).toEqual(['3 tailored resumes per month', '1 cover letter per month', 'Application tracker for up to 10 jobs', 'PDF downloads'])
+    expect(PRO_FEATURES.join(' ')).toMatch(/Unlimited tailored resumes.*Unlimited cover letters.*Evidence interview.*Unlimited application tracker.*PDF \+ Word/)
   })
 })
 

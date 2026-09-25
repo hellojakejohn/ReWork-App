@@ -6,6 +6,8 @@ import { getServerSession } from 'next-auth'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { authOptions } from '@/lib/auth'
+import { getAccess } from '@/lib/entitlements'
+import { canExportWord, WORD_EXPORT_UPSELL } from '@/lib/plans'
 import { prisma } from '@/lib/prisma'
 import { masterToParsed } from '@/lib/master-resume'
 import { ResumePdf } from '@/lib/resume-pdf'
@@ -29,6 +31,9 @@ export async function GET(
   const templateParam = request.nextUrl.searchParams.get('template')
   const template = isTemplateId(templateParam) ? templateParam : 'classic'
   const format = request.nextUrl.searchParams.get('format') === 'docx' ? 'docx' : 'pdf'
+  if (format === 'docx' && !canExportWord((await getAccess(session.user.id)).isPro)) {
+    return new NextResponse(WORD_EXPORT_UPSELL, { status: 402 })
+  }
 
   const resume = await prisma.resume.findFirst({ where: { id, userId: session.user.id } })
   if (!resume) {

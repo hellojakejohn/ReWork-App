@@ -156,6 +156,8 @@ export function TrackerView() {
     onMove: (column: TrackerColumn) => void move(app, column),
     onSave: (patch: { notes?: string; followUpAt?: string | null }) => void save(app, patch),
     onDelete: () => void remove(app),
+    isPro: !!data?.isPro,
+    onUpgrade: (reason: string) => setUpgrade({ open: true, reason }),
   })
   const dragged = dragId ? apps.find((a) => a.id === dragId) : null
 

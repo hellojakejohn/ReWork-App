@@ -32,6 +32,7 @@ export function ResultCard({
   onCoverLetterQuota,
   onUpgrade,
   renderChangeExtra,
+  isPro,
 }: {
   application: ApplicationDetailDTO | null
   template: TemplateId
@@ -44,6 +45,7 @@ export function ResultCard({
   onUpgrade: (reason?: string) => void
   /** Extra action per bullet in the Changes tab (the evidence interview's "Make it stronger"). */
   renderChangeExtra?: (change: ApplicationDetailDTO["changes"][number]) => React.ReactNode
+  isPro: boolean
 }) {
   const [tab, setTab] = useState<Tab>("changes")
   const [pending, setPending] = useState<string | null>(null)
@@ -231,7 +233,7 @@ export function ResultCard({
             <SecondaryButton onClick={onAnotherJob}>
               Tailor for another job <ArrowRight className="h-3.5 w-3.5" />
             </SecondaryButton>
-            <DownloadMenu application={application} template={template} />
+            <DownloadMenu application={application} template={template} isPro={isPro} onUpgrade={onUpgrade} />
           </div>
         }
       />
@@ -264,7 +266,7 @@ export function ResultCard({
             <SecondaryButton className="flex-1" onClick={onAnotherJob}>
               Another job
             </SecondaryButton>
-            <DownloadMenu application={application} template={template} className="flex-1" />
+            <DownloadMenu application={application} template={template} className="flex-1" isPro={isPro} onUpgrade={onUpgrade} />
           </div>
         </div>
       </div>

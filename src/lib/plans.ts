@@ -66,6 +66,7 @@ export const PLAN_LIMITS = {
     masterResumes: FREE_MAX_MASTER_RESUMES,
     trackedApplications: FREE_TRACKER_APPLICATIONS,
     evidenceInterview: false,
+    wordExport: false, // FREE downloads PDF only
   },
   pro: {
     tailorsPerMonth: Infinity,
@@ -73,6 +74,7 @@ export const PLAN_LIMITS = {
     masterResumes: Infinity,
     trackedApplications: Infinity,
     evidenceInterview: true,
+    wordExport: true,
   },
 } as const
 
@@ -92,25 +94,32 @@ export function canUseEvidenceInterview(isPro: boolean): boolean {
   return PLAN_LIMITS[isPro ? 'pro' : 'free'].evidenceInterview
 }
 
+export function canExportWord(isPro: boolean): boolean {
+  return PLAN_LIMITS[isPro ? 'pro' : 'free'].wordExport
+}
+
+export const WORD_EXPORT_UPSELL = 'Word downloads are a Pro feature. Application portals read .docx best; PDF stays free.'
+
 export function masterResumeLimitFor(isPro: boolean): number {
   return PLAN_LIMITS[isPro ? 'pro' : 'free'].masterResumes
 }
 
-// Only list what Pro actually does today.
+// Only list what Pro actually does today. Landing, /pricing and the upgrade sheet read these.
 export const PRO_FEATURES = [
   'Unlimited tailored resumes',
-  'Fact-checked rewrites (no invented numbers or titles)',
-  'Keyword coverage report for every job',
-  'Tailored PDF per job',
-  // TODO(next session): add new Pro features here as they ship.
+  'Unlimited cover letters, fact-checked like your resume',
+  'Evidence interview: stronger bullets from your real numbers',
+  'Unlimited application tracker',
+  'PDF + Word downloads (Word for application portals)',
 ]
 
 export const FREE_FEATURES = [
   `${FREE_TAILORS_PER_MONTH} tailored resumes per month`,
-  `Up to ${FREE_MAX_MASTER_RESUMES} master resumes`,
-  'Unlimited downloads',
+  `${FREE_COVER_LETTERS_PER_MONTH} cover letter per month`,
+  `Application tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs`,
+  'PDF downloads',
 ]
 
 // Copy used across landing page, settings, status bar, FAQ.
-export const FREE_PLAN_SUMMARY = `${FREE_TAILORS_PER_MONTH} tailored resumes per month, up to ${FREE_MAX_MASTER_RESUMES} master resumes, unlimited downloads`
-export const PRO_PLAN_SUMMARY = `Unlimited tailored resumes for ${PRICING.monthly.display}, or ${PRICING.pass.amount} for a ${PASS_DAYS}-day Job Hunt Pass`
+export const FREE_PLAN_SUMMARY = `${FREE_TAILORS_PER_MONTH} tailored resumes and ${FREE_COVER_LETTERS_PER_MONTH} cover letter per month, a tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs, PDF downloads`
+export const PRO_PLAN_SUMMARY = `Unlimited tailoring, cover letters and tracking, plus the evidence interview and Word downloads, for ${PRICING.monthly.display}, or ${PRICING.pass.amount} for a ${PASS_DAYS}-day Job Hunt Pass`

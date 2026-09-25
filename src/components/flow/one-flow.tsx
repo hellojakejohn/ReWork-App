@@ -344,6 +344,7 @@ export function OneFlow() {
         setApplication(null)
         go(1)
       }}
+      isPro={!!quota?.isPro}
       coverLetterQuota={coverLetterQuota}
       onCoverLetterQuota={setCoverLetterQuota}
       onUpgrade={(reason) => setUpgrade({ open: true, reason })}
