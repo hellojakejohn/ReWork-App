@@ -36,7 +36,7 @@ function words(text: string): Set<string> {
 }
 
 /** Master bullet that the tailored bullet most likely rewrote (by word overlap). */
-function closestMasterBullet(text: string, candidates: string[]): string | undefined {
+export function closestMasterBullet(text: string, candidates: string[]): string | undefined {
   const target = words(text)
   let best: string | undefined
   let bestScore = -1

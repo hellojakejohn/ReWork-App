@@ -6,92 +6,105 @@ import { Prisma } from '@prisma/client';
 import { applyTailorOutput, buildTailorInput, callTailorModel, TailorError } from '@/lib/tailor';
 import { factGuard } from '@/lib/fact-guard';
 import { coverageReport } from '@/lib/keyword-coverage';
+import { buildChanges } from '@/lib/tailor-changes';
 import { getTailorQuota, incrementTailorCount } from '@/lib/tailor-quota';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 import { FREE_TAILORS_PER_MONTH, PRICING } from '@/lib/plans';
+import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
+import { toApplicationDetail } from '@/lib/application-dto';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 // The Resume row is the MASTER. Tailoring reads from it and writes the result to a
 // JobApplication; it never writes the master's structured fields.
+//
+// Clients that send `Accept: application/x-ndjson` get a stream of real stages
+// (reading -> rewriting -> checking -> saving) ending in { type: 'done' }; everyone
+// else gets one JSON response. Auth, quota and validation errors are plain JSON either way.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id: resumeId } = await params;
+
+  let requestData;
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    requestData = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request data', success: false }, { status: 400 });
+  }
 
-    const { id: resumeId } = await params;
+  const { jobTitle, company, companyName, location, description, jobDescription, extraContext, contextTags, applicationId: requestedApplicationId } = requestData;
 
-    let requestData;
-    try {
-      requestData = await request.json();
-    } catch {
-      return NextResponse.json({ error: 'Invalid request data', success: false }, { status: 400 });
-    }
+  // Accept both company and companyName for backwards compatibility
+  const actualCompanyName = company || companyName;
+  const actualJobDescription = description || jobDescription;
 
-    const { jobTitle, company, companyName, location, description, jobDescription, extraContext, contextTags, applicationId: requestedApplicationId } = requestData;
+  if (!jobTitle || !actualCompanyName || !actualJobDescription) {
+    return NextResponse.json({ error: 'Missing required job information' }, { status: 400 });
+  }
 
-    // Accept both company and companyName for backwards compatibility
-    const actualCompanyName = company || companyName;
-    const actualJobDescription = description || jobDescription;
+  const resume = await prisma.resume.findUnique({
+    where: { id: resumeId },
+    include: { user: true }
+  });
 
-    if (!jobTitle || !actualCompanyName || !actualJobDescription) {
-      return NextResponse.json({ error: 'Missing required job information' }, { status: 400 });
-    }
+  if (!resume || !resume.isActive) {
+    return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
+  }
+  if (resume.user.email !== session.user.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    const resume = await prisma.resume.findUnique({
-      where: { id: resumeId },
-      include: { user: true }
+  const userId = resume.userId;
+
+  const rate = checkRateLimit(`tailor:${userId}`);
+  if (!rate.allowed) {
+    return NextResponse.json(rateLimitResponseBody(rate.retryAfterSeconds), {
+      status: 429,
+      headers: { 'Retry-After': String(rate.retryAfterSeconds) }
     });
+  }
 
-    if (!resume) {
-      return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
-    }
-    if (resume.user.email !== session.user.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  // Enforce the monthly limit BEFORE spending an OpenAI call
+  const quota = await getTailorQuota(userId);
+  if (!quota.allowed) {
+    return NextResponse.json({
+      success: false,
+      error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Go Pro for unlimited tailoring: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
+      upgradeRequired: true,
+      used: quota.used,
+      limit: quota.limit
+    }, { status: 402 });
+  }
 
-    const userId = resume.userId;
+  const master = {
+    contactInfo: resume.contactInfo,
+    professionalSummary: resume.professionalSummary,
+    workExperience: resume.workExperience,
+    education: resume.education,
+    skills: resume.skills,
+    projects: resume.projects,
+    additionalSections: resume.additionalSections
+  };
 
-    const rate = checkRateLimit(`tailor:${userId}`);
-    if (!rate.allowed) {
-      return NextResponse.json(rateLimitResponseBody(rate.retryAfterSeconds), {
-        status: 429,
-        headers: { 'Retry-After': String(rate.retryAfterSeconds) }
-      });
-    }
+  const input = buildTailorInput(master);
+  if (input.roles.length === 0 && input.education.length === 0 && input.projects.length === 0) {
+    return NextResponse.json({
+      error: 'Your resume has no roles, projects or education yet. Add them first.'
+    }, { status: 400 });
+  }
 
-    // Enforce the monthly limit BEFORE spending an OpenAI call
-    const quota = await getTailorQuota(userId);
-    if (!quota.allowed) {
-      return NextResponse.json({
-        success: false,
-        error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Go Pro for unlimited tailoring: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
-        upgradeRequired: true,
-        used: quota.used,
-        limit: quota.limit
-      }, { status: 402 });
-    }
-
-    const master = {
-      contactInfo: resume.contactInfo,
-      professionalSummary: resume.professionalSummary,
-      workExperience: resume.workExperience,
-      education: resume.education,
-      skills: resume.skills,
-      projects: resume.projects,
-      additionalSections: resume.additionalSections
-    };
-
-    const input = buildTailorInput(master);
-    if (input.roles.length === 0 && input.education.length === 0) {
-      return NextResponse.json({
-        error: 'Resume content not found. Please fill out your resume first.'
-      }, { status: 400 });
-    }
+  const run = async (send: (event: StreamEvent) => void) => {
+    send({ type: 'stage', stage: 'reading' });
+    send({ type: 'stage', stage: 'rewriting' });
 
     let modelResult;
     try {
@@ -103,28 +116,37 @@ export async function POST(
     } catch (error) {
       if (error instanceof TailorError) {
         console.error('❌ Tailor model error:', error.message);
-        return NextResponse.json({ error: error.userMessage, success: false }, { status: error.status });
+        send({ type: 'error', status: error.status, error: error.userMessage });
+        return;
       }
       throw error;
     }
 
+    send({ type: 'stage', stage: 'checking' });
     const { cleaned, warnings } = factGuard(input, modelResult.output);
     const coverage = coverageReport(input, cleaned);
     const tailoredResume = applyTailorOutput(master, input, cleaned);
+    const changes = buildChanges(input, cleaned);
 
+    send({ type: 'stage', stage: 'saving' });
     const categoryScores: TailorCategoryScores = {
       keywordCoverageMaster: coverage.master.score,
       keywordCoverageTailored: coverage.tailored.score
     };
     const report: TailorReport = {
-      version: 'tailor-v2',
+      version: 'tailor-v3',
       model: modelResult.model,
       warnings,
       missingKeywords: coverage.tailored.missing,
       bulletReasons: Object.fromEntries([
         ...cleaned.roles.map((r) => [r.id, r.bullets] as const),
         ...cleaned.projects.map((p) => [p.id, p.bullets] as const)
-      ])
+      ]),
+      changes,
+      targetKeywords: cleaned.targetKeywords,
+      presentBefore: coverage.master.present,
+      presentAfter: coverage.tailored.present,
+      jobLocation: typeof location === 'string' ? location : ''
     };
 
     const applicationData = {
@@ -136,17 +158,16 @@ export async function POST(
       categoryScores: categoryScores as unknown as Prisma.InputJsonValue,
       keywords: cleaned.targetKeywords,
       suggestions: report as unknown as Prisma.InputJsonValue,
-      analysisVersion: 'tailor-v2',
+      analysisVersion: 'tailor-v3',
       status: 'OPTIMIZED' as const,
       lastAnalyzed: new Date()
     };
 
-    // Re-tailor an explicit application, else reuse the one for the same job, else create
-    const existingApplication = await prisma.jobApplication.findFirst({
-      where: requestedApplicationId
-        ? { id: String(requestedApplicationId), resumeId, userId }
-        : { resumeId, userId, jobTitle, company: actualCompanyName }
-    });
+    // Re-tailor an explicit application; otherwise every tailor is its own application
+    // (the Recent drawer lists them all).
+    const existingApplication = requestedApplicationId
+      ? await prisma.jobApplication.findFirst({ where: { id: String(requestedApplicationId), resumeId, userId } })
+      : null;
 
     const application = existingApplication
       ? await prisma.jobApplication.update({
@@ -160,7 +181,7 @@ export async function POST(
             resumeId,
             jobTitle,
             company: actualCompanyName,
-            jobUrl: requestData.jobUrl || null
+            jobUrl: typeof requestData.jobUrl === 'string' && requestData.jobUrl ? requestData.jobUrl : null
           }
         });
 
@@ -171,26 +192,41 @@ export async function POST(
       data: { lastOptimized: new Date() }
     });
 
-    return NextResponse.json({
-      success: true,
-      message: `Resume tailored for ${jobTitle} at ${actualCompanyName}`,
-      applicationId: application.id,
-      tailoredResume,
-      warningsCount: warnings.length,
-      keywordCoverage: {
-        master: coverage.master.score,
-        tailored: coverage.tailored.score,
-        missing: coverage.tailored.missing
-      },
-      tailorsRemaining: quota.limit === Infinity ? null : Math.max(0, quota.remaining - 1)
+    send({
+      type: 'done',
+      result: {
+        application: toApplicationDetail(application),
+        tailorsRemaining: quota.limit === Infinity ? null : Math.max(0, quota.remaining - 1)
+      }
     });
+  };
 
+  if ((request.headers.get('accept') || '').includes('application/x-ndjson')) {
+    return ndjsonResponse(run);
+  }
+
+  // Plain JSON: collect the stream's final event.
+  let final: StreamEvent | null = null;
+  try {
+    await run((event) => {
+      if (event.type !== 'stage') final = event;
+    });
   } catch (error) {
     console.error('❌ Tailoring error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Failed to tailor resume', success: false }, { status: 500 });
+  }
+  const result = final as StreamEvent | null;
+  if (!result || result.type !== 'done') {
     return NextResponse.json(
-      { error: 'Failed to tailor resume', details: errorMessage, success: false },
-      { status: 500 }
+      { error: result?.type === 'error' ? result.error : 'Failed to tailor resume', success: false },
+      { status: result?.type === 'error' ? result.status : 500 }
     );
   }
+  const done = result.result as { application: ReturnType<typeof toApplicationDetail>; tailorsRemaining: number | null };
+  return NextResponse.json({
+    success: true,
+    applicationId: done.application.id,
+    application: done.application,
+    tailorsRemaining: done.tailorsRemaining
+  });
 }

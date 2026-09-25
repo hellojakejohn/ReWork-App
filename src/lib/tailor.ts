@@ -5,6 +5,8 @@
 // applyTailorOutput (merge back into the master's own shape, contact info copied).
 import OpenAI from 'openai'
 import type { TailorInput, TailorOutput } from '@/types/tailor'
+import { readSkillGroups } from '@/lib/master-resume'
+import { classifyAIError } from '@/lib/ai-errors'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyRecord = Record<string, any>
@@ -72,22 +74,24 @@ function summaryText(value: unknown): string {
   return ''
 }
 
-function skillsList(value: unknown): string[] {
-  const raw = Array.isArray(value)
-    ? value
-    : value && typeof value === 'object'
-      ? Object.values(value as AnyRecord).flat()
-      : []
+function skillsList(groups: { items: string[] }[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
-  for (const item of raw) {
-    const skill = str(item)
+  for (const skill of groups.flatMap((g) => g.items)) {
     if (skill && !seen.has(skill.toLowerCase())) {
       seen.add(skill.toLowerCase())
       out.push(skill)
     }
   }
   return out
+}
+
+function certificationList(additionalSections: unknown): string[] {
+  const certs = (additionalSections as AnyRecord | null)?.certifications
+  return asArray(certs)
+    .map((c) => [str(c.name), str(c.issuer)].filter(Boolean).join(', '))
+    .concat(Array.isArray(certs) ? certs.filter((c) => typeof c === 'string').map(str) : [])
+    .filter(Boolean)
 }
 
 function roleDates(exp: AnyRecord): { startDate: string; endDate: string } {
@@ -111,6 +115,7 @@ export function buildTailorInput(master: MasterResume): TailorInput {
   const eduIds = stableIds(education, 'edu')
   const projects = asArray(master.projects)
   const projectIds = stableIds(projects, 'proj')
+  const skillGroups = readSkillGroups(master.skills)
 
   return {
     summary: summaryText(master.professionalSummary),
@@ -128,16 +133,23 @@ export function buildTailorInput(master: MasterResume): TailorInput {
       field: str(edu.field) || str(edu.fieldOfStudy),
       institution: str(edu.institution) || str(edu.school),
       graduationYear: str(edu.graduationYear) || str(edu.year) || str(edu.graduationDate) || str(edu.endDate),
-      details: [...textList(edu.honors), ...textList(edu.relevantCoursework), str(edu.additionalInfo)].filter(Boolean),
+      details: [
+        ...textList(edu.details),
+        ...textList(edu.honors),
+        ...textList(edu.relevantCoursework),
+        str(edu.additionalInfo),
+      ].filter(Boolean),
     })),
     projects: projects.map((project, i) => ({
       id: projectIds[i],
       name: str(project.name) || str(project.title),
       description: str(project.description),
-      technologies: textList(project.technologies),
-      bullets: textList(project.achievements),
+      technologies: textList(project.technologies ?? project.tech),
+      bullets: textList(project.achievements ?? project.bullets),
     })),
-    skills: skillsList(master.skills),
+    skills: skillsList(skillGroups),
+    skillGroups,
+    certifications: certificationList(master.additionalSections),
   }
 }
 
@@ -259,8 +271,9 @@ RULES (all mandatory):
 6. Bullets: rewrite each role's bullets to emphasize what matters for this job. Start with a strong action verb, keep each to 1-2 lines. You may reorder bullets by relevance and merge or drop weak ones, but every bullet must be supported by the original bullets for that same role. Keep 3-5 bullets per role when the source has that many.
 7. For every bullet, give a short "reason" (under 15 words) for the change, e.g. "Moved up: matches CI/CD requirement".
 8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume.
-9. Skills: reorder with the most relevant first. Only include skills that appear in the resume. You may drop irrelevant ones.
-10. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.`
+9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"). You may drop irrelevant ones. The resume's grouping is kept for you.
+10. Certifications are facts: mention them in the summary or bullets only if relevant, word for word, never invent one.
+11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.`
 }
 
 export class TailorError extends Error {
@@ -277,7 +290,8 @@ export class TailorError extends Error {
 let defaultClient: OpenAI | null = null
 function getClient(): OpenAI {
   if (!process.env.OPENAI_API_KEY) {
-    throw new TailorError('OPENAI_API_KEY is not configured', 500, 'AI service is not configured. Please contact support.')
+    console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
+    throw new TailorError('OPENAI_API_KEY is not configured', 503, "Tailoring is temporarily unavailable, we're on it.")
   }
   defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return defaultClient
@@ -307,14 +321,8 @@ export async function callTailorModel(
       ],
     })
   } catch (error: any) {
-    const status = error?.status
-    const message = String(error?.message || 'Unknown OpenAI error')
-    if (status === 401) throw new TailorError(message, 500, 'Invalid AI service credentials. Please contact support.')
-    if (status === 429) throw new TailorError(message, 429, 'AI service is currently busy. Please try again in a moment.')
-    if (/context|maximum.*tokens/i.test(message)) {
-      throw new TailorError(message, 400, 'Resume or job description is too long. Please shorten and try again.')
-    }
-    throw new TailorError(message, 502, 'Failed to generate tailored resume. Please try again.')
+    const classified = classifyAIError(error, 'Tailoring')
+    throw new TailorError(String(error?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage)
   }
 
   const choice = completion.choices[0]
@@ -342,6 +350,22 @@ function mergeSkills(masterSkills: unknown, tailored: string[]): unknown {
   const rank = new Map(tailored.map((s, i) => [s.toLowerCase(), i]))
   const byRank = (a: string, b: string) => (rank.get(a.toLowerCase()) ?? 0) - (rank.get(b.toLowerCase()) ?? 0)
 
+  if (Array.isArray(masterSkills) && masterSkills.some((g) => g && typeof g === 'object')) {
+    // [{ group, items }]: keep the groups and their order, reorder/filter items inside.
+    const groups = readSkillGroups(masterSkills)
+    const placed = new Set<string>()
+    const result = groups.map((g) => {
+      const kept = g.items.filter((s) => rank.has(s.toLowerCase())).sort(byRank)
+      kept.forEach((s) => placed.add(s.toLowerCase()))
+      return { group: g.group, items: kept }
+    })
+    const extra = tailored.filter((s) => !placed.has(s.toLowerCase()))
+    if (extra.length > 0) {
+      if (result.length === 0) result.push({ group: '', items: [] })
+      result[0].items.push(...extra)
+    }
+    return result.filter((g) => g.items.length > 0)
+  }
   if (!masterSkills || typeof masterSkills !== 'object' || Array.isArray(masterSkills)) {
     return tailored
   }

@@ -51,6 +51,8 @@ const master: TailorInput = {
     },
   ],
   skills: ['React', 'JavaScript', 'TypeScript', 'Jest', 'CSS'],
+  skillGroups: [{ group: '', items: ['React', 'JavaScript', 'TypeScript', 'Jest', 'CSS'] }],
+  certifications: [],
 }
 
 // A faithful rewrite that should pass untouched.
