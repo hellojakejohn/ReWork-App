@@ -63,4 +63,4 @@ export function stripeId(ref: string | { id: string } | null | undefined): strin
 }
 
 /** Stripe statuses that mean the customer already has a subscription we shouldn't duplicate. */
-export const BLOCKING_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid', 'incomplete'])
+export const BLOCKING_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid'])
