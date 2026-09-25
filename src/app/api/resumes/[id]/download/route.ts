@@ -13,7 +13,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
-  return handleDownload(request, resolvedParams, {});
+  const applicationId = request.nextUrl.searchParams.get('applicationId') || undefined;
+  return handleDownload(request, resolvedParams, { applicationId });
 }
 
 export async function POST(
@@ -33,7 +34,9 @@ export async function POST(
 async function handleDownload(
   request: NextRequest,
   params: { id: string },
-  options: { 
+  options: {
+    // When set, render that JobApplication's tailored version instead of the master
+    applicationId?: string;
     version?: 'original' | 'optimized'; 
     template?: string;
     colors?: { primary: string; accent: string };
@@ -60,35 +63,6 @@ async function handleDownload(
       return new NextResponse('User not found', { status: 404 });
     }
 
-    // Check download limits for FREE users
-    if (user.plan === 'FREE') {
-      // Count recent resume activities this month as a proxy for downloads
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const recentActivityCount = await prisma.resume.count({
-        where: {
-          userId: user.id,
-          updatedAt: {
-            gte: startOfMonth
-          }
-        }
-      });
-
-      // FREE users get 5 downloads per month (generous limit)
-      const FREE_DOWNLOAD_LIMIT = 5;
-      if (recentActivityCount >= FREE_DOWNLOAD_LIMIT) {
-        return NextResponse.json({
-          error: 'Download limit reached',
-          message: `Free users can download ${FREE_DOWNLOAD_LIMIT} PDFs per month. Upgrade to Premium for unlimited downloads.`,
-          downloadsUsed: recentActivityCount,
-          downloadLimit: FREE_DOWNLOAD_LIMIT,
-          upgradeRequired: true
-        }, { status: 403 });
-      }
-    }
-
     // Get resume with all structured data
     const resume = await prisma.resume.findFirst({
       where: {
@@ -102,6 +76,19 @@ async function handleDownload(
     }
 
     console.log('✅ Resume found:', resume.title);
+
+    // Tailored version lives on the JobApplication; the Resume row is the master
+    let application: { company: string; optimizedStructured: unknown } | null = null;
+    if (options.applicationId) {
+      application = await prisma.jobApplication.findFirst({
+        where: { id: options.applicationId, resumeId: resume.id, userId: user.id },
+        select: { company: true, optimizedStructured: true }
+      });
+      if (!application?.optimizedStructured) {
+        return new NextResponse('Tailored version not found', { status: 404 });
+      }
+    }
+    const source = (application?.optimizedStructured as Record<string, unknown> | undefined) ?? resume;
 
     // Determine which version to use
     interface ResumeData {
@@ -119,41 +106,41 @@ async function handleDownload(
     }
     
     let resumeData: ResumeData = {};
-    const isOptimized = options.version === 'optimized' || options.version === undefined;
+    const isOptimized = !!application || options.version === 'optimized' || options.version === undefined;
 
     console.log('🎯 Using optimized version:', isOptimized);
 
-    if (isOptimized && (resume.contactInfo || resume.professionalSummary || resume.workExperience)) {
+    if (isOptimized && (source.contactInfo || source.professionalSummary || source.workExperience)) {
       // 🔧 FIXED: Use same parsing logic as preview route
       console.log('📊 Using structured (optimized) resume data with proper parsing');
       
       resumeData = {
         // Parse contactInfo consistently and add contact alias for PDF template compatibility
-        contactInfo: resume.contactInfo ? (typeof resume.contactInfo === 'string' ? JSON.parse(resume.contactInfo) : resume.contactInfo) : {},
-        contact: resume.contactInfo ? (typeof resume.contactInfo === 'string' ? JSON.parse(resume.contactInfo) : resume.contactInfo) : {},
+        contactInfo: source.contactInfo ? (typeof source.contactInfo === 'string' ? JSON.parse(source.contactInfo) : source.contactInfo) : {},
+        contact: source.contactInfo ? (typeof source.contactInfo === 'string' ? JSON.parse(source.contactInfo) : source.contactInfo) : {},
         
         // Parse professionalSummary the same way as preview  
-        professionalSummary: resume.professionalSummary ? (typeof resume.professionalSummary === 'string' ? JSON.parse(resume.professionalSummary) : resume.professionalSummary) : {},
+        professionalSummary: source.professionalSummary ? (typeof source.professionalSummary === 'string' ? JSON.parse(source.professionalSummary) : source.professionalSummary) : {},
         
         // Parse workExperience the same way as preview
-        workExperience: resume.workExperience ? (typeof resume.workExperience === 'string' ? JSON.parse(resume.workExperience) : resume.workExperience) : [],
+        workExperience: source.workExperience ? (typeof source.workExperience === 'string' ? JSON.parse(source.workExperience) : source.workExperience) : [],
         
         // Parse education the same way as preview
-        education: resume.education ? (typeof resume.education === 'string' ? JSON.parse(resume.education) : resume.education) : [],
+        education: source.education ? (typeof source.education === 'string' ? JSON.parse(source.education) : source.education) : [],
         
         // Parse skills the same way as preview
-        skills: resume.skills ? (typeof resume.skills === 'string' ? JSON.parse(resume.skills) : resume.skills) : [],
+        skills: source.skills ? (typeof source.skills === 'string' ? JSON.parse(source.skills) : source.skills) : [],
         
         // Parse projects the same way as preview
-        projects: resume.projects ? (typeof resume.projects === 'string' ? JSON.parse(resume.projects) : resume.projects) : [],
+        projects: source.projects ? (typeof source.projects === 'string' ? JSON.parse(source.projects) : source.projects) : [],
         
         isOptimized: true
       };
 
       console.log('📋 RAW DATABASE RESUME FIELDS:', {
-        workExperienceType: typeof resume.workExperience,
-        workExperienceContent: JSON.stringify(resume.workExperience),
-        workExpRawLength: Array.isArray(resume.workExperience) ? resume.workExperience.length : 'not array'
+        workExperienceType: typeof source.workExperience,
+        workExperienceContent: JSON.stringify(source.workExperience),
+        workExpRawLength: Array.isArray(source.workExperience) ? source.workExperience.length : 'not array'
       });
 
       console.log('📋 Optimized data parsed:', {
@@ -230,14 +217,6 @@ async function handleDownload(
       throw renderError;
     }
 
-    // Track download activity by updating the resume timestamp
-    await prisma.resume.update({
-      where: { id: resume.id },
-      data: { updatedAt: new Date() }
-    });
-    console.log('📊 Download activity tracked');
-
-
     // Create descriptive filename
     // Extract first and last name from contact info
     let firstName = 'Resume';
@@ -253,14 +232,8 @@ async function handleDownload(
       }
     }
 
-    // Check if this is a tailored resume
-    const jobApplication = await prisma.jobApplication.findFirst({
-      where: { resumeId: resume.id },
-      select: { company: true }
-    });
-
-    const filename = jobApplication?.company
-      ? `${firstName}_${lastName}_Resume_${jobApplication.company.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+    const filename = application?.company
+      ? `${firstName}_${lastName}_Resume_${application.company.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
       : `${firstName}_${lastName}_Resume.pdf`;
 
     return new NextResponse(buffer, {
