@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Zap } from "lucide-react"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
+import { describeAccess } from "@/lib/entitlement-rules"
 
 interface StatusBarProps {
   tailorsUsed?: number
@@ -52,7 +53,7 @@ export default function StatusBar({ tailorsUsed, autoSaveStatus, className = "" 
             ) : (
               <>
                 <span className="text-text-secondary">
-                  {isPremium ? 'Pro' : 'Free Plan'}
+                  {isPremium && session ? describeAccess(session.user.access) : 'Free Plan'}
                 </span>
                 {!isPremium && tailorsUsed !== undefined && (
                   <>
@@ -69,11 +70,11 @@ export default function StatusBar({ tailorsUsed, autoSaveStatus, className = "" 
           {/* Right Side - Upgrade Link */}
           {!isPremium && !autoSaveStatus && (
             <Link
-              href="/#pricing"
+              href="/pricing"
               className="flex items-center gap-1.5 text-[12px] text-indigo-400 hover:text-indigo-300 transition-colors"
             >
               <Zap className="w-3.5 h-3.5" />
-              Upgrade to Premium
+              Go Pro
             </Link>
           )}
         </div>

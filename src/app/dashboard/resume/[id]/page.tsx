@@ -20,6 +20,7 @@ import ResumePreview from '@/components/resume/templates/ResumePreview'
 import TemplateSelector, { TemplateType } from '@/components/resume/templates/TemplateSelector'
 import { US_CITIES } from '@/lib/cities'
 import TailoringProgress from '@/components/tailoring-progress'
+import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import {
   ArrowLeft,
   Save,
@@ -230,6 +231,7 @@ export default function UnifiedEditorPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isTailoring, setIsTailoring] = useState(false)
+  const [upgradeReason, setUpgradeReason] = useState<string | null>(null)
   const [isParsingUrl, setIsParsingUrl] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<'saving' | 'saved' | 'error'>('saved')
 
@@ -545,9 +547,7 @@ export default function UnifiedEditorPage() {
       if (!response.ok) {
         // Handle specific error cases with user-friendly messages
         if (response.status === 402 && data.upgradeRequired) {
-          toast.error(data.error || 'Monthly tailoring limit reached.', {
-            action: { label: 'Upgrade', onClick: () => router.push('/#pricing') }
-          });
+          setUpgradeReason(data.error || 'Monthly tailoring limit reached.');
         } else if (response.status === 500 && data.error?.includes('AI service')) {
           toast.error('AI service temporarily unavailable. Please try again in a moment.');
         } else if (response.status === 429) {
@@ -610,6 +610,11 @@ export default function UnifiedEditorPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <UpgradeSheet
+        open={!!upgradeReason}
+        onOpenChange={(open) => { if (!open) setUpgradeReason(null) }}
+        reason={upgradeReason ?? undefined}
+      />
       {/* Top Navigation */}
       <Navigation showUserMenu={false} />
 

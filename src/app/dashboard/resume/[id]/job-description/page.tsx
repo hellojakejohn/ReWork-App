@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { Logo, BetaBadge } from "@/components/ui/logo"
+import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 
 export default function JobDescriptionPage() {
   const { data: session, status } = useSession()
@@ -57,6 +58,7 @@ export default function JobDescriptionPage() {
   const [jobUrl, setJobUrl] = useState("")
   const [isParsingUrl, setIsParsingUrl] = useState(false)
   const [isTailoring, setIsTailoring] = useState(false)
+  const [upgradeReason, setUpgradeReason] = useState<string | null>(null)
 
   // Client-side mount check
   useEffect(() => {
@@ -264,9 +266,7 @@ export default function JobDescriptionPage() {
             router.push(`/dashboard?showResult=${data.applicationId}`)
           }, 500)
         } else if (response.status === 402 && data.upgradeRequired) {
-          toast.error(data.error || 'Monthly tailoring limit reached.', {
-            action: { label: 'Upgrade', onClick: () => router.push('/#pricing') }
-          })
+          setUpgradeReason(data.error || 'Monthly tailoring limit reached.')
           setIsTailoring(false)
         } else {
           throw new Error(data.error || 'Failed to tailor resume')
@@ -292,6 +292,11 @@ export default function JobDescriptionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <UpgradeSheet
+        open={!!upgradeReason}
+        onOpenChange={(open) => { if (!open) setUpgradeReason(null) }}
+        reason={upgradeReason ?? undefined}
+      />
       {/* Tailoring Loading Overlay */}
       {isTailoring && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center">
