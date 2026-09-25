@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { extractAndParseResume } from '@/lib/pdf-extractor';
 import { getSignedDownloadUrl, downloadFromStorage } from '@/lib/storage';
+import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 
 export async function POST(
   request: NextRequest,
@@ -39,6 +40,14 @@ export async function POST(
     // Verify user ownership
     if (resume.user.email !== session.user.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rate = checkRateLimit(`autofill:${resume.userId}`);
+    if (!rate.allowed) {
+      return NextResponse.json(rateLimitResponseBody(rate.retryAfterSeconds), {
+        status: 429,
+        headers: { 'Retry-After': String(rate.retryAfterSeconds) }
+      });
     }
 
     console.log('📄 Resume found:', {
