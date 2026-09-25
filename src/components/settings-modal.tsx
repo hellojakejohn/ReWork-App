@@ -45,7 +45,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isManagingSubscription, setIsManagingSubscription] = useState(false)
   // Avatar state removed - now handled by AvatarColorPicker component
 
-  const isPro = session?.user?.plan === "PREMIUM"
+  const isPro = !!session?.user?.access?.isPro
 
   const handleUpgrade = async () => {
     try {

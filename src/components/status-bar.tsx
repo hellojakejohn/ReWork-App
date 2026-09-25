@@ -13,7 +13,7 @@ interface StatusBarProps {
 
 export default function StatusBar({ tailorsUsed, autoSaveStatus, className = "" }: StatusBarProps) {
   const { data: session } = useSession()
-  const isPremium = session?.user?.plan === "PREMIUM"
+  const isPremium = !!session?.user?.access?.isPro
 
   return (
     <div
@@ -52,7 +52,7 @@ export default function StatusBar({ tailorsUsed, autoSaveStatus, className = "" 
             ) : (
               <>
                 <span className="text-text-secondary">
-                  {isPremium ? 'Premium Plan' : 'Free Plan'}
+                  {isPremium ? 'Pro' : 'Free Plan'}
                 </span>
                 {!isPremium && tailorsUsed !== undefined && (
                   <>

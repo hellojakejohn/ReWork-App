@@ -203,7 +203,7 @@ function DashboardContent() {
     return `${Math.round(mb * 10) / 10} MB`
   }
 
-  const isPremium = session?.user?.plan === "PREMIUM"
+  const isPremium = !!session?.user?.access?.isPro
   const tailorLimit = isPremium ? "unlimited" : String(FREE_TAILORS_PER_MONTH)
   const tailorsUsed = session?.user?.monthlyTailors ?? 0
 

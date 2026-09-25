@@ -2,6 +2,8 @@ import { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import { getAccess } from "@/lib/entitlements"
+import { isAdminEmail } from "@/lib/admin"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -29,7 +31,6 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: {
-            plan: true,
             resumesCreated: true,
             totalResumesCreated: true,
             monthlyResumesCreated: true,
@@ -41,7 +42,6 @@ export const authOptions: NextAuthOptions = {
           }
         })
         if (dbUser) {
-          session.user.plan = dbUser.plan
           session.user.resumesCreated = dbUser.resumesCreated
           session.user.totalResumesCreated = dbUser.totalResumesCreated
           session.user.monthlyResumesCreated = dbUser.monthlyResumesCreated
@@ -59,6 +59,8 @@ export const authOptions: NextAuthOptions = {
           where: { userId: user.id }
         })
         session.user.resumesOptimized = jobApplicationsCount
+        session.user.access = await getAccess(user.id)
+        session.user.isAdmin = isAdminEmail(session.user.email)
       }
       return session
     },

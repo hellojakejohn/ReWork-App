@@ -1,13 +1,12 @@
 // Monthly tailor metering (server only).
 import { prisma } from '@/lib/prisma'
+import { getAccess } from '@/lib/entitlements'
 import { tailorLimitFor } from '@/lib/plans'
 
-type PlanName = 'FREE' | 'PREMIUM'
-
 export interface TailorQuota {
-  plan: PlanName
+  isPro: boolean
   used: number
-  limit: number // Infinity for PREMIUM
+  limit: number // Infinity for Pro
   remaining: number
   allowed: boolean
 }
@@ -17,16 +16,19 @@ function isNewMonth(resetAt: Date, now = new Date()): boolean {
 }
 
 export async function getTailorQuota(userId: string): Promise<TailorQuota> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { plan: true, monthlyTailors: true, tailorsResetAt: true },
-  })
+  const [user, access] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { monthlyTailors: true, tailorsResetAt: true },
+    }),
+    getAccess(userId),
+  ])
   if (!user) throw new Error('User not found')
 
   const used = isNewMonth(user.tailorsResetAt) ? 0 : user.monthlyTailors
-  const limit = tailorLimitFor(user.plan === 'PREMIUM')
+  const limit = tailorLimitFor(access.isPro)
   return {
-    plan: user.plan,
+    isPro: access.isPro,
     used,
     limit,
     remaining: Math.max(0, limit - used),
