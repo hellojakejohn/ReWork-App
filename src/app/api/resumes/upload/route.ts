@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { uploadToStorage, generateStorageKey, getContentType } from '@/lib/storage'
 import { generatePDFThumbnail } from '@/lib/pdf-thumbnail-generator'
 import { incrementResumeCount } from '@/lib/resume-count'
-import { FREE_MAX_MASTER_RESUMES, PRO_PRICE_DISPLAY, masterResumeLimitFor } from '@/lib/plans'
+import { FREE_MAX_MASTER_RESUMES, masterResumeLimitFor } from '@/lib/plans'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Uploads are unlimited; FREE accounts can only keep a few master resumes at once.
     // Tailoring is what's metered (see src/lib/tailor-quota.ts).
-    const masterLimit = masterResumeLimitFor(user.plan)
+    const masterLimit = masterResumeLimitFor(user.plan === 'PREMIUM')
     if (masterLimit !== Infinity) {
       const activeResumes = await prisma.resume.count({
         where: { userId: user.id, isActive: true }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       if (activeResumes >= masterLimit) {
         return NextResponse.json({
           success: false,
-          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one to upload another, or upgrade to Pro (${PRO_PRICE_DISPLAY}).`,
+          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one to upload another, or go Pro for unlimited.`,
           upgradeRequired: true
         }, { status: 403 })
       }

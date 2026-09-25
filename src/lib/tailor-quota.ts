@@ -1,6 +1,8 @@
 // Monthly tailor metering (server only).
 import { prisma } from '@/lib/prisma'
-import { tailorLimitFor, type PlanName } from '@/lib/plans'
+import { tailorLimitFor } from '@/lib/plans'
+
+type PlanName = 'FREE' | 'PREMIUM'
 
 export interface TailorQuota {
   plan: PlanName
@@ -22,7 +24,7 @@ export async function getTailorQuota(userId: string): Promise<TailorQuota> {
   if (!user) throw new Error('User not found')
 
   const used = isNewMonth(user.tailorsResetAt) ? 0 : user.monthlyTailors
-  const limit = tailorLimitFor(user.plan)
+  const limit = tailorLimitFor(user.plan === 'PREMIUM')
   return {
     plan: user.plan,
     used,

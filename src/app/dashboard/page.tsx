@@ -10,7 +10,7 @@ import Navigation from "@/components/navigation"
 import ComparisonModal from "@/components/comparison-modal"
 import { ChatBubble } from "@/components/ui/chat-bubble"
 import { Badge } from "@/components/ui/badge"
-import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from "@/lib/plans"
+import { FREE_TAILORS_PER_MONTH, PRICING } from "@/lib/plans"
 import {
   FileText,
   Plus,
@@ -512,7 +512,7 @@ function DashboardContent() {
           </div>
           {!isPremium && (
             <Link href="/#pricing" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-              Upgrade to Pro ({PRO_PRICE_DISPLAY}) for unlimited tailoring
+              Upgrade to Pro ({PRICING.monthly.display}) for unlimited tailoring
             </Link>
           )}
         </div>

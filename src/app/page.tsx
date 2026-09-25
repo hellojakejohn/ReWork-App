@@ -19,7 +19,7 @@ import {
   X
 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
-import { FREE_TAILORS_PER_MONTH, PRO_PRICE_PARTS } from "@/lib/plans"
+import { FREE_FEATURES, FREE_TAILORS_PER_MONTH, PASS_DAYS, PRICING, PRO_FEATURES } from "@/lib/plans"
 
 export default function HomePage() {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
@@ -460,14 +460,7 @@ export default function HomePage() {
                 <CardContent className="relative z-10 space-y-4 flex-1 flex flex-col">
                   <div className="space-y-3 flex-1">
                     {[
-                      { text: `${FREE_TAILORS_PER_MONTH} tailored resumes per month`, included: true },
-                      { text: "AI-powered improvements", included: true },
-                      { text: "Basic templates", included: true },
-                      { text: "PDF export", included: true },
-                      { text: "ATS compatibility check", included: true },
-                      { text: "Cover letter generation", included: false },
-                      { text: "LinkedIn optimization tips", included: false },
-                      { text: "24/7 priority support", included: false }
+                      ...FREE_FEATURES.map((text) => ({ text, included: true }))
                     ].map((feature, index) => (
                       <div key={index} className="flex items-center gap-3">
                         {feature.included ? (
@@ -497,29 +490,23 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 to-transparent pointer-events-none"></div>
                 <CardHeader className="relative z-10">
                   <CardTitle className="text-2xl text-white mb-2">Pro</CardTitle>
-                  <div className="text-3xl font-bold text-white">{PRO_PRICE_PARTS.amount}<span className="text-lg font-normal text-gray-400">{PRO_PRICE_PARTS.period}</span></div>
+                  <div className="text-3xl font-bold text-white">{PRICING.monthly.amount}<span className="text-lg font-normal text-gray-400">{PRICING.monthly.period}</span></div>
+                  <p className="text-sm text-gray-400 mt-1">or {PRICING.pass.amount} one-time for a {PASS_DAYS}-day Job Hunt Pass</p>
                 </CardHeader>
                 <CardContent className="relative z-10 space-y-4">
                   <div className="space-y-3">
-                    {[
-                      "Unlimited tailored resumes",
-                      "Advanced AI analysis",
-                      "All premium templates",
-                      "Priority processing",
-                      "ATS simulation & scoring",
-                      "Cover letter generation",
-                      "LinkedIn optimization tips",
-                      "24/7 priority support"
-                    ].map((feature, index) => (
+                    {PRO_FEATURES.map((feature, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
                         <span className="text-gray-300">{feature}</span>
                       </div>
                     ))}
                   </div>
-                  <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500 border-0 hover:shadow-lg hover:shadow-emerald-500/25 mt-auto">
-                    Upgrade to Pro
-                  </Button>
+                  <Link href="/pricing" className="block mt-auto">
+                    <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-500 border-0 hover:shadow-lg hover:shadow-emerald-500/25">
+                      See Pro options
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>

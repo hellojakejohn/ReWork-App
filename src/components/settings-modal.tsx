@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from "@/lib/plans"
+import { FREE_TAILORS_PER_MONTH, PRICING } from "@/lib/plans"
 import {
   User,
   Crown,
@@ -322,7 +322,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   disabled={isUpgrading}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
-                  {isUpgrading ? "Redirecting..." : `Upgrade Now - ${PRO_PRICE_DISPLAY}`}
+                  {isUpgrading ? "Redirecting..." : `Upgrade Now - ${PRICING.monthly.display}`}
                 </Button>
               </div>
             )}
