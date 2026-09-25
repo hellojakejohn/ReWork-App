@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
+import { Sparkles } from "lucide-react"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { CheckoutSuccess } from "@/components/billing/checkout-success"
 import { hasContent } from "@/lib/master-dto"
@@ -171,6 +172,20 @@ export function OneFlow() {
     }
   }
 
+  // Changes tab -> "Make it stronger": the interview for that bullet's master, in the Resume card.
+  const strengthen = (entryId: string, bullet: string) => {
+    if (!quota?.isPro) {
+      setUpgrade({ open: true, reason: "The evidence interview is a Pro feature: it asks for your real numbers and rewrites your weakest bullets with them." })
+      return
+    }
+    if (application && masters.some((m) => m.id === application.resumeId) && application.resumeId !== activeId) {
+      setActiveId(application.resumeId)
+      writeStored(ACTIVE_MASTER_KEY, application.resumeId)
+    }
+    setResumeRequest({ mode: "evidence", focus: { entryId, bullet }, nonce: Date.now() })
+    go(0)
+  }
+
   const upsertMaster = (master: MasterResumeDTO) => {
     setMasters((list) => [master, ...list.filter((m) => m.id !== master.id)])
     setActiveId(master.id)
@@ -270,6 +285,7 @@ export function OneFlow() {
       }}
       onLimit={(reason) => setUpgrade({ open: true, reason })}
       request={resumeRequest}
+      isPro={!!quota?.isPro}
     />,
     <JobCard
       key="job"
@@ -307,6 +323,17 @@ export function OneFlow() {
       coverLetterQuota={coverLetterQuota}
       onCoverLetterQuota={setCoverLetterQuota}
       onUpgrade={(reason) => setUpgrade({ open: true, reason })}
+      renderChangeExtra={(c) =>
+        c.section !== "summary" && c.before ? (
+          <button
+            onClick={() => strengthen(c.entryId, c.before)}
+            className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-500/10"
+            title="Answer a few questions to add real numbers to this bullet"
+          >
+            <Sparkles className="h-3 w-3" /> Make it stronger
+          </button>
+        ) : null
+      }
     />,
   ]
 

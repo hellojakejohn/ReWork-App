@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useDropzone } from "react-dropzone"
-import { AlertTriangle, FileText, Plus, RefreshCw, Trash2, Upload } from "lucide-react"
+import { toast } from "sonner"
+import { AlertTriangle, FileText, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react"
 import { summarizeResume } from "@/lib/master-resume"
 import { hasContent } from "@/lib/master-dto"
 import type { ParsedResume } from "@/types/parsed-resume"
-import { deleteMaster, parseResumeInput, saveMaster, type MasterResumeDTO } from "./api"
+import { deleteMaster, parseResumeInput, saveMaster, type EvidenceFocus, type MasterResumeDTO } from "./api"
 import { ResumeEditor } from "./resume-editor"
+import { EvidenceInterview } from "./evidence-interview"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, PrimaryButton, ReviewDot, SecondaryButton, StageList, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 
@@ -18,12 +20,13 @@ const PARSE_STAGES = [
   { id: "saving", label: "Saving" },
 ]
 
-type Mode = "summary" | "new" | "parsing" | "editing"
+type Mode = "summary" | "new" | "parsing" | "editing" | "evidence"
 
-/** A request from outside the card (step rail, Start over, Tailor card's Replace link). */
+/** A request from outside the card (step rail, Start over, Replace links, "Make it stronger"). */
 export interface ResumeCardRequest {
-  mode: "summary" | "new" | "replace"
+  mode: "summary" | "new" | "replace" | "evidence"
   nonce: number
+  focus?: EvidenceFocus | null
 }
 
 export function ResumeCard({
@@ -37,6 +40,7 @@ export function ResumeCard({
   onConfirm,
   onLimit,
   request,
+  isPro,
 }: {
   active: MasterResumeDTO | null
   masters: MasterResumeDTO[]
@@ -49,6 +53,7 @@ export function ResumeCard({
   onConfirm: () => void
   onLimit: (message: string) => void
   request?: ResumeCardRequest | null
+  isPro: boolean
 }) {
   const [mode, setMode] = useState<Mode>(active ? "summary" : "new")
   const [pasteOpen, setPasteOpen] = useState(false)
@@ -60,6 +65,8 @@ export function ResumeCard({
   const [saving, setSaving] = useState(false)
   // Id of the master being replaced while the dropzone is in replace mode.
   const [replacing, setReplacing] = useState<string | null>(null)
+  // Set when the interview was opened for one bullet (from the Result card's Changes tab).
+  const [evidenceFocus, setEvidenceFocus] = useState<EvidenceFocus | null>(null)
 
   useEffect(() => {
     if (!active && mode === "summary") setMode("new")
@@ -77,12 +84,25 @@ export function ResumeCard({
     if (request.mode === "summary") {
       setReplacing(null)
       setMode(active ? "summary" : "new")
+    } else if (request.mode === "evidence") {
+      if (active) openEvidence(request.focus ?? null)
     } else {
       openNew(request.mode === "replace")
     }
     // Only react to a new request, not to active/mode changing underneath it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request?.nonce])
+
+  const openEvidence = (focus: EvidenceFocus | null) => {
+    if (!isPro) {
+      onLimit("The evidence interview is a Pro feature: it asks for your real numbers and rewrites your weakest bullets with them.")
+      setMode(active ? "summary" : "new")
+      return
+    }
+    setError("")
+    setEvidenceFocus(focus)
+    setMode("evidence")
+  }
 
   const parse = async (input: File | string) => {
     setError("")
@@ -224,6 +244,27 @@ export function ResumeCard({
 
   if (!active) return null
 
+  // ----- evidence interview -----
+  if (mode === "evidence") {
+    return (
+      <EvidenceInterview
+        master={active}
+        focus={evidenceFocus}
+        onClose={() => setMode("summary")}
+        onUpgrade={onLimit}
+        onSaved={(master, applied) => {
+          onSaved(master)
+          setMode("summary")
+          toast.success(
+            evidenceFocus
+              ? `Saved to your resume. Tailor again to use it for this job.`
+              : `${applied} ${applied === 1 ? "bullet" : "bullets"} updated in your resume.`
+          )
+        }}
+      />
+    )
+  }
+
   // ----- editing -----
   if (mode === "editing" && draft) {
     return (
@@ -342,7 +383,7 @@ export function ResumeCard({
         )}
         {toCheck > 0 && (
           <div className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-sm">
-            <p className="mb-1 font-medium text-amber-200">We left these out because they aren't in your file:</p>
+            <p className="mb-1 font-medium text-amber-200">We left these out because they aren&apos;t in your file:</p>
             <ul className="space-y-0.5 text-amber-100/80">
               {active.needsReview.map((n, i) => (
                 <li key={i} className="truncate">“{n.value}”</li>
@@ -353,6 +394,10 @@ export function ResumeCard({
         {empty && <ErrorNote>We didn&apos;t find any roles, projects or education. Use “Fix something” to add them, or upload again.</ErrorNote>}
       </CardBody>
       <CardFooter>
+        <SecondaryButton className="mr-auto" onClick={() => openEvidence(null)} disabled={empty}>
+          <Sparkles className="h-4 w-4 text-emerald-300" /> Make it stronger
+          {!isPro && <span className="rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-semibold uppercase text-emerald-300">Pro</span>}
+        </SecondaryButton>
         <SecondaryButton onClick={startEdit}>Fix something</SecondaryButton>
         <PrimaryButton disabled={!canConfirm} onClick={onConfirm}>Looks good</PrimaryButton>
       </CardFooter>

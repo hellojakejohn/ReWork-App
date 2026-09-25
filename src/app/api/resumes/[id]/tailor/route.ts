@@ -12,6 +12,7 @@ import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 import { FREE_TAILORS_PER_MONTH, PRICING } from '@/lib/plans';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
+import { evidenceFacts } from '@/lib/evidence-shared';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
 export const runtime = 'nodejs';
@@ -96,6 +97,8 @@ export async function POST(
   };
 
   const input = buildTailorInput(master);
+  const evidence = evidenceFacts(resume.evidence);
+  if (evidence.length > 0) input.evidence = evidence;
   if (input.roles.length === 0 && input.education.length === 0 && input.projects.length === 0) {
     return NextResponse.json({
       error: 'Your resume has no roles, projects or education yet. Add them first.'

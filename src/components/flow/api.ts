@@ -6,6 +6,7 @@ import type { ApplicationDetailDTO, ApplicationSummaryDTO } from "@/lib/applicat
 import type { ParsedResume } from "@/types/parsed-resume"
 import type { BulletChange } from "@/types/tailor"
 import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shared"
+import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
 
 export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO }
 
@@ -221,6 +222,65 @@ export async function saveCoverLetter(
     if (!res.ok) return failure(res, "Couldn't save the letter.")
     const data = await res.json()
     return { ok: true, coverLetter: data.coverLetter, coverLetterUpdatedAt: data.coverLetterUpdatedAt }
+  } catch {
+    return NETWORK
+  }
+}
+
+export interface EvidenceFocus {
+  entryId: string
+  bullet: string
+}
+
+export async function startEvidence(
+  resumeId: string,
+  focus?: EvidenceFocus | null
+): Promise<{ ok: true; items: EvidenceItem[]; answers: EvidenceAnswer[]; message?: string } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/${resumeId}/evidence`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(focus ? { focus } : {}),
+    })
+    if (!res.ok) return failure(res, "Couldn't start the interview. Please try again.")
+    const data = await res.json()
+    return { ok: true, items: data.items ?? [], answers: data.answers ?? [], message: data.message }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function submitEvidence(
+  resumeId: string,
+  items: EvidenceItem[],
+  answers: EvidenceAnswer[]
+): Promise<{ ok: true; rewrites: EvidenceRewrite[] } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/${resumeId}/evidence/rewrite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items, answers }),
+    })
+    if (!res.ok) return failure(res, "Couldn't rewrite your bullets. Your answers are saved.")
+    return { ok: true, rewrites: (await res.json()).rewrites ?? [] }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function applyEvidence(
+  resumeId: string,
+  accepted: EvidenceRewrite[]
+): Promise<{ ok: true; applied: number; master: MasterResumeDTO } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/${resumeId}/evidence/apply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accepted }),
+    })
+    if (!res.ok) return failure(res, "Couldn't save to your resume.")
+    const data = await res.json()
+    return { ok: true, applied: data.applied, master: data.master }
   } catch {
     return NETWORK
   }
