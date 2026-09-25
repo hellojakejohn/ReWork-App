@@ -8,7 +8,6 @@ const config: NextConfig = {
     ignoreDuringBuilds: true,
   },
   serverExternalPackages: [
-    'pdf-parse',
     'sharp',
     'pdfjs-dist',       // resume parsing (src/lib/resume-source-text.ts) loads its worker from disk
     'mammoth',
