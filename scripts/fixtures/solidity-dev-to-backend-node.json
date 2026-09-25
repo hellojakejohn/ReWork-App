@@ -1,0 +1,52 @@
+{
+  "name": "Solidity dev -> Backend Node role",
+  "job": {
+    "title": "Backend Engineer (Node.js)",
+    "company": "Parcelstream",
+    "description": "Parcelstream is hiring a Backend Engineer to build the APIs behind our shipping platform.\n\nYou will:\n- Design and build REST and GraphQL APIs in Node.js and TypeScript\n- Model data in PostgreSQL and write performant queries\n- Build event-driven services with queues (SQS, Kafka)\n- Write integration tests and own services in production\n- Deploy with Docker on AWS (ECS, Lambda)\n- Participate in code review and on-call\n\nYou have:\n- 3+ years of backend development\n- Strong Node.js and TypeScript\n- SQL and PostgreSQL experience\n- Experience with Docker and AWS\n- Understanding of security best practices and authentication (OAuth, JWT)\n- Testing discipline (Jest, integration tests)"
+  },
+  "resume": {
+    "contactInfo": { "firstName": "Sam", "lastName": "Okafor", "email": "sam@example.com", "phone": "555-0103", "location": "Saint Paul, MN" },
+    "professionalSummary": { "summary": "Smart contract developer with 2 years of Solidity experience and a full-stack JavaScript background.", "keyStrengths": [], "careerLevel": "mid" },
+    "workExperience": [
+      {
+        "id": "exp_1",
+        "jobTitle": "Smart Contract Developer",
+        "company": "Ledgerline Labs",
+        "startDate": "2023-04",
+        "endDate": "present",
+        "location": "Remote",
+        "isCurrentRole": true,
+        "achievements": [
+          "Wrote and audited Solidity contracts for an ERC-20 staking protocol holding $4M in deposits",
+          "Built a Node.js and TypeScript indexer that reads contract events into PostgreSQL",
+          "Exposed indexed data through a REST API used by the web app",
+          "Wrote Foundry and Hardhat test suites, reaching full branch coverage on core contracts",
+          "Containerized the indexer with Docker and deployed it on AWS ECS"
+        ]
+      },
+      {
+        "id": "exp_2",
+        "jobTitle": "Full Stack Developer",
+        "company": "Maple Street Software",
+        "startDate": "2021-08",
+        "endDate": "2023-03",
+        "location": "Minneapolis, MN",
+        "isCurrentRole": false,
+        "achievements": [
+          "Built Express endpoints and React pages for a scheduling SaaS",
+          "Added JWT-based authentication and role checks to the API",
+          "Wrote Jest unit tests for billing logic"
+        ]
+      }
+    ],
+    "education": [
+      { "id": "edu_1", "degree": "Certificate", "field": "Solidity and Blockchain Engineering", "institution": "Metana", "graduationYear": "2023" },
+      { "id": "edu_2", "degree": "Certificate", "field": "Full Stack Web Development", "institution": "Metana", "graduationYear": "2021" }
+    ],
+    "skills": { "technical": ["Solidity", "TypeScript", "JavaScript", "SQL"], "frameworks": ["Node.js", "Express", "React", "Hardhat", "Foundry", "ethers.js"], "tools": ["Git", "Docker", "Jest"], "cloud": ["AWS"], "databases": ["PostgreSQL"], "soft": [], "certifications": [] },
+    "projects": [
+      { "id": "proj_1", "name": "Gas Watcher", "description": "Discord bot that alerts on gas price spikes", "technologies": ["Node.js", "ethers.js"], "achievements": ["Polls chain data and posts alerts to 3 community servers"] }
+    ]
+  }
+}

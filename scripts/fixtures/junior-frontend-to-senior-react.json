@@ -1,0 +1,52 @@
+{
+  "name": "Junior frontend dev -> Senior React role",
+  "job": {
+    "title": "Senior React Engineer",
+    "company": "Lumen Health",
+    "description": "Lumen Health is hiring a Senior React Engineer to lead development of our patient-facing web app. You will own architecture decisions for a large React + TypeScript codebase, mentor engineers, and partner with design on an accessible component library.\n\nRequirements:\n- 5+ years building production web apps with React\n- Deep TypeScript experience\n- State management (Redux Toolkit, React Query)\n- GraphQL APIs\n- Accessibility (WCAG 2.1 AA)\n- Testing with Jest and React Testing Library, Cypress for E2E\n- Performance profiling and Core Web Vitals\n- CI/CD with GitHub Actions\n- Experience mentoring other engineers\n\nNice to have: Next.js, Storybook, design systems, healthcare/HIPAA experience."
+  },
+  "resume": {
+    "contactInfo": { "firstName": "Riley", "lastName": "Nguyen", "email": "riley@example.com", "phone": "555-0101", "location": "Saint Paul, MN" },
+    "professionalSummary": { "summary": "Frontend developer with 2 years of experience building React interfaces for internal tools and marketing sites.", "keyStrengths": [], "careerLevel": "entry" },
+    "workExperience": [
+      {
+        "id": "exp_1",
+        "jobTitle": "Frontend Developer",
+        "company": "Northloop Logistics",
+        "startDate": "2023-02",
+        "endDate": "present",
+        "location": "Minneapolis, MN",
+        "isCurrentRole": true,
+        "achievements": [
+          "Built a React dashboard in TypeScript that dispatchers use to track 1,200 daily shipments",
+          "Moved server state from custom hooks to React Query, removing about 800 lines of fetching code",
+          "Wrote Jest and React Testing Library tests for shared form components",
+          "Fixed keyboard navigation and color contrast issues flagged in an accessibility audit",
+          "Paired with a senior engineer to set up GitHub Actions for lint and test on every PR"
+        ],
+        "technologies": ["React", "TypeScript", "React Query", "Jest"]
+      },
+      {
+        "id": "exp_2",
+        "jobTitle": "Web Developer Intern",
+        "company": "Brightside Agency",
+        "startDate": "2022-06",
+        "endDate": "2022-12",
+        "location": "Remote",
+        "isCurrentRole": false,
+        "achievements": [
+          "Built landing pages for 6 client campaigns in Next.js and Tailwind",
+          "Improved Lighthouse performance scores by lazy-loading images"
+        ],
+        "technologies": ["Next.js", "Tailwind"]
+      }
+    ],
+    "education": [
+      { "id": "edu_1", "degree": "Certificate", "field": "Full Stack Web Development", "institution": "Prime Digital Academy", "graduationYear": "2022" }
+    ],
+    "skills": { "technical": ["JavaScript", "TypeScript", "HTML", "CSS"], "frameworks": ["React", "Next.js", "Tailwind", "React Query"], "tools": ["Git", "Jest", "React Testing Library", "GitHub Actions"], "cloud": [], "databases": [], "soft": ["Collaboration"], "certifications": [] },
+    "projects": [
+      { "id": "proj_1", "name": "Trailhead", "description": "Hiking trip planner built with React and the Mapbox API", "technologies": ["React", "Mapbox"], "achievements": ["Implemented offline trail caching with service workers"] }
+    ]
+  }
+}
