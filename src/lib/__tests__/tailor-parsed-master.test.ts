@@ -127,3 +127,24 @@ describe('buildChanges / applyChangeDecision', () => {
     expect(masterToParsed(applyChangeDecision(tailored, summary, 'reverted')).summary).toBe(parsed.summary)
   })
 })
+
+describe('callTailorModel errors', () => {
+  it('says tailoring is unavailable (not "busy") when OpenAI is out of quota', async () => {
+    const { callTailorModel, TailorError } = await import('@/lib/tailor')
+    const spy = (await import('vitest')).vi.spyOn(console, 'error').mockImplementation(() => {})
+    const client = {
+      chat: {
+        completions: {
+          create: async () => {
+            throw Object.assign(new Error('429 You exceeded your current quota'), { status: 429, code: 'insufficient_quota' })
+          },
+        },
+      },
+    }
+    const error = await callTailorModel(buildTailorInput(master), { title: 'x', company: 'y', description: 'z' }, { client: client as never }).catch((e) => e)
+    spy.mockRestore()
+    expect(error).toBeInstanceOf(TailorError)
+    expect(error.userMessage).toBe("Tailoring is temporarily unavailable, we're on it.")
+    expect(error.status).toBe(503)
+  })
+})
