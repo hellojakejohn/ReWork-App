@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from "@/lib/plans"
 import {
   User,
   Crown,
@@ -98,7 +99,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('upgraded') === 'true') {
-      toast.success('Welcome to Pro! You now have unlimited resumes.')
+      toast.success('Welcome to Pro! You now have unlimited tailored resumes.')
       update() // Refresh session data
       // Clean up URL
       router.replace('/dashboard')
@@ -282,9 +283,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="p-4 bg-slate-800/30 border border-white/10 rounded-lg">
-                <p className="text-sm text-slate-400 mb-1">This Month</p>
+                <p className="text-sm text-slate-400 mb-1">Tailors This Month</p>
                 <p className="text-2xl font-bold text-white">
-                  {session?.user?.monthlyResumesCreated || session?.user?.resumesCreated || 0} / {isPro ? '∞' : '3'}
+                  {session?.user?.monthlyTailors ?? 0} / {isPro ? '∞' : FREE_TAILORS_PER_MONTH}
                 </p>
               </div>
               <div className="p-4 bg-slate-800/30 border border-white/10 rounded-lg">
@@ -303,7 +304,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 <div className="grid grid-cols-1 gap-2 mb-4 text-sm">
                   {[
-                    "Unlimited resume creations",
+                    `Unlimited tailored resumes (Free: ${FREE_TAILORS_PER_MONTH}/month)`,
                     "Advanced AI optimization",
                     "Premium templates & designs",
                     "Priority customer support",
@@ -321,7 +322,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   disabled={isUpgrading}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
                 >
-                  {isUpgrading ? "Redirecting..." : "Upgrade Now - $3/month"}
+                  {isUpgrading ? "Redirecting..." : `Upgrade Now - ${PRO_PRICE_DISPLAY}`}
                 </Button>
               </div>
             )}

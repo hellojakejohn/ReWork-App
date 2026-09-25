@@ -259,17 +259,22 @@ export default function JobDescriptionPage() {
             duration: 3000
           })
 
-          // Redirect back to the resume editor with the tailored content
+          // Land on this job's tailored version (the master resume is unchanged)
           setTimeout(() => {
-            router.push(`/dashboard/resume/${resumeId}`)
+            router.push(`/dashboard?showResult=${data.applicationId}`)
           }, 500)
+        } else if (response.status === 402 && data.upgradeRequired) {
+          toast.error(data.error || 'Monthly tailoring limit reached.', {
+            action: { label: 'Upgrade', onClick: () => router.push('/#pricing') }
+          })
+          setIsTailoring(false)
         } else {
           throw new Error(data.error || 'Failed to tailor resume')
         }
       } catch (error) {
         console.error('Tailoring error:', error)
         toast.error('Failed to tailor resume', {
-          description: 'Please try again or continue manually'
+          description: error instanceof Error && error.message ? error.message : 'Please try again or continue manually'
         })
         setIsTailoring(false)
       }

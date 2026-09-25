@@ -34,6 +34,8 @@ export const authOptions: NextAuthOptions = {
             totalResumesCreated: true,
             monthlyResumesCreated: true,
             resumeCountResetAt: true,
+            monthlyTailors: true,
+            tailorsResetAt: true,
             createdAt: true,
             lastActiveAt: true
           }
@@ -44,6 +46,10 @@ export const authOptions: NextAuthOptions = {
           session.user.totalResumesCreated = dbUser.totalResumesCreated
           session.user.monthlyResumesCreated = dbUser.monthlyResumesCreated
           session.user.resumeCountResetAt = dbUser.resumeCountResetAt
+          const now = new Date()
+          const sameMonth = now.getUTCFullYear() === dbUser.tailorsResetAt.getUTCFullYear() &&
+            now.getUTCMonth() === dbUser.tailorsResetAt.getUTCMonth()
+          session.user.monthlyTailors = sameMonth ? dbUser.monthlyTailors : 0
           session.user.createdAt = dbUser.createdAt
           session.user.lastActiveAt = dbUser.lastActiveAt
         }

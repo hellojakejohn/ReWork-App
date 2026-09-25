@@ -10,6 +10,7 @@ import Navigation from "@/components/navigation"
 import ComparisonModal from "@/components/comparison-modal"
 import { ChatBubble } from "@/components/ui/chat-bubble"
 import { Badge } from "@/components/ui/badge"
+import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from "@/lib/plans"
 import {
   FileText,
   Plus,
@@ -203,8 +204,8 @@ function DashboardContent() {
   }
 
   const isPremium = session?.user?.plan === "PREMIUM"
-  const resumeLimit = isPremium ? "unlimited" : "3"
-  const resumeCount = resumes.length
+  const tailorLimit = isPremium ? "unlimited" : String(FREE_TAILORS_PER_MONTH)
+  const tailorsUsed = session?.user?.monthlyTailors ?? 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-black bg-dots-sm">
@@ -213,7 +214,7 @@ function DashboardContent() {
         <div className="flex items-center space-x-4 ml-auto">
           {/* Plan Badge */}
           <Badge variant={isPremium ? "default" : "secondary"} className="text-xs">
-            {isPremium ? "Pro Plan" : "Free Plan"} • {resumeCount}/{resumeLimit} resumes
+            {isPremium ? "Pro Plan" : "Free Plan"} • {tailorsUsed}/{tailorLimit} tailors this month
           </Badge>
 
           {/* Upgrade Button - Opens Settings Modal */}
@@ -466,7 +467,8 @@ function DashboardContent() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation()
-                                // TODO: Implement download
+                                // Tailored version for this application, not the master
+                                window.location.href = `/api/resumes/${app.resumeId}/download?applicationId=${app.id}`
                               }}
                               className="flex-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
                               <Download className="w-3 h-3" />
@@ -506,11 +508,11 @@ function DashboardContent() {
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-sm border-t border-white/10 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="text-sm text-slate-400">
-            {isPremium ? "Pro Plan" : "Free Plan"} • {resumeCount}/{resumeLimit} resumes used
+            {isPremium ? "Pro Plan" : "Free Plan"} • {tailorsUsed}/{tailorLimit} tailors used this month
           </div>
           {!isPremium && (
             <Link href="/#pricing" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-              Upgrade to Pro — unlimited resumes
+              Upgrade to Pro ({PRO_PRICE_DISPLAY}) for unlimited tailoring
             </Link>
           )}
         </div>

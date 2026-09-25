@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import * as cheerio from 'cheerio';
 import { openai } from '@/lib/openai';
+import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +11,14 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rate = checkRateLimit(`job-url:${session.user.id || session.user.email}`);
+    if (!rate.allowed) {
+      return NextResponse.json(rateLimitResponseBody(rate.retryAfterSeconds), {
+        status: 429,
+        headers: { 'Retry-After': String(rate.retryAfterSeconds) }
+      });
     }
 
     const { url } = await request.json();

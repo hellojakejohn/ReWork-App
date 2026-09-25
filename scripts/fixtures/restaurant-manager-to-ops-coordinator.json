@@ -1,0 +1,46 @@
+{
+  "name": "Restaurant manager -> Operations coordinator (career change)",
+  "job": {
+    "title": "Operations Coordinator",
+    "company": "Cedar & Pine Property Management",
+    "description": "We're looking for an Operations Coordinator to keep our property management team running smoothly. You'll coordinate vendor schedules, manage work orders, track budgets, and improve internal processes.\n\nWhat you'll do:\n- Schedule and coordinate vendors and maintenance teams\n- Track work orders and follow up to resolution\n- Maintain inventory of supplies and reorder as needed\n- Prepare weekly reports in Excel/Google Sheets\n- Support budget tracking and invoice processing\n- Improve SOPs and onboarding documentation\n- Communicate with residents and handle escalations professionally\n\nWhat you bring:\n- 3+ years in an operations or coordination role\n- Strong organization and prioritization\n- Proficiency with Excel or Google Sheets\n- Vendor management experience\n- Customer service and conflict resolution skills\n- Experience with scheduling software is a plus"
+  },
+  "resume": {
+    "contactInfo": { "firstName": "Marcus", "lastName": "Hill", "email": "marcus@example.com", "phone": "555-0102", "location": "Saint Paul, MN" },
+    "professionalSummary": { "summary": "Restaurant general manager with 6 years of experience running high-volume dining rooms, leading teams, and keeping costs in line.", "keyStrengths": [], "careerLevel": "mid" },
+    "workExperience": [
+      {
+        "id": "exp_1",
+        "jobTitle": "General Manager",
+        "company": "Riverside Grill",
+        "startDate": "2020-03",
+        "endDate": "present",
+        "location": "Saint Paul, MN",
+        "isCurrentRole": true,
+        "achievements": [
+          "Managed a staff of 28 across front and back of house, including hiring and scheduling",
+          "Ran weekly inventory and ordering with 5 food and beverage vendors",
+          "Cut food waste by 15% by switching to par-level ordering",
+          "Handled guest complaints and escalations, keeping reviews at 4.6 stars",
+          "Wrote the training manual used to onboard new servers and hosts",
+          "Built weekly labor and sales reports in Google Sheets for the owners"
+        ]
+      },
+      {
+        "id": "exp_2",
+        "jobTitle": "Assistant Manager",
+        "company": "Blue Door Pub",
+        "startDate": "2018-01",
+        "endDate": "2020-02",
+        "location": "Minneapolis, MN",
+        "isCurrentRole": false,
+        "description": "Scheduled shifts for 15 staff using 7shifts\nCoordinated repairs with equipment and HVAC vendors\nReconciled nightly cash and processed vendor invoices"
+      }
+    ],
+    "education": [
+      { "id": "edu_1", "degree": "AAS", "field": "Hospitality Management", "institution": "Saint Paul College", "graduationYear": "2017" }
+    ],
+    "skills": { "technical": ["Google Sheets", "Excel", "7shifts", "Toast POS"], "frameworks": [], "tools": [], "cloud": [], "databases": [], "soft": ["Team leadership", "Conflict resolution", "Scheduling", "Vendor management"], "certifications": ["ServSafe Manager"] },
+    "projects": []
+  }
+}

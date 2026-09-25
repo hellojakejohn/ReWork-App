@@ -60,6 +60,8 @@ model User {
   totalResumesCreated    Int              @default(0)
   monthlyResumesCreated  Int              @default(0)
   resumeCountResetAt     DateTime         @default(now())
+  monthlyTailors         Int              @default(0)
+  tailorsResetAt         DateTime         @default(now())
   lastActiveAt           DateTime         @default(now())
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
