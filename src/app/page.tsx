@@ -19,6 +19,7 @@ import {
   X
 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
+import { FREE_TAILORS_PER_MONTH, PRO_PRICE_PARTS } from "@/lib/plans"
 
 export default function HomePage() {
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 })
@@ -294,7 +295,7 @@ export default function HomePage() {
             {/* Badge under CTA */}
             <div className={`transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '1000ms' }}>
               <Badge className="bg-gradient-to-r from-emerald-900/30 to-blue-900/30 text-emerald-300 border border-emerald-500/30 px-4 py-2 text-sm">
-                3 Free Resumes per Month • No Credit Card Required
+                {FREE_TAILORS_PER_MONTH} Free Tailored Resumes per Month • No Credit Card Required
               </Badge>
             </div>
 
@@ -459,7 +460,7 @@ export default function HomePage() {
                 <CardContent className="relative z-10 space-y-4 flex-1 flex flex-col">
                   <div className="space-y-3 flex-1">
                     {[
-                      { text: "3 resume optimizations", included: true },
+                      { text: `${FREE_TAILORS_PER_MONTH} tailored resumes per month`, included: true },
                       { text: "AI-powered improvements", included: true },
                       { text: "Basic templates", included: true },
                       { text: "PDF export", included: true },
@@ -496,12 +497,12 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 to-transparent pointer-events-none"></div>
                 <CardHeader className="relative z-10">
                   <CardTitle className="text-2xl text-white mb-2">Pro</CardTitle>
-                  <div className="text-3xl font-bold text-white">$3<span className="text-lg font-normal text-gray-400">/month</span></div>
+                  <div className="text-3xl font-bold text-white">{PRO_PRICE_PARTS.amount}<span className="text-lg font-normal text-gray-400">{PRO_PRICE_PARTS.period}</span></div>
                 </CardHeader>
                 <CardContent className="relative z-10 space-y-4">
                   <div className="space-y-3">
                     {[
-                      "Unlimited resume optimizations",
+                      "Unlimited tailored resumes",
                       "Advanced AI analysis",
                       "All premium templates",
                       "Priority processing",

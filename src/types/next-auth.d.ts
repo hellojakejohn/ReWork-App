@@ -12,6 +12,7 @@ declare module "next-auth" {
       totalResumesCreated: number
       monthlyResumesCreated: number
       resumeCountResetAt: Date
+      monthlyTailors: number // already reset to 0 when a new month started
       createdAt: Date
       lastActiveAt: Date
       resumesOptimized: number

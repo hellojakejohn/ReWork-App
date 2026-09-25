@@ -10,6 +10,9 @@ export const FREE_TAILORS_PER_MONTH = 3
 export const FREE_MAX_MASTER_RESUMES = 5
 
 export const PRO_PRICE_DISPLAY = '$3/month'
+// Split for layouts that style the amount and period separately (landing pricing card)
+const [proAmount, proPeriod = 'month'] = PRO_PRICE_DISPLAY.split('/')
+export const PRO_PRICE_PARTS = { amount: proAmount, period: `/${proPeriod}` }
 
 export const PLAN_LIMITS: Record<PlanName, { tailorsPerMonth: number; masterResumes: number }> = {
   FREE: { tailorsPerMonth: FREE_TAILORS_PER_MONTH, masterResumes: FREE_MAX_MASTER_RESUMES },

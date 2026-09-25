@@ -3,14 +3,15 @@
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Zap } from "lucide-react"
+import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 
 interface StatusBarProps {
-  resumeCount?: number
+  tailorsUsed?: number
   autoSaveStatus?: "saving" | "saved" | "error"
   className?: string
 }
 
-export default function StatusBar({ resumeCount, autoSaveStatus, className = "" }: StatusBarProps) {
+export default function StatusBar({ tailorsUsed, autoSaveStatus, className = "" }: StatusBarProps) {
   const { data: session } = useSession()
   const isPremium = session?.user?.plan === "PREMIUM"
 
@@ -53,11 +54,11 @@ export default function StatusBar({ resumeCount, autoSaveStatus, className = "" 
                 <span className="text-text-secondary">
                   {isPremium ? 'Premium Plan' : 'Free Plan'}
                 </span>
-                {!isPremium && resumeCount !== undefined && (
+                {!isPremium && tailorsUsed !== undefined && (
                   <>
                     <span className="text-text-muted">•</span>
                     <span className="text-text-secondary">
-                      {resumeCount}/3 resumes used
+                      {tailorsUsed}/{FREE_TAILORS_PER_MONTH} tailors used this month
                     </span>
                   </>
                 )}

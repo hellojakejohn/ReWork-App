@@ -4,7 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { uploadToStorage, generateStorageKey, getContentType } from '@/lib/storage'
 import { generatePDFThumbnail } from '@/lib/pdf-thumbnail-generator'
-import { canCreateResume, incrementResumeCount } from '@/lib/resume-count'
+import { incrementResumeCount } from '@/lib/resume-count'
+import { FREE_MAX_MASTER_RESUMES, PRO_PRICE_DISPLAY, masterResumeLimitFor } from '@/lib/plans'
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,14 +32,20 @@ export async function POST(request: NextRequest) {
 
     console.log('👤 User found:', user.id);
 
-    // Check plan limits using new monthly count logic
-    const canCreate = await canCreateResume(user.id);
-    if (!canCreate) {
-      console.log('❌ Monthly resume limit reached');
-      return NextResponse.json({
-        success: false,
-        error: 'Monthly resume limit reached. Try again next month or upgrade to Pro.'
-      }, { status: 403 })
+    // Uploads are unlimited; FREE accounts can only keep a few master resumes at once.
+    // Tailoring is what's metered (see src/lib/tailor-quota.ts).
+    const masterLimit = masterResumeLimitFor(user.plan)
+    if (masterLimit !== Infinity) {
+      const activeResumes = await prisma.resume.count({
+        where: { userId: user.id, isActive: true }
+      })
+      if (activeResumes >= masterLimit) {
+        return NextResponse.json({
+          success: false,
+          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one to upload another, or upgrade to Pro (${PRO_PRICE_DISPLAY}).`,
+          upgradeRequired: true
+        }, { status: 403 })
+      }
     }
 
     // Parse form data

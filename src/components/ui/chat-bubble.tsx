@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { FREE_PLAN_SUMMARY, FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from '@/lib/plans'
 
 interface ChatMessage {
   id: string
@@ -36,13 +37,13 @@ const FAQS: FAQ[] = [
   {
     id: '3',
     question: 'What\'s the difference between Free and Premium?',
-    answer: 'Free users can create resumes and tailor them. Premium users get unlimited downloads, priority support, and access to advanced templates.',
+    answer: `Free: ${FREE_PLAN_SUMMARY}. Pro: unlimited tailored resumes for ${PRO_PRICE_DISPLAY}.`,
     category: 'billing'
   },
   {
     id: '4',
     question: 'Can I download my resume as PDF?',
-    answer: 'Yes! Click the download button on any resume. Free users get 5 downloads per month, Premium users get unlimited downloads.',
+    answer: 'Yes! Click the download button on any resume or tailored version. Downloads are unlimited on every plan.',
     category: 'general'
   },
   {
@@ -118,9 +119,9 @@ export function ChatBubble({ className }: ChatBubbleProps) {
         } else if (lowerMessage.includes('upload') || lowerMessage.includes('pdf')) {
           response = 'For upload issues, make sure your file is a PDF under 10MB. Try refreshing if problems persist.'
         } else if (lowerMessage.includes('download') || lowerMessage.includes('limit')) {
-          response = 'Free users get 5 PDF downloads per month. Upgrade to Premium for unlimited downloads!'
+          response = `Downloads are unlimited on every plan. Free includes ${FREE_TAILORS_PER_MONTH} tailored resumes per month; Pro is unlimited.`
         } else if (lowerMessage.includes('pricing') || lowerMessage.includes('cost')) {
-          response = 'Premium is just $2.99/month with unlimited downloads and priority support. Great value!'
+          response = `Pro is ${PRO_PRICE_DISPLAY} for unlimited tailored resumes. Free includes ${FREE_TAILORS_PER_MONTH} per month.`
         } else {
           response = 'Thanks for your message! Our team will get back to you soon. Check our FAQ above for instant answers.'
         }
