@@ -216,10 +216,10 @@ export function ResultCard({
           </div>
         }
       />
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="hidden min-h-0 overflow-y-auto border-r border-white/5 bg-slate-950/40 p-4 lg:block">{preview}</div>
         <div className="flex min-h-0 flex-col">
-          <div role="tablist" className="flex shrink-0 gap-1 border-b border-white/5 px-3 pt-2">
+          <div role="tablist" className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/5 px-3 pt-2">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -227,7 +227,7 @@ export function ResultCard({
                 aria-selected={tab === t.id}
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "-mb-px border-b-2 px-3 py-2 text-sm",
+                  "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm",
                   t.mobileOnly && "lg:hidden",
                   tab === t.id ? "border-emerald-400 text-white" : "border-transparent text-slate-400 hover:text-slate-200"
                 )}

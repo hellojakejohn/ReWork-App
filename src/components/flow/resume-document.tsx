@@ -58,7 +58,7 @@ export function ResumeDocument({
   )
 
   return (
-    <div ref={outer} className="w-full" style={{ height: height * scale }}>
+    <div ref={outer} className="w-full overflow-hidden" style={{ height: height * scale }}>
       <div
         ref={inner}
         className="origin-top-left bg-white text-[13px] leading-[1.4] text-gray-900 shadow-lg"

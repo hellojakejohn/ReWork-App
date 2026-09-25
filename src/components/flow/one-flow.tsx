@@ -254,7 +254,7 @@ export function OneFlow() {
         onUpgrade={() => setUpgrade({ open: true })}
       />
       <StepRail current={step} completed={completed} onSelect={go} />
-      <main className="relative min-h-0 flex-1 overflow-hidden">
+      <main className="relative min-h-0 flex-1 overflow-clip">
         <div
           className="flex h-full transition-transform duration-300 ease-out motion-reduce:transition-none"
           style={{ transform: `translateX(-${step * 100}%)` }}
@@ -264,7 +264,7 @@ export function OneFlow() {
               key={i}
               aria-hidden={i !== step}
               inert={i !== step}
-              className="flex h-full w-full shrink-0 justify-center px-3 pb-3 sm:px-6 sm:pb-6"
+              className="flex h-full w-full shrink-0 justify-center overflow-clip px-3 pb-3 sm:px-6 sm:pb-6"
             >
               {card}
             </section>

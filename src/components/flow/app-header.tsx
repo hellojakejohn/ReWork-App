@@ -53,6 +53,8 @@ export function AppHeader({
           {recentCount > 0 && (
             <button
               onClick={onOpenRecent}
+              aria-label="Recent tailored resumes"
+              title="Recent"
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5"
             >
               <History className="h-4 w-4" />
