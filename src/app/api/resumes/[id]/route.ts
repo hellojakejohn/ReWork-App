@@ -1,248 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import type { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { masterToParsed, parsedToMaster } from '@/lib/master-resume'
+import { toMasterDTO } from '@/lib/master-dto'
+
+async function findOwned(resumeId: string, userId: string) {
+  return prisma.resume.findFirst({ where: { id: resumeId, userId, isActive: true } })
+}
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: resumeId } = await params
-
-    // Get user first
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Get resume with S3 fields and new structured fields
-    const resume = await prisma.resume.findFirst({
-      where: {
-        id: resumeId,
-        userId: user.id,
-        isActive: true
-      }
-    })
-
-    if (!resume) {
-      return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
-    }
-
-    return NextResponse.json({
-      success: true,
-      resume
-    })
-
-  } catch (error) {
-    console.error('Resume fetch error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to fetch resume' 
-    }, { status: 500 })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const { id } = await params
+  const resume = await findOwned(id, session.user.id)
+  if (!resume) {
+    return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+  }
+  return NextResponse.json({ success: true, master: toMasterDTO(resume) })
 }
 
-// PUT method for complete updates
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  return PATCH(request, { params });
-}
-
+// PATCH { resume: ParsedResume, title? } from the inline "Fix something" editor.
+// Saving counts as the user having reviewed the parse, so needsReview is cleared.
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: resumeId } = await params
-    const body = await request.json()
-
-    // Extract all possible fields from the request body
-    const {
-      title,
-      currentContent,
-      content, // Legacy field name
-      // NEW: Structured fields
-      contactInfo,
-      professionalSummary,
-      workExperience,
-      education,
-      skills,
-      projects,
-      additionalSections
-    } = body
-
-    // Get user first
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Build the update data object
-    interface UpdateData {
-      updatedAt: Date;
-      title?: string;
-      currentContent?: unknown;
-      contactInfo?: unknown;
-      professionalSummary?: unknown;
-      workExperience?: unknown;
-      education?: unknown;
-      skills?: unknown;
-      projects?: unknown;
-      additionalSections?: unknown;
-      dataCompletionScore?: number;
-      lastStructuredUpdate?: Date;
-    }
-    
-    const updateData: UpdateData = {
-      updatedAt: new Date()
-    }
-
-    // Handle title
-    if (title !== undefined) {
-      updateData.title = title
-    }
-
-    // Handle legacy content field (backward compatibility)
-    if (currentContent !== undefined) {
-      updateData.currentContent = currentContent
-    } else if (content !== undefined) {
-      updateData.currentContent = content
-    }
-
-    // Handle new structured fields - only update if provided
-    if (contactInfo !== undefined) {
-      updateData.contactInfo = contactInfo
-    }
-
-    // Map 'summary' field to 'professionalSummary' for compatibility
-    const summary = body.summary || body.professionalSummary;
-    if (summary !== undefined) {
-      updateData.professionalSummary = summary
-    }
-
-    // Map 'experience' field to 'workExperience' for compatibility
-    const experience = body.experience || body.workExperience;
-    if (experience !== undefined) {
-      updateData.workExperience = experience
-    }
-
-    if (education !== undefined) {
-      updateData.education = education
-    }
-
-    if (skills !== undefined) {
-      updateData.skills = skills
-    }
-
-    if (projects !== undefined) {
-      updateData.projects = projects
-    }
-
-    if (additionalSections !== undefined) {
-      updateData.additionalSections = additionalSections
-    }
-
-    // Update completion tracking
-    if (contactInfo || workExperience || skills || education) {
-      // Calculate completion score based on structured data
-      let completionScore = 0
-      
-      if (contactInfo?.firstName && contactInfo?.email) completionScore += 25
-      if (workExperience && Array.isArray(workExperience) && workExperience.length > 0) completionScore += 25
-      if (skills && Object.keys(skills).length > 0) completionScore += 25
-      if (education && Array.isArray(education) && education.length > 0) completionScore += 25
-
-      updateData.dataCompletionScore = completionScore
-      updateData.lastStructuredUpdate = new Date()
-    }
-
-    console.log('📝 Updating resume with data:', updateData)
-
-    // Update resume
-    const updatedResume = await prisma.resume.update({
-      where: {
-        id: resumeId,
-        userId: user.id
-      },
-      data: updateData as any
-    })
-
-    console.log('✅ Resume updated successfully')
-
-    return NextResponse.json({
-      success: true,
-      resume: updatedResume
-    })
-
-  } catch (error) {
-    console.error('❌ Resume update error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to update resume',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const { id } = await params
+
+  let body: { resume?: unknown; title?: unknown }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+  if (!body.resume || typeof body.resume !== 'object' || !('contact' in body.resume)) {
+    return NextResponse.json({ error: 'resume is required' }, { status: 400 })
+  }
+
+  const existing = await findOwned(id, session.user.id)
+  if (!existing) {
+    return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+  }
+
+  // Round-trip through the stored shape so whatever the client sent is normalized.
+  const resume = masterToParsed(parsedToMaster(body.resume as never))
+  const master = parsedToMaster(resume)
+  const original = (existing.originalContent ?? {}) as Record<string, unknown>
+  const parse = (original.parse ?? {}) as Record<string, unknown>
+
+  const updated = await prisma.resume.update({
+    where: { id: existing.id },
+    data: {
+      ...(typeof body.title === 'string' && body.title.trim() ? { title: body.title.trim().slice(0, 120) } : {}),
+      ...(master as unknown as Record<string, Prisma.InputJsonValue>),
+      currentContent: resume as unknown as Prisma.InputJsonValue,
+      originalContent: { ...original, parse: { ...parse, needsReview: [], reviewedAt: new Date().toISOString() } } as Prisma.InputJsonValue,
+      lastStructuredUpdate: new Date(),
+    },
+  })
+  return NextResponse.json({ success: true, master: toMasterDTO(updated) })
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { id: resumeId } = await params
-
-    // Get user first
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    // Soft delete - mark as inactive instead of hard delete
-    await prisma.resume.update({
-      where: {
-        id: resumeId,
-        userId: user.id
-      },
-      data: {
-        isActive: false,
-        updatedAt: new Date()
-      }
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Resume deleted successfully'
-    })
-
-  } catch (error) {
-    console.error('Resume delete error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to delete resume' 
-    }, { status: 500 })
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const { id } = await params
+  const existing = await findOwned(id, session.user.id)
+  if (!existing) {
+    return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+  }
+  // Soft delete: tailored resumes made from it stay readable.
+  await prisma.resume.update({ where: { id: existing.id }, data: { isActive: false } })
+  return NextResponse.json({ success: true })
 }

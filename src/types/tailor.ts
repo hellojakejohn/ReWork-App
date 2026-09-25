@@ -29,12 +29,19 @@ export interface TailorInputProject {
   bullets: string[]
 }
 
+export interface TailorInputSkillGroup {
+  group: string
+  items: string[]
+}
+
 export interface TailorInput {
   summary: string
   roles: TailorInputRole[]
   education: TailorInputEducation[]
   projects: TailorInputProject[]
-  skills: string[]
+  skills: string[] // every skill, flattened in group order
+  skillGroups: TailorInputSkillGroup[] // the resume's own grouping, for context
+  certifications: string[] // facts: never rewritten, only referenced
 }
 
 // What the model returns (enforced by the JSON schema in src/lib/tailor.ts).
@@ -108,11 +115,31 @@ export interface TailorCategoryScores {
   keywordCoverageTailored: number
 }
 
+// One rewritten bullet (or the summary) as shown in the Changes tab. `before` is the master
+// text it most likely came from. Accept keeps `after`; Revert puts `before` back.
+export interface BulletChange {
+  id: string // `${entryId}:${index}` or 'summary'
+  section: 'summary' | 'roles' | 'projects'
+  entryId: string
+  entryLabel: string // "Frontend Developer at Acme" / project name / "Summary"
+  index: number // position in the tailored entry's bullets; -1 for summary
+  before: string
+  after: string
+  reason: string
+  status: 'accepted' | 'reverted'
+}
+
 // Stored on JobApplication.suggestions
 export interface TailorReport {
-  version: 'tailor-v2'
+  version: 'tailor-v2' | 'tailor-v3'
   model: string
   warnings: FactGuardWarning[]
   missingKeywords: string[]
   bulletReasons: Record<string, TailoredBullet[]> // keyed by role/project id
+  // tailor-v3+
+  changes?: BulletChange[]
+  targetKeywords?: string[]
+  presentBefore?: string[]
+  presentAfter?: string[]
+  jobLocation?: string
 }

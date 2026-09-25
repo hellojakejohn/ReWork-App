@@ -177,3 +177,20 @@ export function describeAccess(access: Access): string {
       return date ? `Pro until ${date}` : 'Pro'
   }
 }
+
+// Stripe Checkout rejects a subscription trial_end less than 48 hours out (or more than
+// 730 days). The 5 minutes cover the round trip to Stripe.
+export const MIN_TRIAL_MS = 48 * 60 * 60 * 1000 + 5 * 60 * 1000
+export const MAX_TRIAL_MS = 730 * DAY_MS
+
+/**
+ * trial_end (unix seconds) for a monthly subscription bought while a Job Hunt Pass is
+ * still running, so billing starts when the pass ends instead of charging twice.
+ * Undefined when there's no running pass. A pass ending within 48h is pushed out to
+ * Stripe's minimum: the user gets up to two free days rather than a double charge.
+ */
+export function subscriptionTrialEnd(passEnd: Date | null, now: Date): number | undefined {
+  if (!passEnd || passEnd.getTime() <= now.getTime()) return undefined
+  const end = Math.min(Math.max(passEnd.getTime(), now.getTime() + MIN_TRIAL_MS), now.getTime() + MAX_TRIAL_MS)
+  return Math.ceil(end / 1000)
+}

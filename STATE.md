@@ -23,6 +23,15 @@
 - OPENAI_API_KEY
 - NEXT_PUBLIC_SUPABASE_URL
 - SUPABASE_SERVICE_ROLE_KEY
+- OPENAI_PARSE_MODEL (optional, default gpt-4o): resume parsing
+- OPENAI_TAILOR_MODEL (optional, default gpt-4o): tailoring
+- OPENAI_JOB_MODEL (optional, default gpt-4o-mini): job page extraction fallback
+
+## One-page flow (9/26)
+The app is one page at `/dashboard`: upload or paste a resume -> paste a job URL -> tailor ->
+result (preview, per-bullet accept/revert, keywords, fact-guard warnings, Classic/Modern PDF).
+The old editor, job-description page, tutorial and chat bubble are gone. `/api/health`
+(admins) checks keys, DB and one OpenAI call.
 
 ## What's Working ✅
 - Database connected and all 8 tables created ✅

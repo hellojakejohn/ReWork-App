@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PRICING, isOfferId } from '@/lib/plans'
+import { currentChainEnd } from '@/lib/entitlements'
+import { subscriptionTrialEnd } from '@/lib/entitlement-rules'
 import {
   BLOCKING_SUB_STATUSES,
   appBaseUrl,
@@ -80,6 +82,12 @@ export async function POST(request: NextRequest) {
       await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } })
     }
 
+    // Buying monthly while a Job Hunt Pass is running: start billing when the pass ends.
+    const trialEnd =
+      offer.mode === 'subscription'
+        ? subscriptionTrialEnd(await currentChainEnd(user.id, 'STRIPE_PASS'), new Date())
+        : undefined
+
     const base = appBaseUrl(request)
     const cancelPath = safeReturnPath(request, body.returnTo, '/pricing')
     const metadata = { userId: user.id, offer: offer.id }
@@ -94,7 +102,7 @@ export async function POST(request: NextRequest) {
       success_url: `${base}/dashboard?checkout=success&offer=${offer.id}`,
       cancel_url: `${base}${cancelPath}`,
       ...(offer.mode === 'subscription'
-        ? { subscription_data: { metadata } }
+        ? { subscription_data: { metadata, ...(trialEnd ? { trial_end: trialEnd } : {}) } }
         : { payment_intent_data: { metadata } }),
     })
 
