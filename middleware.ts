@@ -1,25 +1,33 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
 
-export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request })
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth/signin')
+// Auth uses the database session strategy (Prisma adapter), so the session cookie
+// holds an opaque session token, not a JWT. getToken() from next-auth/jwt can't decode
+// it and always returned null, which bounced every hard load of /dashboard to sign-in.
+//
+// Middleware runs on the edge and can't hit Prisma, so it only checks that a session
+// cookie is present to decide on redirects. Real auth happens server-side with
+// getServerSession (API routes) and useSession (client pages).
+const SESSION_COOKIES = ['__Secure-next-auth.session-token', 'next-auth.session-token']
+
+function hasSessionCookie(request: NextRequest) {
+  return SESSION_COOKIES.some((name) => !!request.cookies.get(name)?.value)
+}
+
+export function middleware(request: NextRequest) {
+  const hasSession = hasSessionCookie(request)
   const isLandingPage = request.nextUrl.pathname === '/'
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard')
 
-  // If user is authenticated and tries to access landing page, redirect to dashboard
-  if (token && isLandingPage) {
+  // If user looks signed in and hits the landing page, send them to the dashboard.
+  // We intentionally don't redirect away from /auth/signin on cookie presence: a stale
+  // cookie (expired/deleted DB session) would loop signin -> dashboard -> signin.
+  if (hasSession && isLandingPage) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // If user is authenticated and tries to access sign-in page, redirect to dashboard
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  // If user is not authenticated and tries to access protected routes, redirect to sign-in
-  if (!token && isDashboardRoute) {
+  // No session cookie at all -> protected routes go to sign-in
+  if (!hasSession && isDashboardRoute) {
     const signInUrl = new URL('/auth/signin', request.url)
     signInUrl.searchParams.set('callbackUrl', request.url)
     return NextResponse.redirect(signInUrl)
