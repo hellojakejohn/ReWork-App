@@ -70,6 +70,7 @@ model User {
   applications           JobApplication[]
   resumes                Resume[]
   sessions               Session[]
+  entitlements           Entitlement[]
 
   @@map("users")
 }
@@ -167,6 +168,54 @@ model Feedback {
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("feedback")
+}
+
+// One row per grant of Pro. getAccess() in src/lib/entitlements.ts is the only
+// reader; User.plan is a cached mirror of it for the admin page.
+model Entitlement {
+  id                String            @id @default(cuid())
+  userId            String
+  source            EntitlementSource
+  status            EntitlementStatus
+  startsAt          DateTime          @default(now())
+  endsAt            DateTime?
+  cancelAtPeriodEnd Boolean           @default(false)
+  pastDueAt         DateTime?
+  externalId        String?
+  stripePriceId     String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([source, externalId])
+  @@index([userId])
+  @@index([status, endsAt])
+  @@map("entitlements")
+}
+
+// Processed Stripe webhook events, for idempotency.
+model StripeEvent {
+  id          String   @id
+  type        String
+  processedAt DateTime @default(now())
+
+  @@map("stripe_events")
+}
+
+enum EntitlementSource {
+  STRIPE_SUBSCRIPTION
+  STRIPE_PASS
+  COMP
+  TOKEN_HOLD // reserved: future crypto path, unused
+  TOKEN_PAYMENT // reserved: future crypto path, unused
+}
+
+enum EntitlementStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  REFUNDED
 }
 
 enum Plan {
