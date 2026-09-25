@@ -1,13 +1,16 @@
 // src/lib/openai.ts
 import OpenAI from 'openai'
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY environment variable is required')
-}
+let client: OpenAI | null = null
 
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+/** Created on first use so importing this module (and `next build`) works without env. */
+export function getOpenAI(): OpenAI {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is required')
+  }
+  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return client
+}
 
 export interface ResumeAnalysis {
   matchScore: number
@@ -47,7 +50,7 @@ export async function analyzeResumeForJob(
   const prompt = createAnalysisPrompt(resumeText, jobDetails)
   
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -119,7 +122,7 @@ Return only the optimized ${sectionName} content, no additional text.
 `
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -159,7 +162,7 @@ Return a JSON array of 15-20 most important keywords. Example: ["JavaScript", "R
 `
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {

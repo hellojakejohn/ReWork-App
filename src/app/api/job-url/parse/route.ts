@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import * as cheerio from 'cheerio';
-import { openai } from '@/lib/openai';
+import { getOpenAI } from '@/lib/openai';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 import { FetchTimeoutError, ResponseTooLargeError, UnsafeUrlError, assertSafeUrl, safeFetch } from '@/lib/safe-fetch';
 
@@ -182,7 +182,7 @@ Important:
 - If any field cannot be determined, use empty string ""
 - Return valid JSON only`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
