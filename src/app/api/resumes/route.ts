@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { toMasterDTO } from '@/lib/master-dto'
 import { toApplicationSummary } from '@/lib/application-dto'
 import { getCoverLetterQuota, getTailorQuota, quotaDTO } from '@/lib/tailor-quota'
@@ -40,7 +41,8 @@ export async function GET() {
         orderBy: { updatedAt: 'desc' },
       }),
       prisma.jobApplication.findMany({
-        where: { userId },
+        // Tailored ones only; jobs tracked without tailoring live on the tracker.
+        where: { userId, NOT: { optimizedStructured: { equals: Prisma.DbNull } } },
         select: {
           id: true,
           resumeId: true,

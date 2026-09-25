@@ -26,7 +26,7 @@ import { AppHeader } from "./app-header"
 import { StepRail } from "./step-rail"
 import { ResumeCard, type ResumeCardRequest } from "./resume-card"
 import { ManageResumesDialog } from "./manage-resumes"
-import { JobCard } from "./job-card"
+import { JobCard, jobIsValid } from "./job-card"
 import { TailorCard } from "./tailor-card"
 import { ResultCard } from "./result-card"
 import { RecentDrawer } from "./recent-drawer"
@@ -101,18 +101,42 @@ export function OneFlow() {
     if (stored === "classic" || stored === "modern") setTemplate(stored)
     setLoaded(true)
 
-    // Links from other views (the tracker's account menu): ?open=manage | start
+    // Links from the tracker: ?open=manage | start, ?application=<id> (open its result),
+    // ?tailor=<id> (tailor a job that was only tracked).
     const params = new URLSearchParams(window.location.search)
     const open = params.get("open")
-    if (open) {
-      params.delete("open")
+    const applicationParam = params.get("application")
+    const tailorParam = params.get("tailor")
+    if (open || applicationParam || tailorParam) {
+      for (const key of ["open", "application", "tailor"]) params.delete(key)
       const query = params.toString()
       window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
-      if (open === "manage") setManageOpen(true)
-      if (open === "start") {
-        setResumeConfirmed(false)
-        setStep(0)
-        setResumeRequest({ mode: "new", nonce: Date.now() })
+    }
+    if (open === "manage") setManageOpen(true)
+    if (open === "start") {
+      setResumeConfirmed(false)
+      setStep(0)
+      setResumeRequest({ mode: "new", nonce: Date.now() })
+    }
+    if (applicationParam || tailorParam) {
+      const opened = await loadApplication((applicationParam || tailorParam)!)
+      if (!opened.ok) {
+        toast.error(opened.error)
+        return
+      }
+      const app = opened.application
+      if (result.masters.some((m) => m.id === app.resumeId)) {
+        setActiveId(app.resumeId)
+        setResumeConfirmed(true)
+      }
+      const draft: JobDraft = { url: app.jobUrl ?? "", title: app.jobTitle, company: app.company, location: app.jobLocation, description: app.jobDescription }
+      if (applicationParam) {
+        setApplication(app)
+        setJob(draft)
+        setStep(3)
+      } else {
+        setJob({ ...draft, applicationId: app.id })
+        setStep(jobIsValid(draft) ? 2 : 1)
       }
     }
   }, [])

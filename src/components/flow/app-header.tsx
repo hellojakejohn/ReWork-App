@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { ChevronDown, FileStack, History, Home, LogOut, RotateCcw, Settings, Sparkles, Tag } from "lucide-react"
+import { ChevronDown, FileStack, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { UserAvatar } from "@/components/ui/avatar"
 import {
@@ -31,12 +31,14 @@ export function AppHeader({
   onOpenRecent,
   onUpgrade,
   flow,
+  view = "flow",
 }: {
   quota: Quota | null
   recentCount: number
   onOpenRecent?: () => void
   onUpgrade: () => void
   flow: FlowActions | null
+  view?: "flow" | "tracker"
 }) {
   const { data: session } = useSession()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -68,6 +70,18 @@ export function AppHeader({
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {tailorsText && <span className="hidden text-xs text-slate-400 sm:inline">{tailorsText}</span>}
+
+          {view === "tracker" ? (
+            <Link href="/dashboard" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5" title="Tailor">
+              <Wand2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Tailor</span>
+            </Link>
+          ) : (
+            <Link href="/dashboard/tracker" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5" title="Application tracker">
+              <KanbanSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Tracker</span>
+            </Link>
+          )}
 
           {recentCount > 0 && onOpenRecent && (
             <button

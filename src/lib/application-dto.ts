@@ -1,5 +1,6 @@
 // What the client gets for a tailored resume (a JobApplication row).
 import { masterToParsed } from '@/lib/master-resume'
+import type { ApplicationStatus } from '@prisma/client'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { readStoredCoverLetter, type StoredCoverLetter } from '@/lib/cover-letter-shared'
 import type { BulletChange, FactGuardWarning, TailorCategoryScores, TailorReport } from '@/types/tailor'
@@ -13,6 +14,17 @@ export interface ApplicationSummaryDTO {
   createdAt: string
   coverageBefore: number | null
   coverageAfter: number | null
+}
+
+/** One card on the tracker. */
+export interface TrackerCardDTO extends ApplicationSummaryDTO {
+  status: ApplicationStatus
+  statusUpdatedAt: string
+  appliedAt: string | null
+  notes: string
+  followUpAt: string | null // YYYY-MM-DD
+  tailored: boolean
+  hasCoverLetter: boolean
 }
 
 export interface ApplicationDetailDTO extends ApplicationSummaryDTO {
@@ -76,5 +88,27 @@ export function toApplicationDetail(row: ApplicationRowLike): ApplicationDetailD
     warnings: Array.isArray(report.warnings) ? report.warnings : [],
     coverLetter: readStoredCoverLetter(row.coverLetter),
     coverLetterUpdatedAt: row.coverLetterUpdatedAt ? row.coverLetterUpdatedAt.toISOString() : null,
+  }
+}
+
+interface TrackerRowLike extends ApplicationRowLike {
+  status: ApplicationStatus
+  statusUpdatedAt: Date | null
+  updatedAt: Date
+  appliedAt: Date | null
+  notes: string | null
+  followUpAt: Date | null
+}
+
+export function toTrackerCard(row: TrackerRowLike): TrackerCardDTO {
+  return {
+    ...toApplicationSummary(row),
+    status: row.status,
+    statusUpdatedAt: (row.statusUpdatedAt ?? row.createdAt).toISOString(),
+    appliedAt: row.appliedAt ? row.appliedAt.toISOString() : null,
+    notes: row.notes ?? '',
+    followUpAt: row.followUpAt ? row.followUpAt.toISOString().slice(0, 10) : null,
+    tailored: !!row.optimizedStructured,
+    hasCoverLetter: !!row.coverLetter,
   }
 }

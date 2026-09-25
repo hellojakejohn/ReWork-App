@@ -162,24 +162,30 @@ export async function POST(
       keywords: cleaned.targetKeywords,
       suggestions: report as unknown as Prisma.InputJsonValue,
       analysisVersion: 'tailor-v3',
-      status: 'OPTIMIZED' as const,
       lastAnalyzed: new Date()
     };
 
-    // Re-tailor an explicit application; otherwise every tailor is its own application
-    // (the Recent drawer lists them all).
+    // Re-tailor an explicit application (or tailor a job that was only on the tracker);
+    // otherwise every tailor is its own application (the Recent drawer lists them all).
     const existingApplication = requestedApplicationId
-      ? await prisma.jobApplication.findFirst({ where: { id: String(requestedApplicationId), resumeId, userId } })
+      ? await prisma.jobApplication.findFirst({ where: { id: String(requestedApplicationId), userId } })
       : null;
 
     const application = existingApplication
       ? await prisma.jobApplication.update({
           where: { id: existingApplication.id },
-          data: applicationData
+          data: {
+            ...applicationData,
+            resumeId,
+            // Don't pull a card back to Saved on the tracker because it was re-tailored.
+            ...(existingApplication.status === 'DRAFT' ? { status: 'OPTIMIZED' as const, statusUpdatedAt: new Date() } : {})
+          }
         })
       : await prisma.jobApplication.create({
           data: {
             ...applicationData,
+            status: 'OPTIMIZED' as const,
+            statusUpdatedAt: new Date(),
             userId,
             resumeId,
             jobTitle,

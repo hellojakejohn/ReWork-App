@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { toApplicationSummary } from '@/lib/application-dto'
 
 // GET: the user's tailored resumes, newest first (the Recent drawer).
@@ -11,7 +12,8 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const applications = await prisma.jobApplication.findMany({
-    where: { userId: session.user.id },
+    // Tailored ones only; jobs tracked without tailoring live on the tracker.
+    where: { userId: session.user.id, NOT: { optimizedStructured: { equals: Prisma.DbNull } } },
     select: {
       id: true,
       resumeId: true,

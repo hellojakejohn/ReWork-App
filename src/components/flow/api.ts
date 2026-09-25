@@ -2,13 +2,14 @@
 // throwing, so cards can show the server's own message.
 import { readNdjson } from "@/lib/ndjson"
 import type { MasterResumeDTO } from "@/lib/master-dto"
-import type { ApplicationDetailDTO, ApplicationSummaryDTO } from "@/lib/application-dto"
+import type { ApplicationDetailDTO, ApplicationSummaryDTO, TrackerCardDTO } from "@/lib/application-dto"
+import type { TrackerColumn } from "@/lib/tracker"
 import type { ParsedResume } from "@/types/parsed-resume"
 import type { BulletChange } from "@/types/tailor"
 import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shared"
 import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
 
-export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO }
+export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO, TrackerCardDTO }
 
 export interface Quota {
   isPro: boolean
@@ -23,6 +24,8 @@ export interface JobDraft {
   company: string
   location: string
   description: string
+  /** A job already on the tracker: tailoring fills that application instead of adding one. */
+  applicationId?: string
 }
 
 export type Failure = { ok: false; error: string; status: number; upgradeRequired?: boolean }
@@ -154,6 +157,7 @@ export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage
         location: job.location,
         description: job.description,
         jobUrl: job.url || undefined,
+        applicationId: job.applicationId,
       }),
     })
     return await streamed<{ application: ApplicationDetailDTO; tailorsRemaining: number | null }>(res, onStage, "Tailoring failed. Please try again.")
@@ -281,6 +285,64 @@ export async function applyEvidence(
     if (!res.ok) return failure(res, "Couldn't save to your resume.")
     const data = await res.json()
     return { ok: true, applied: data.applied, master: data.master }
+  } catch {
+    return NETWORK
+  }
+}
+
+export interface TrackerData {
+  isPro: boolean
+  total: number
+  limit: number | null
+  applications: TrackerCardDTO[]
+}
+
+export async function loadTracker(): Promise<({ ok: true } & TrackerData) | Failure> {
+  try {
+    const res = await fetch("/api/tracker", { cache: "no-store" })
+    if (!res.ok) return failure(res, "Couldn't load your applications.")
+    const data = await res.json()
+    return { ok: true, isPro: data.isPro, total: data.total, limit: data.limit, applications: data.applications }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function addTrackedJob(job: JobDraft): Promise<{ ok: true; application: TrackerCardDTO } | Failure> {
+  try {
+    const res = await fetch("/api/tracker", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: job.url, title: job.title, company: job.company, location: job.location, description: job.description }),
+    })
+    if (!res.ok) return failure(res, "Couldn't add that job.")
+    return { ok: true, application: (await res.json()).application }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function updateTracked(
+  id: string,
+  patch: { column?: TrackerColumn; notes?: string; followUpAt?: string | null }
+): Promise<{ ok: true; application: TrackerCardDTO } | Failure> {
+  try {
+    const res = await fetch(`/api/tracker/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    })
+    if (!res.ok) return failure(res, "Couldn't save that.")
+    return { ok: true, application: (await res.json()).application }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function deleteTracked(id: string): Promise<{ ok: true } | Failure> {
+  try {
+    const res = await fetch(`/api/tracker/${id}`, { method: "DELETE" })
+    return res.ok ? { ok: true } : failure(res, "Couldn't delete that.")
   } catch {
     return NETWORK
   }
