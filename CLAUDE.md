@@ -14,9 +14,13 @@
 - `prisma/` - Database schema
 
 ## Key Files
+- `src/components/flow/` - the whole app UI: one page at `/dashboard` (Resume -> Job -> Tailor -> Result cards)
+- `src/lib/parse-resume.ts` + `src/lib/parse-validate.ts` - resume parsing (PDF file input + text, strict schema) and the "is it in the file?" validator. No fallback parser.
+- `src/lib/master-resume.ts` - parsed shape <-> Resume row structured fields
+- `src/lib/tailor.ts`, `src/lib/fact-guard.ts`, `src/lib/tailor-changes.ts` - tailoring, fact checks, per-bullet accept/revert
+- `src/lib/job-resolve/` - job URL resolver chain (ATS APIs -> JSON-LD -> page + model -> needsPaste)
+- `src/lib/resume-pdf.tsx` - Classic/Modern PDF templates
 - `src/lib/storage.ts` - Supabase Storage (was S3)
-- `src/app/api/resumes/[id]/analyze/route.ts` - AI resume generation
-- `src/components/resume-uploader.tsx` - File upload component
 - `prisma/schema.prisma` - Database schema
 
 ## Environment
