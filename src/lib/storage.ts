@@ -1,22 +1,25 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-// Initialize Supabase client with service role key for server-side operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Supabase client with service role key for server-side operations. Created on first use
+// so importing this module (and `next build`) works without env.
+let client: SupabaseClient | null = null
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+function getSupabase(): SupabaseClient {
+  client ??= createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+  return client
+}
 
 // Bucket name for storing resumes
 const BUCKET_NAME = 'resumes'
 
 // Ensure bucket exists (run this once on app startup)
 export async function ensureBucketExists() {
-  const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+  const { data: buckets, error: listError } = await getSupabase().storage.listBuckets()
 
   if (listError) {
     console.error('Error listing buckets:', listError)
@@ -26,7 +29,7 @@ export async function ensureBucketExists() {
   const bucketExists = buckets?.some(bucket => bucket.name === BUCKET_NAME)
 
   if (!bucketExists) {
-    const { data, error } = await supabase.storage.createBucket(BUCKET_NAME, {
+    const { data, error } = await getSupabase().storage.createBucket(BUCKET_NAME, {
       public: false, // Keep files private
       fileSizeLimit: 10 * 1024 * 1024, // 10MB limit
       allowedMimeTypes: [
@@ -59,7 +62,7 @@ export async function uploadToStorage(
     const blob = new Blob([file], { type: contentType })
 
     // Upload file
-    const { data, error } = await supabase.storage
+    const { data, error } = await getSupabase().storage
       .from(BUCKET_NAME)
       .upload(key, blob, {
         contentType,
@@ -73,7 +76,7 @@ export async function uploadToStorage(
     }
 
     // Get public URL (even though bucket is private, we'll use signed URLs)
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = getSupabase().storage
       .from(BUCKET_NAME)
       .getPublicUrl(key)
 
@@ -95,7 +98,7 @@ export async function uploadToStorage(
 // Generate signed URL for secure file access
 export async function getSignedDownloadUrl(key: string, expiresIn: number = 3600) {
   try {
-    const { data, error } = await supabase.storage
+    const { data, error } = await getSupabase().storage
       .from(BUCKET_NAME)
       .createSignedUrl(key, expiresIn)
 
@@ -119,7 +122,7 @@ export async function getSignedDownloadUrl(key: string, expiresIn: number = 3600
 // Delete file from Supabase Storage
 export async function deleteFromStorage(key: string) {
   try {
-    const { error } = await supabase.storage
+    const { error } = await getSupabase().storage
       .from(BUCKET_NAME)
       .remove([key])
 
@@ -167,7 +170,7 @@ export function getContentType(fileName: string): string {
 // Download file from Supabase Storage
 export async function downloadFromStorage(key: string): Promise<Buffer | null> {
   try {
-    const { data, error } = await supabase.storage
+    const { data, error } = await getSupabase().storage
       .from(BUCKET_NAME)
       .download(key)
 
