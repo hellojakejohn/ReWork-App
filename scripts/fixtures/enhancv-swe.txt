@@ -1,0 +1,37 @@
+JAKOB JOHNSON
+Software Engineer
+​(651) 555-0142​ ​jakobmjohnson9@gmail.com​ ​linkedin.com/in/jakob-johnson​ ​github.com/hellojakejohn​ ​Saint Paul, MN
+
+SUMMARY
+Full-stack and blockchain engineer who ships production web apps end to end. Built and launched ReWork, an AI resume tailoring product, on Next.js, Prisma and Postgres. Recently completed Solidity and full-stack bootcamps at Metana.
+
+SKILLS
+Languages: TypeScript, JavaScript, Solidity, SQL, HTML, CSS
+Frameworks: React, Next.js, Node.js, Express, Tailwind CSS
+Web3: Hardhat, Foundry, ethers.js, OpenZeppelin
+Tools: Git, Docker, Prisma, PostgreSQL, Supabase, Vercel, Stripe
+
+EXPERIENCE
+06/2024 - Present      Founder & Software Engineer
+Saint Paul, MN         ReWork
+                       • Built an AI resume tailoring app with Next.js 15, Prisma and Supabase serving 120 users
+                       • Designed a fact-guard layer that blocks invented numbers, titles and employers in AI rewrites
+                       • Integrated Stripe subscriptions and one-time passes with webhook-driven entitlements
+01/2022 - 05/2024      Independent Full-Stack Web Developer
+Remote                 Self-employed
+                       • Delivered 8 client sites in React and Node.js, from design handoff to deployment
+                       • Cut a client checkout page load time by 40% by moving to server rendering
+
+PROJECTS
+Token Vesting Vault | github.com/hellojakejohn/vesting-vault
+                       • Solidity vesting contract with cliff and linear release, 100% branch coverage in Foundry
+                       Solidity, Foundry, OpenZeppelin
+Job Board Scraper
+                       • Resolver chain that pulls job posts from Greenhouse and Lever JSON APIs
+                       TypeScript, Node.js
+
+EDUCATION
+2025                   Solidity Bootcamp
+                       Metana
+2024                   Full Stack Web Development Bootcamp
+                       Metana

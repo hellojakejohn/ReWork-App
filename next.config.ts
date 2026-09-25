@@ -8,8 +8,10 @@ const config: NextConfig = {
     ignoreDuringBuilds: true,
   },
   serverExternalPackages: [
-    'pdf-parse',        // Keep for text extraction
-    'sharp',            // Add for image optimization
+    'pdf-parse',
+    'sharp',
+    'pdfjs-dist',       // resume parsing (src/lib/resume-source-text.ts) loads its worker from disk
+    'mammoth',
   ],
   
   turbopack: {
