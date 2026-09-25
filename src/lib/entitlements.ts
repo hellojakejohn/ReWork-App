@@ -5,6 +5,7 @@
 // add a verifier that upserts rows with those sources and calls refreshPlanMirror().
 // Feature code only ever calls getAccess() / reads session.user.access.
 
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import {
   DAY_MS,
@@ -37,8 +38,13 @@ export async function refreshPlanMirror(userId: string): Promise<Access> {
 }
 
 /** Latest end among a user's still-active rows of one source (for stacking passes/comps). */
-export async function currentChainEnd(userId: string, source: EntitlementSource, now = new Date()): Promise<Date | null> {
-  const latest = await prisma.entitlement.findFirst({
+export async function currentChainEnd(
+  userId: string,
+  source: EntitlementSource,
+  now = new Date(),
+  db: Prisma.TransactionClient = prisma
+): Promise<Date | null> {
+  const latest = await db.entitlement.findFirst({
     where: { userId, source, status: 'ACTIVE', endsAt: { gt: now } },
     orderBy: { endsAt: 'desc' },
     select: { endsAt: true },
