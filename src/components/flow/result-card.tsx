@@ -226,7 +226,7 @@ export function ResultCard({
     <Card wide>
       <CardHeader
         title={`${application.jobTitle} at ${application.company}`}
-        subtitle={`Keywords ${application.coverageBefore ?? 0}% → ${application.coverageAfter ?? 0}% · ${changes.length} changes`}
+        subtitle={`Keywords ${application.coverageBefore ?? 0}% → ${application.coverageAfter ?? 0}% · ${changes.length} ${changes.length === 1 ? "change" : "changes"}`}
         onBack={onBack}
         right={
           <div className="hidden items-center gap-2 sm:flex">

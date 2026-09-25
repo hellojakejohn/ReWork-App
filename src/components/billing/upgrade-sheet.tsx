@@ -13,7 +13,7 @@ interface UpgradeSheetProps {
   reason?: string
 }
 
-/** Shown when a free user hits the monthly tailor limit (402 upgradeRequired). */
+/** Shown when a free user hits a limit (402 upgradeRequired) or picks a Pro-only feature. */
 export function UpgradeSheet({ open, onOpenChange, reason }: UpgradeSheetProps) {
   const { data: session } = useSession()
   return (
@@ -22,7 +22,7 @@ export function UpgradeSheet({ open, onOpenChange, reason }: UpgradeSheetProps) 
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-emerald-400" />
-            Keep tailoring with Pro
+            {reason ? "Get more with Pro" : "Keep tailoring with Pro"}
           </DialogTitle>
           <DialogDescription className="text-slate-400">
             {reason || `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month.`}
