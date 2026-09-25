@@ -185,7 +185,7 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
     completion = await client.chat.completions.create({
       model,
       temperature: 0,
-      max_tokens: 8000,
+      max_completion_tokens: 8000,
       response_format: {
         type: 'json_schema',
         json_schema: { name: 'parsed_resume', strict: true, schema: PARSE_SCHEMA as unknown as Record<string, unknown> },
