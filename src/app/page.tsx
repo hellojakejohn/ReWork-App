@@ -53,7 +53,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         No. After every rewrite a fact guard compares the result with your resume: numbers, employers, titles, dates, tools and credentials. Anything
-        your resume doesn't support is removed or flagged, and every changed bullet comes with the reason for the change so you can keep it or
+        your resume doesn’t support is removed or flagged, and every changed bullet comes with the reason for the change so you can keep it or
         revert it. When a bullet needs a number, the evidence interview asks you for it instead of guessing.
       </>
     ),
@@ -63,7 +63,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         The templates are single-column with standard section headings, and PDFs contain real, selectable text. Pro adds Word downloads built from
-        plain paragraphs, with no tables or text boxes, which is what application portals parse most reliably. We don't promise an &quot;ATS
+        plain paragraphs, with no tables or text boxes, which is what application portals parse most reliably. We don’t promise an &quot;ATS
         score&quot;; nobody honestly can.
       </>
     ),

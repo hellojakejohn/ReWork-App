@@ -178,7 +178,7 @@ function DataTab() {
         <h3 className="text-lg font-semibold text-white mb-2">Your data</h3>
         <p className="text-sm text-slate-400">
           We keep your resumes, tailored versions, cover letters and tracker in our database so you can come back to them. Text is sent to
-          OpenAI's API to do the rewriting; OpenAI doesn't train on API data. Details in the{" "}
+          OpenAI’s API to do the rewriting; OpenAI doesn’t train on API data. Details in the{" "}
           <Link href="/privacy" className="underline hover:text-white">privacy policy</Link>.
         </p>
       </div>
@@ -199,7 +199,7 @@ function DataTab() {
         <Label className="text-red-300 font-medium mb-1 block">Delete my account</Label>
         <p className="text-sm text-slate-300 mb-3">
           Cancels any Pro subscription, then permanently deletes your account, resumes, uploaded files, tailored versions, cover letters and
-          tracker. This can't be undone.
+          tracker. This can’t be undone.
         </p>
         <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
           <Trash2 className="w-4 h-4 mr-2" />
@@ -247,7 +247,7 @@ function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => 
         </DialogHeader>
         <div className="space-y-3 text-sm text-slate-300">
           <p>This cancels any active Pro subscription right away (no further charges) and deletes everything: resumes, files, tailored versions, cover letters and your tracker.</p>
-          <p>A Job Hunt Pass you've already used isn't refunded. Stripe keeps its own receipts of past payments.</p>
+          <p>A Job Hunt Pass you’ve already used isn’t refunded. Stripe keeps its own receipts of past payments.</p>
           <label className="block">
             <span className="mb-1 block text-slate-400">Type DELETE to confirm</span>
             <Input value={typed} onChange={(e) => setTyped(e.target.value)} className="bg-slate-800/50 border-slate-600 text-white" autoComplete="off" />

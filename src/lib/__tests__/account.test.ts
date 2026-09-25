@@ -1,4 +1,5 @@
 // Account deletion: Stripe first, then files, then the user row. Nothing is deleted if
+/* eslint-disable @typescript-eslint/no-unused-vars -- mock signatures keep their params for typed mock.calls */
 // billing can't be stopped.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -11,11 +12,11 @@ const m = vi.hoisted(() => {
     subs: [] as { id: string; status: string }[],
     stripeOn: true,
     cancelFails: false,
-    userDelete: vi.fn(async (_args: unknown) => {
+    userDelete: vi.fn(async (..._: unknown[]) => {
       order.push('user.delete')
       return {}
     }),
-    cancel: vi.fn(async (id: string, _params?: unknown) => {
+    cancel: vi.fn(async (id: string, ..._: unknown[]) => {
       order.push(`cancel:${id}`)
       if (m.cancelFails) throw new Error('stripe down')
       return { id, status: 'canceled' }
@@ -25,7 +26,7 @@ const m = vi.hoisted(() => {
       order.push('files')
       return { deleted: keys.length }
     }),
-    track: vi.fn(async (..._args: unknown[]) => {}),
+    track: vi.fn(async (..._: unknown[]) => {}),
   }
 })
 

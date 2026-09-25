@@ -1,7 +1,8 @@
 // Daily ceilings apply to everyone (Pro included), per UTC day, counted from events.
+/* eslint-disable @typescript-eslint/no-unused-vars -- mock signatures keep their params for typed mock.calls */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const db = vi.hoisted(() => ({ count: vi.fn(async (_args: unknown) => 0) }))
+const db = vi.hoisted(() => ({ count: vi.fn(async (..._: unknown[]) => 0) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { event: { count: db.count } } }))
 
 import { CEILING_EVENTS, checkDailyCeiling, startOfUtcDay } from '@/lib/daily-ceiling'

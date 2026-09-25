@@ -19,15 +19,15 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li>ReWork is run by one person, Jakob Johnson, in Saint Paul, Minnesota.</li>
           <li>We store your resume, the jobs you tailor for, and what we write for you, so you can come back to it.</li>
-          <li>Resume and job text is sent to OpenAI's API to do the rewriting. OpenAI doesn't use API data to train its models.</li>
-          <li>We don't sell your data, show ads, or share your resume with employers.</li>
+          <li>Resume and job text is sent to OpenAI’s API to do the rewriting. OpenAI doesn’t use API data to train its models.</li>
+          <li>We don’t sell your data, show ads, or share your resume with employers.</li>
           <li>You can download everything or delete your account any time from Settings, Your data.</li>
         </ul>
       }
     >
       <Section title="Who we are">
         <p>
-          ReWork (rework.hellojakejohn.com) is operated by Jakob Johnson, an individual based in Saint Paul, Minnesota, USA ("we", "us"). Questions
+          ReWork (rework.hellojakejohn.com) is operated by Jakob Johnson, an individual based in Saint Paul, Minnesota, USA (&quot;we&quot;, &quot;us&quot;). Questions
           about your data go to {mail}.
         </p>
       </Section>
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Your Google account basics.</strong> When you sign in with Google we get your name, email address, profile picture URL and
-            Google account ID. We don't request access to Gmail, Drive, Contacts or anything else in your Google account.
+            Google account ID. We don’t request access to Gmail, Drive, Contacts or anything else in your Google account.
           </li>
           <li>
             <strong>Resumes you upload or paste.</strong> The original file, the text we extract from it, and the structured version (roles,
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
           <li>To reply when you contact us.</li>
         </ul>
         <p>
-          We don't sell your data, we don't use it for advertising, and we don't share your resume with employers or recruiters. We don't use your
+          We don’t sell your data, we don’t use it for advertising, and we don’t share your resume with employers or recruiters. We don’t use your
           resume to train AI models.
         </p>
       </Section>
@@ -97,9 +97,9 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>OpenAI</strong>: when you parse a resume, tailor, write a cover letter, run the evidence interview or fetch some job pages, the
-            relevant text is sent to OpenAI's API to generate the result. Under OpenAI's API data policy, data sent through the API is not used to
+            relevant text is sent to OpenAI’s API to generate the result. Under OpenAI’s API data policy, data sent through the API is not used to
             train their models. OpenAI may keep API data for a limited time to monitor for abuse, under its own policy (see{" "}
-            <a href="https://openai.com/policies/privacy-policy/" rel="noopener noreferrer">OpenAI's privacy policy</a>).
+            <a href="https://openai.com/policies/privacy-policy/" rel="noopener noreferrer">OpenAI’s privacy policy</a>).
           </li>
           <li>
             <strong>Stripe</strong>: payments, receipts, subscriptions and the billing portal. Stripe is responsible for your card details.
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p>
-          When you paste a job link, our server fetches that page (or the job board's public API) to read the posting. The job site sees a request
+          When you paste a job link, our server fetches that page (or the job board’s public API) to read the posting. The job site sees a request
           from our server, not from you.
         </p>
       </Section>
@@ -126,7 +126,7 @@ export default function PrivacyPage() {
             files, and deletes your account, resumes, tailored versions, cover letters, tracker and feedback from our database right away. Database
             backups held by Supabase age out on their normal schedule.
           </li>
-          <li>Usage events are kept after account deletion with the link to you removed, so they can't be tied back to you.</li>
+          <li>Usage events are kept after account deletion with the link to you removed, so they can’t be tied back to you.</li>
           <li>Stripe keeps records of past payments, as payment processors are required to.</li>
         </ul>
       </Section>
@@ -142,14 +142,14 @@ export default function PrivacyPage() {
           <li>
             <strong>Delete it</strong>: delete resumes one at a time, or your whole account.
           </li>
-          <li>For anything else, including questions under privacy laws where you live, email {mail}. We'll answer within 30 days.</li>
+          <li>For anything else, including questions under privacy laws where you live, email {mail}. We’ll answer within 30 days.</li>
         </ul>
       </Section>
 
       <Section title="Cookies and local storage">
         <p>
-          We use one essential cookie to keep you signed in, plus the cookies Google and Stripe set during sign-in and checkout. Your browser's
-          local storage remembers small preferences like your resume template and avatar color. We don't use advertising or cross-site tracking
+          We use one essential cookie to keep you signed in, plus the cookies Google and Stripe set during sign-in and checkout. Your browser’s
+          local storage remembers small preferences like your resume template and avatar color. We don’t use advertising or cross-site tracking
           cookies.
         </p>
       </Section>
@@ -157,17 +157,17 @@ export default function PrivacyPage() {
       <Section title="Security">
         <p>
           Traffic is encrypted with HTTPS. Uploaded files are kept in a private storage bucket, and database access is limited to our server. No
-          system is perfectly secure; if we learn of a breach that affects your data, we'll tell you by email.
+          system is perfectly secure; if we learn of a breach that affects your data, we’ll tell you by email.
         </p>
       </Section>
 
       <Section title="Children">
-        <p>ReWork isn't meant for anyone under 16, and we don't knowingly collect data from them.</p>
+        <p>ReWork isn’t meant for anyone under 16, and we don’t knowingly collect data from them.</p>
       </Section>
 
       <Section title="Changes">
         <p>
-          If we change this policy, we'll update the date at the top. If a change affects how we use data you've already given us, we'll email you
+          If we change this policy, we’ll update the date at the top. If a change affects how we use data you’ve already given us, we’ll email you
           before it takes effect.
         </p>
       </Section>

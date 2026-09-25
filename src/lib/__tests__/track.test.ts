@@ -1,7 +1,8 @@
 // track(): writes one events row, never throws. Usage collection and cost estimate.
+/* eslint-disable @typescript-eslint/no-unused-vars -- mock signatures keep their params for typed mock.calls */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const db = vi.hoisted(() => ({ create: vi.fn(async (_args: unknown) => ({})) }))
+const db = vi.hoisted(() => ({ create: vi.fn(async (..._: unknown[]) => ({})) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { event: { create: db.create } } }))
 
 import { msSince, track } from '@/lib/track'
