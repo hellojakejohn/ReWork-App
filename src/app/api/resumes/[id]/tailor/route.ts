@@ -2,66 +2,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { openai } from '@/lib/openai';
+import { Prisma } from '@prisma/client';
+import { applyTailorOutput, buildTailorInput, callTailorModel, TailorError } from '@/lib/tailor';
+import { factGuard } from '@/lib/fact-guard';
+import { coverageReport } from '@/lib/keyword-coverage';
+import { getTailorQuota, incrementTailorCount } from '@/lib/tailor-quota';
+import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
+import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from '@/lib/plans';
+import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
+// The Resume row is the MASTER. Tailoring reads from it and writes the result to a
+// JobApplication; it never writes the master's structured fields.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log('📍 Tailor API: Request received');
-
-  // Check OpenAI API key first
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('❌ OPENAI_API_KEY is not configured');
-    return NextResponse.json({
-      error: 'AI service is not configured. Please contact support.',
-      success: false
-    }, { status: 500 });
-  }
-
   try {
     const session = await getServerSession(authOptions);
-    console.log('📍 Tailor API: Session validated');
-
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
-    const resumeId = id;
+    const { id: resumeId } = await params;
 
     let requestData;
     try {
       requestData = await request.json();
-      console.log('📍 Tailor API: Request data parsed', {
-        hasJobTitle: !!requestData.jobTitle,
-        hasCompany: !!requestData.company || !!requestData.companyName,
-        hasDescription: !!requestData.description || !!requestData.jobDescription,
-        dataSize: JSON.stringify(requestData).length
-      });
-    } catch (parseError) {
-      console.error('❌ Failed to parse request JSON:', parseError);
-      return NextResponse.json({
-        error: 'Invalid request data',
-        success: false
-      }, { status: 400 });
+    } catch {
+      return NextResponse.json({ error: 'Invalid request data', success: false }, { status: 400 });
     }
 
-    const { jobTitle, company, companyName, location, description, jobDescription, extraContext, contextTags } = requestData;
+    const { jobTitle, company, companyName, location, description, jobDescription, extraContext, contextTags, applicationId: requestedApplicationId } = requestData;
 
     // Accept both company and companyName for backwards compatibility
     const actualCompanyName = company || companyName;
     const actualJobDescription = description || jobDescription;
 
     if (!jobTitle || !actualCompanyName || !actualJobDescription) {
-      return NextResponse.json({
-        error: 'Missing required job information'
-      }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required job information' }, { status: 400 });
     }
 
-    console.log('🎯 Starting resume tailoring for:', { resumeId, jobTitle, company: actualCompanyName });
-
-    // Get the resume with user data
     const resume = await prisma.resume.findUnique({
       where: { id: resumeId },
       include: { user: true }
@@ -70,433 +50,146 @@ export async function POST(
     if (!resume) {
       return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
     }
-
-    // Verify user ownership
     if (resume.user.email !== session.user.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get the current resume content from structured fields
-    // The database stores data in separate fields, not in currentContent
-    const hasStructuredData = resume.contactInfo || resume.workExperience || resume.education;
+    const userId = resume.userId;
 
-    if (!hasStructuredData) {
+    const rate = checkRateLimit(`tailor:${userId}`);
+    if (!rate.allowed) {
+      return NextResponse.json(rateLimitResponseBody(rate.retryAfterSeconds), {
+        status: 429,
+        headers: { 'Retry-After': String(rate.retryAfterSeconds) }
+      });
+    }
+
+    // Enforce the monthly limit BEFORE spending an OpenAI call
+    const quota = await getTailorQuota(userId);
+    if (!quota.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Upgrade to Pro (${PRO_PRICE_DISPLAY}) for unlimited tailoring.`,
+        upgradeRequired: true,
+        used: quota.used,
+        limit: quota.limit
+      }, { status: 402 });
+    }
+
+    const master = {
+      contactInfo: resume.contactInfo,
+      professionalSummary: resume.professionalSummary,
+      workExperience: resume.workExperience,
+      education: resume.education,
+      skills: resume.skills,
+      projects: resume.projects,
+      additionalSections: resume.additionalSections
+    };
+
+    const input = buildTailorInput(master);
+    if (input.roles.length === 0 && input.education.length === 0) {
       return NextResponse.json({
         error: 'Resume content not found. Please fill out your resume first.'
       }, { status: 400 });
     }
 
-    // Build the current content from structured fields
-    const currentContent = {
-      contactInfo: resume.contactInfo as any || {},
-      professionalSummary: resume.professionalSummary as any || {},
-      workExperience: resume.workExperience as any || [],
-      education: resume.education as any || [],
-      skills: resume.skills as any || {},
-      projects: resume.projects as any || [],
-      additionalSections: resume.additionalSections as any || {}
-    };
-
-    // Save the original content if not already saved
-    if (!resume.originalContent) {
-      await prisma.resume.update({
-        where: { id: resumeId },
-        data: {
-          originalContent: currentContent
-        }
-      });
-    }
-
-    // Prepare the resume data for the AI - transform to expected format
-    const resumeData = {
-      contact: currentContent.contactInfo || {},
-      summary: typeof currentContent.professionalSummary === 'object'
-        ? currentContent.professionalSummary.summary || ''
-        : currentContent.professionalSummary || '',
-      experience: Array.isArray(currentContent.workExperience)
-        ? currentContent.workExperience.map((exp: any) => ({
-            title: exp.role || exp.title,
-            company: exp.company,
-            startDate: exp.dates?.split(' - ')[0] || exp.startDate || '',
-            endDate: exp.dates?.split(' - ')[1] || exp.endDate || '',
-            location: exp.location || '',
-            description: Array.isArray(exp.achievements)
-              ? exp.achievements.join(' • ')
-              : exp.responsibilities || ''
-          }))
-        : [],
-      education: Array.isArray(currentContent.education)
-        ? currentContent.education.map((edu: any) => ({
-            degree: edu.degree,
-            school: edu.school || edu.institution,
-            year: edu.graduationDate || edu.year,
-            gpa: edu.gpa || '',
-            fieldOfStudy: edu.fieldOfStudy || '',
-            additionalInfo: edu.additionalInfo || ''
-          }))
-        : [],
-      skills: currentContent.skills && typeof currentContent.skills === 'object'
-        ? Object.values(currentContent.skills).flat()
-        : []
-    };
-
-    console.log('📝 Creating tailored resume with OpenAI...');
-    console.log('📍 Resume data size:', JSON.stringify(resumeData).length, 'bytes');
-    console.log('📍 Job description size:', actualJobDescription.length, 'characters');
-
-    // Create the tailoring prompt
-    const contextSection = (extraContext || contextTags?.length) ? `
-ADDITIONAL CONTEXT:
-${extraContext ? `Additional Information: ${extraContext}` : ''}
-${contextTags?.length ? `Context Tags: ${contextTags.join(', ')}` : ''}
-
-Consider this context when tailoring the resume. For example:
-- Career Changer: Emphasize transferable skills and relevant achievements
-- Recent Graduate: Highlight academic projects, internships, and potential
-- Employment Gaps: Focus on skills maintained and any freelance/volunteer work
-- Military Transition: Translate military experience to civilian terms
-` : '';
-
-    const prompt = `You are an expert resume writer who creates authentic, compelling resumes tailored for specific positions. Your task is to rewrite this resume to align with the job posting while maintaining complete accuracy about the candidate's actual experience.
-
-CANDIDATE'S CURRENT RESUME:
-${JSON.stringify(resumeData, null, 2)}
-
-TARGET JOB:
-Position: ${jobTitle}
-Company: ${actualCompanyName}
-Job Description:
-${actualJobDescription}
-${contextSection}
-
-CRITICAL RULES:
-1. NEVER fabricate experience, skills, dates, companies, schools, or achievements
-2. Keep ALL factual information accurate (dates, companies, titles, schools, degrees)
-3. Maintain the candidate's authentic voice - it should sound natural, not robotic
-4. DO NOT copy language verbatim from the job description - use adjacent, professional language
-5. Each experience bullet must follow: Action verb + what you did + measurable result/impact when possible
-6. If experience doesn't directly match, identify and emphasize transferable skills
-7. Prioritize quantified achievements (numbers, percentages, metrics) where they exist
-8. Keep bullet points concise and impactful (1-2 lines max)
-
-REWRITING GUIDELINES:
-
-Professional Summary:
-- Rewrite to position the candidate for this specific role
-- 2-3 sentences maximum
-- Lead with their strongest relevant qualification
-- Include years of experience if 3+ years
-- Mention the most relevant technical skills for this role
-- End with what unique value they bring to this position
-
-Work Experience:
-- Keep the same jobs/companies/dates (never change facts)
-- Rewrite each bullet point to emphasize skills relevant to the target job
-- Start each bullet with a strong action verb (managed, developed, increased, etc.)
-- Include metrics and results where available
-- Highlight achievements that demonstrate skills needed for the target role
-- Order bullets by relevance to the target position (most relevant first)
-- 3-5 bullets per position maximum
-
-Skills:
-- Reorder to put the most relevant skills for this job first
-- Group into categories if helpful (Technical, Tools, Soft Skills)
-- Only include skills actually mentioned in their experience or education
-- Remove outdated or irrelevant skills for this position
-
-Education:
-- Keep all factual information unchanged
-- Can add relevant coursework, projects, or honors if they align with the job
-
-Return a JSON object with this exact structure:
-{
-  "contact": {
-    "firstName": "unchanged",
-    "lastName": "unchanged",
-    "email": "unchanged",
-    "phone": "unchanged",
-    "location": "unchanged",
-    "linkedin": "unchanged",
-    "website": "unchanged"
-  },
-  "summary": "rewritten professional summary tailored for this role",
-  "experience": [
-    {
-      "title": "unchanged job title",
-      "company": "unchanged company name",
-      "startDate": "unchanged",
-      "endDate": "unchanged",
-      "location": "unchanged",
-      "description": "rewritten bullets as single string separated by • "
-    }
-  ],
-  "education": [
-    {
-      "degree": "unchanged",
-      "school": "unchanged",
-      "year": "unchanged",
-      "gpa": "unchanged or empty",
-      "additionalInfo": "relevant coursework/projects if applicable"
-    }
-  ],
-  "skills": ["reordered skill list", "most relevant first"]
-}
-
-Focus on creating a compelling narrative that shows why this candidate is perfect for this role, using only their real experience.`;
-
-    let completion;
+    let modelResult;
     try {
-      console.log('📍 Calling OpenAI API with model: gpt-4o-mini');
-      completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini", // Using gpt-4o-mini for better cost/performance
-        messages: [
-        {
-          role: "system",
-          content: "You are a professional resume writer who creates authentic, compelling resumes. You never fabricate information and always maintain the candidate's genuine experience while presenting it in the best possible light."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7, // Natural-sounding language
-      max_tokens: 4000,
-      });
-      console.log('✅ OpenAI API responded successfully');
-    } catch (openaiError: any) {
-      console.error('❌ OpenAI API error:', openaiError);
-      console.error('Error details:', openaiError?.response?.data || openaiError?.message);
-
-      if (openaiError?.status === 401 || openaiError?.message?.includes('401')) {
-        return NextResponse.json({
-          error: 'Invalid AI service credentials. Please contact support.',
-          success: false
-        }, { status: 500 });
+      modelResult = await callTailorModel(
+        input,
+        { title: jobTitle, company: actualCompanyName, description: actualJobDescription, location },
+        { extraContext, contextTags: Array.isArray(contextTags) ? contextTags : undefined }
+      );
+    } catch (error) {
+      if (error instanceof TailorError) {
+        console.error('❌ Tailor model error:', error.message);
+        return NextResponse.json({ error: error.userMessage, success: false }, { status: error.status });
       }
-
-      if (openaiError?.status === 429 || openaiError?.message?.includes('429')) {
-        return NextResponse.json({
-          error: 'AI service is currently busy. Please try again in a moment.',
-          success: false
-        }, { status: 429 });
-      }
-
-      if (openaiError?.message?.includes('token') || openaiError?.message?.includes('context')) {
-        return NextResponse.json({
-          error: 'Resume or job description is too long. Please shorten and try again.',
-          success: false
-        }, { status: 400 });
-      }
-
-      return NextResponse.json({
-        error: 'Failed to generate tailored resume. Please try again.',
-        details: openaiError?.message || 'Unknown OpenAI error',
-        success: false
-      }, { status: 500 });
+      throw error;
     }
 
-    const response = completion.choices[0]?.message?.content?.trim();
-    if (!response) {
-      console.error('❌ Empty response from OpenAI');
-      return NextResponse.json({
-        error: 'AI service returned empty response. Please try again.',
-        success: false
-      }, { status: 500 });
-    }
+    const { cleaned, warnings } = factGuard(input, modelResult.output);
+    const coverage = coverageReport(input, cleaned);
+    const tailoredResume = applyTailorOutput(master, input, cleaned);
 
-    console.log('📍 OpenAI response size:', response.length, 'characters');
-
-    // Parse the AI response
-    let tailoredData;
-    try {
-      const cleanedResponse = response.replace(/```json\n?|\n?```/g, '').trim();
-      tailoredData = JSON.parse(cleanedResponse);
-      console.log('✅ Tailored data parsed successfully');
-    } catch (parseError: any) {
-      console.error('❌ Failed to parse OpenAI response:', parseError);
-      console.error('Response was:', response.substring(0, 500));
-      return NextResponse.json({
-        error: 'Failed to parse AI response. Please try again.',
-        success: false
-      }, { status: 500 });
-    }
-
-    console.log('✅ Tailored resume generated successfully');
-
-    // Transform the tailored data to match the database schema AND frontend expectations
-    const tailoredContent = {
-      contact: tailoredData.contact || currentContent.contactInfo,
-      summary: tailoredData.summary || '',
-      experience: Array.isArray(tailoredData.experience) ?
-        tailoredData.experience.map((exp: any) => ({
-          jobTitle: exp.title,
-          company: exp.company,
-          startDate: exp.startDate,
-          endDate: exp.endDate,
-          location: exp.location || '',
-          responsibilities: exp.description || '',
-          current: exp.endDate?.toLowerCase().includes('present') || false
-        })) : [],
-      education: Array.isArray(tailoredData.education) ?
-        tailoredData.education.map((edu: any) => ({
-          degree: edu.degree,
-          institution: edu.school,
-          graduationYear: edu.year,
-          gpa: edu.gpa || '',
-          fieldOfStudy: edu.fieldOfStudy || '',
-          additionalInfo: edu.additionalInfo || ''
-        })) : [],
-      skills: Array.isArray(tailoredData.skills) ? tailoredData.skills : [],
-      tailoredFor: {
-        jobTitle,
-        company: actualCompanyName,
-        tailoredAt: new Date().toISOString()
-      }
+    const categoryScores: TailorCategoryScores = {
+      keywordCoverageMaster: coverage.master.score,
+      keywordCoverageTailored: coverage.tailored.score
+    };
+    const report: TailorReport = {
+      version: 'tailor-v2',
+      model: modelResult.model,
+      warnings,
+      missingKeywords: coverage.tailored.missing,
+      bulletReasons: Object.fromEntries([
+        ...cleaned.roles.map((r) => [r.id, r.bullets] as const),
+        ...cleaned.projects.map((p) => [p.id, p.bullets] as const)
+      ])
     };
 
-    // Create the frontend-compatible structure
-    const frontendResume = {
-      contactInfo: tailoredData.contact || currentContent.contactInfo,
-      professionalSummary: tailoredData.summary ? {
-        summary: tailoredData.summary,
-        targetRole: '',
-        keyStrengths: [],
-        careerLevel: 'mid'
-      } : currentContent.professionalSummary,
-      workExperience: Array.isArray(tailoredData.experience) ?
-        tailoredData.experience.map((exp: any, index: number) => ({
-          id: `exp_${Date.now()}_${index}`,
-          role: exp.title,
-          company: exp.company,
-          dates: `${exp.startDate} - ${exp.endDate}`,
-          location: exp.location || '',
-          achievements: exp.description ? exp.description.split('•').map((a: string) => a.trim()).filter(Boolean) : [],
-          current: exp.endDate?.toLowerCase().includes('present') || false,
-          jobTitle: exp.title, // Some components may use jobTitle instead of role
-          startDate: exp.startDate,
-          endDate: exp.endDate,
-          isCurrentRole: exp.endDate?.toLowerCase().includes('present') || false,
-          technologies: []
-        })) : [],
-      education: Array.isArray(tailoredData.education) ?
-        tailoredData.education.map((edu: any, index: number) => ({
-          id: `edu_${Date.now()}_${index}`,
-          degree: edu.degree,
-          school: edu.school,
-          institution: edu.school, // Some components may use institution instead of school
-          graduationDate: edu.year,
-          graduationYear: edu.year, // Alternative field name
-          gpa: edu.gpa || '',
-          field: edu.fieldOfStudy || '', // Alternative field name
-          fieldOfStudy: edu.fieldOfStudy || '',
-          additionalInfo: edu.additionalInfo || '',
-          honors: [],
-          relevantCoursework: []
-        })) : [],
-      skills: Array.isArray(tailoredData.skills) ? {
-        technical: tailoredData.skills,
-        frameworks: [],
-        tools: [],
-        cloud: [],
-        databases: [],
-        soft: [],
-        certifications: []
-      } : currentContent.skills || { technical: [], frameworks: [], tools: [], cloud: [], databases: [], soft: [], certifications: [] }
+    const applicationData = {
+      jobDescription: actualJobDescription,
+      originalContent: master as Prisma.InputJsonValue, // master snapshot at tailor time
+      optimizedContent: cleaned as unknown as Prisma.InputJsonValue,
+      optimizedStructured: tailoredResume as unknown as Prisma.InputJsonValue,
+      matchScore: coverage.tailored.score,
+      categoryScores: categoryScores as unknown as Prisma.InputJsonValue,
+      keywords: cleaned.targetKeywords,
+      suggestions: report as unknown as Prisma.InputJsonValue,
+      analysisVersion: 'tailor-v2',
+      status: 'OPTIMIZED' as const,
+      lastAnalyzed: new Date()
     };
 
-    // Update the resume with tailored content - save to structured fields
-    const updatedResume = await prisma.resume.update({
-      where: { id: resumeId },
-      data: {
-        contactInfo: frontendResume.contactInfo,
-        professionalSummary: frontendResume.professionalSummary,
-        workExperience: frontendResume.workExperience,
-        education: frontendResume.education,
-        skills: frontendResume.skills,
-        lastOptimized: new Date(),
-      }
-    });
-
-    console.log('💾 Resume updated with tailored content');
-
-    // Create or update job application
+    // Re-tailor an explicit application, else reuse the one for the same job, else create
     const existingApplication = await prisma.jobApplication.findFirst({
-      where: {
-        resumeId: resumeId,
-        jobTitle: jobTitle,
-        company: actualCompanyName,
-        userId: resume.userId
-      }
+      where: requestedApplicationId
+        ? { id: String(requestedApplicationId), resumeId, userId }
+        : { resumeId, userId, jobTitle, company: actualCompanyName }
     });
 
-    let applicationId: string;
+    const application = existingApplication
+      ? await prisma.jobApplication.update({
+          where: { id: existingApplication.id },
+          data: applicationData
+        })
+      : await prisma.jobApplication.create({
+          data: {
+            ...applicationData,
+            userId,
+            resumeId,
+            jobTitle,
+            company: actualCompanyName,
+            jobUrl: requestData.jobUrl || null
+          }
+        });
 
-    if (existingApplication) {
-      // Update existing application
-      const updatedApp = await prisma.jobApplication.update({
-        where: { id: existingApplication.id },
-        data: {
-          originalContent: currentContent, // Store the pre-tailoring snapshot
-          optimizedContent: tailoredContent,
-          optimizedStructured: frontendResume,
-          jobDescription: actualJobDescription,
-          status: 'OPTIMIZED',
-          lastAnalyzed: new Date()
-        }
-      });
-      applicationId = updatedApp.id;
-      console.log('📝 Updated existing job application');
-    } else {
-      // Create new job application
-      console.log('📝 Creating JobApplication with userId:', resume.userId);
-      const newApplication = await prisma.jobApplication.create({
-        data: {
-          userId: resume.userId,
-          resumeId: resumeId,
-          jobTitle: jobTitle,
-          company: actualCompanyName,
-          jobDescription: actualJobDescription,
-          originalContent: currentContent, // Store the pre-tailoring snapshot
-          optimizedContent: tailoredContent,
-          optimizedStructured: frontendResume,
-          status: 'OPTIMIZED',
-          lastAnalyzed: new Date()
-        }
-      });
-      applicationId = newApplication.id;
-      console.log('📝 Created new job application with ID:', newApplication.id, 'for userId:', newApplication.userId);
-
-      // Increment the user's monthly resume count (only for new tailoring)
-      await prisma.user.update({
-        where: { id: resume.userId },
-        data: {
-          monthlyResumesCreated: { increment: 1 },
-          totalResumesCreated: { increment: 1 },
-          resumesCreated: { increment: 1 }
-        }
-      });
-      console.log('📊 Incremented user resume count');
-    }
+    // Count only after the result is saved. Re-tailoring counts too.
+    await incrementTailorCount(userId);
+    await prisma.resume.update({
+      where: { id: resumeId },
+      data: { lastOptimized: new Date() }
+    });
 
     return NextResponse.json({
       success: true,
       message: `Resume tailored for ${jobTitle} at ${actualCompanyName}`,
-      tailoredResume: frontendResume,
-      tailoredContent,
-      applicationId // Include the JobApplication ID for redirect
+      applicationId: application.id,
+      tailoredResume,
+      warningsCount: warnings.length,
+      keywordCoverage: {
+        master: coverage.master.score,
+        tailored: coverage.tailored.score,
+        missing: coverage.tailored.missing
+      },
+      tailorsRemaining: quota.limit === Infinity ? null : Math.max(0, quota.remaining - 1)
     });
 
   } catch (error) {
     console.error('❌ Tailoring error:', error);
-
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
     return NextResponse.json(
-      {
-        error: 'Failed to tailor resume',
-        details: errorMessage,
-        success: false
-      },
+      { error: 'Failed to tailor resume', details: errorMessage, success: false },
       { status: 500 }
     );
   }
