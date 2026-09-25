@@ -5,6 +5,7 @@ import type { MasterResumeDTO } from "@/lib/master-dto"
 import type { ApplicationDetailDTO, ApplicationSummaryDTO } from "@/lib/application-dto"
 import type { ParsedResume } from "@/types/parsed-resume"
 import type { BulletChange } from "@/types/tailor"
+import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shared"
 
 export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO }
 
@@ -33,13 +34,13 @@ async function failure(res: Response, fallback: string): Promise<Failure> {
 const NETWORK: Failure = { ok: false, status: 0, error: "Can't reach ReWork. Check your connection and try again." }
 
 export async function loadDashboard(): Promise<
-  { ok: true; masters: MasterResumeDTO[]; applications: ApplicationSummaryDTO[]; quota: Quota } | Failure
+  { ok: true; masters: MasterResumeDTO[]; applications: ApplicationSummaryDTO[]; quota: Quota; coverLetterQuota: Quota } | Failure
 > {
   try {
     const res = await fetch("/api/resumes", { cache: "no-store" })
     if (!res.ok) return failure(res, "Couldn't load your resumes.")
     const data = await res.json()
-    return { ok: true, masters: data.masters, applications: data.applications, quota: data.quota }
+    return { ok: true, masters: data.masters, applications: data.applications, quota: data.quota, coverLetterQuota: data.coverLetterQuota }
   } catch {
     return NETWORK
   }
@@ -183,6 +184,43 @@ export async function decideChange(
     })
     if (!res.ok) return failure(res, "Couldn't save that.")
     return { ok: true, application: (await res.json()).application }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function writeCoverLetter(
+  applicationId: string,
+  tone: CoverLetterTone
+): Promise<{ ok: true; application: ApplicationDetailDTO; coverLetterQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/applications/${applicationId}/cover-letter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tone }),
+    })
+    if (!res.ok) return failure(res, "We couldn't write the letter. Please try again.")
+    const data = await res.json()
+    return { ok: true, application: data.application, coverLetterQuota: data.coverLetterQuota }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function saveCoverLetter(
+  applicationId: string,
+  text: string,
+  tone: CoverLetterTone
+): Promise<{ ok: true; coverLetter: StoredCoverLetter; coverLetterUpdatedAt: string } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/applications/${applicationId}/cover-letter`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, tone }),
+    })
+    if (!res.ok) return failure(res, "Couldn't save the letter.")
+    const data = await res.json()
+    return { ok: true, coverLetter: data.coverLetter, coverLetterUpdatedAt: data.coverLetterUpdatedAt }
   } catch {
     return NETWORK
   }

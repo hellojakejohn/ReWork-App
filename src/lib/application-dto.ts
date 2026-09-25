@@ -1,6 +1,7 @@
 // What the client gets for a tailored resume (a JobApplication row).
 import { masterToParsed } from '@/lib/master-resume'
 import type { ParsedResume } from '@/types/parsed-resume'
+import { readStoredCoverLetter, type StoredCoverLetter } from '@/lib/cover-letter-shared'
 import type { BulletChange, FactGuardWarning, TailorCategoryScores, TailorReport } from '@/types/tailor'
 
 export interface ApplicationSummaryDTO {
@@ -21,6 +22,8 @@ export interface ApplicationDetailDTO extends ApplicationSummaryDTO {
   changes: BulletChange[]
   keywords: { target: string[]; presentBefore: string[]; presentAfter: string[]; missing: string[] }
   warnings: FactGuardWarning[]
+  coverLetter: StoredCoverLetter | null
+  coverLetterUpdatedAt: string | null
 }
 
 interface ApplicationRowLike {
@@ -36,6 +39,8 @@ interface ApplicationRowLike {
   keywords?: string[]
   suggestions?: unknown
   optimizedStructured?: unknown
+  coverLetter?: unknown
+  coverLetterUpdatedAt?: Date | null
 }
 
 export function toApplicationSummary(row: ApplicationRowLike): ApplicationSummaryDTO {
@@ -69,5 +74,7 @@ export function toApplicationDetail(row: ApplicationRowLike): ApplicationDetailD
       missing,
     },
     warnings: Array.isArray(report.warnings) ? report.warnings : [],
+    coverLetter: readStoredCoverLetter(row.coverLetter),
+    coverLetterUpdatedAt: row.coverLetterUpdatedAt ? row.coverLetterUpdatedAt.toISOString() : null,
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react'
 import { describe, expect, it } from 'vitest'
 import { renderToBuffer } from '@react-pdf/renderer'
-import { ResumePdf } from '@/lib/resume-pdf'
+import { CoverLetterPdf, ResumePdf } from '@/lib/resume-pdf'
 import { extractPdfText } from '@/lib/resume-source-text'
 import type { ParsedResume } from '@/types/parsed-resume'
 
@@ -22,6 +22,17 @@ describe('ResumePdf', () => {
     const text = await extractPdfText(buffer)
     for (const expected of ['Jakob Johnson', 'Software Engineer', 'EXPERIENCE', 'Founder, ReWork', '06/2024 – Present', 'Built the app', 'PROJECTS', 'EDUCATION', 'SKILLS', 'Languages: TypeScript, Solidity', 'CERTIFICATIONS', 'github.com/hellojakejohn']) {
       expect(text).toContain(expected)
+    }
+  }, 20_000)
+})
+
+describe('CoverLetterPdf', () => {
+  it('uses the resume header and keeps the letter text', async () => {
+    const text = 'Dear Hiring Team,\n\nI built the ReWork app end to end.\n\nSincerely,\nJakob Johnson'
+    const buffer = Buffer.from(await renderToBuffer(React.createElement(CoverLetterPdf, { resume, template: 'classic', text }) as never))
+    const out = await extractPdfText(buffer)
+    for (const expected of ['Jakob Johnson', 'Software Engineer', 'j@x.io', 'Dear Hiring Team,', 'I built the ReWork app end to end.', 'Sincerely,']) {
+      expect(out).toContain(expected)
     }
   }, 20_000)
 })

@@ -62,6 +62,7 @@ export function OneFlow() {
   const [masters, setMasters] = useState<MasterResumeDTO[]>([])
   const [applications, setApplications] = useState<ApplicationSummaryDTO[]>([])
   const [quota, setQuota] = useState<Quota | null>(null)
+  const [coverLetterQuota, setCoverLetterQuota] = useState<Quota | null>(null)
 
   const [step, setStep] = useState(0)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -87,6 +88,7 @@ export function OneFlow() {
     setMasters(result.masters)
     setApplications(result.applications)
     setQuota(result.quota)
+    setCoverLetterQuota(result.coverLetterQuota)
     const initial = pickInitial(result.masters)
     setActiveId(initial?.id ?? null)
     // Returning users with a usable master start on the Job card.
@@ -302,6 +304,9 @@ export function OneFlow() {
         setApplication(null)
         go(1)
       }}
+      coverLetterQuota={coverLetterQuota}
+      onCoverLetterQuota={setCoverLetterQuota}
+      onUpgrade={(reason) => setUpgrade({ open: true, reason })}
     />,
   ]
 

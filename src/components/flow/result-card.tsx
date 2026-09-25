@@ -1,15 +1,17 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { AlertTriangle, ArrowRight, Check, Download, RotateCcw, ShieldCheck } from "lucide-react"
+import { AlertTriangle, ArrowRight, Check, RotateCcw, ShieldCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { TEMPLATES, type TemplateId } from "@/lib/resume-templates"
 import type { FactGuardWarning } from "@/types/tailor"
-import { decideChange, type ApplicationDetailDTO } from "./api"
+import { decideChange, type ApplicationDetailDTO, type Quota } from "./api"
 import { ResumeDocument } from "./resume-document"
-import { Card, CardHeader, ErrorNote, SecondaryButton, primaryButtonClass } from "./ui"
+import { CoverLetterPanel } from "./cover-letter-panel"
+import { DownloadMenu } from "./download-menu"
+import { Card, CardHeader, ErrorNote, SecondaryButton } from "./ui"
 
-type Tab = "preview" | "changes" | "keywords" | "warnings"
+type Tab = "preview" | "changes" | "keywords" | "warnings" | "letter"
 
 const WARNING_LABEL: Record<FactGuardWarning["type"], string> = {
   fact_restored: "Fact restored",
@@ -26,6 +28,10 @@ export function ResultCard({
   onChange,
   onBack,
   onAnotherJob,
+  coverLetterQuota,
+  onCoverLetterQuota,
+  onUpgrade,
+  renderChangeExtra,
 }: {
   application: ApplicationDetailDTO | null
   template: TemplateId
@@ -33,6 +39,11 @@ export function ResultCard({
   onChange: (application: ApplicationDetailDTO) => void
   onBack: () => void
   onAnotherJob: () => void
+  coverLetterQuota: Quota | null
+  onCoverLetterQuota: (quota: Quota) => void
+  onUpgrade: (reason?: string) => void
+  /** Extra action per bullet in the Changes tab (the evidence interview's "Make it stronger"). */
+  renderChangeExtra?: (change: ApplicationDetailDTO["changes"][number]) => React.ReactNode
 }) {
   const [tab, setTab] = useState<Tab>("changes")
   const [pending, setPending] = useState<string | null>(null)
@@ -64,13 +75,13 @@ export function ResultCard({
   // Older results didn't store what the master covered; don't mark everything as new.
   const knowsBefore = keywords.presentBefore.length > 0 || application.coverageBefore === 0
   const newlyCovered = knowsBefore ? keywords.presentAfter.filter((k) => !keywords.presentBefore.includes(k)) : []
-  const downloadHref = `/api/resumes/${application.resumeId}/download?applicationId=${application.id}&template=${template}`
 
   const tabs: { id: Tab; label: string; count?: number; mobileOnly?: boolean }[] = [
     { id: "preview", label: "Preview", mobileOnly: true },
     { id: "changes", label: "Changes", count: changes.length },
     { id: "keywords", label: "Keywords" },
     { id: "warnings", label: "Warnings", count: warnings.length },
+    { id: "letter", label: "Cover letter", count: application.coverLetter?.warnings.length || undefined },
   ]
 
   const preview = (
@@ -128,6 +139,7 @@ export function ResultCard({
                 >
                   <RotateCcw className="h-3 w-3" /> {reverted ? "Reverted" : "Revert"}
                 </button>
+                {renderChangeExtra?.(c)}
               </div>
             </div>
           )
@@ -197,6 +209,15 @@ export function ResultCard({
         )}
       </div>
     ),
+    letter: (
+      <CoverLetterPanel
+        application={application}
+        quota={coverLetterQuota}
+        onChange={onChange}
+        onQuota={onCoverLetterQuota}
+        onUpgrade={onUpgrade}
+      />
+    ),
   }
 
   return (
@@ -210,9 +231,7 @@ export function ResultCard({
             <SecondaryButton onClick={onAnotherJob}>
               Tailor for another job <ArrowRight className="h-3.5 w-3.5" />
             </SecondaryButton>
-            <a href={downloadHref} className={primaryButtonClass}>
-              <Download className="h-4 w-4" /> Download PDF
-            </a>
+            <DownloadMenu application={application} template={template} />
           </div>
         }
       />
@@ -245,9 +264,7 @@ export function ResultCard({
             <SecondaryButton className="flex-1" onClick={onAnotherJob}>
               Another job
             </SecondaryButton>
-            <a href={downloadHref} className={cn(primaryButtonClass, "flex-1")}>
-              <Download className="h-4 w-4" /> PDF
-            </a>
+            <DownloadMenu application={application} template={template} className="flex-1" />
           </div>
         </div>
       </div>
