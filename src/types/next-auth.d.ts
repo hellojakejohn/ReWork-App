@@ -1,4 +1,5 @@
 import "next-auth"
+import type { Access } from "@/lib/entitlement-rules"
 
 declare module "next-auth" {
   interface Session {
@@ -7,7 +8,8 @@ declare module "next-auth" {
       name?: string | null
       email?: string | null
       image?: string | null
-      plan: 'FREE' | 'PREMIUM'
+      access: Access // from getAccess(); the only "is Pro" answer on the client
+      isAdmin: boolean
       resumesCreated: number
       totalResumesCreated: number
       monthlyResumesCreated: number
@@ -21,7 +23,6 @@ declare module "next-auth" {
 
   interface User {
     id: string
-    plan: 'FREE' | 'PREMIUM'
     resumesCreated: number
     totalResumesCreated: number
     monthlyResumesCreated: number

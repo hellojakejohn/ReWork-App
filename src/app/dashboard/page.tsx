@@ -10,7 +10,8 @@ import Navigation from "@/components/navigation"
 import ComparisonModal from "@/components/comparison-modal"
 import { ChatBubble } from "@/components/ui/chat-bubble"
 import { Badge } from "@/components/ui/badge"
-import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from "@/lib/plans"
+import { FREE_TAILORS_PER_MONTH, PASS_DAYS, PRICING } from "@/lib/plans"
+import { CheckoutSuccess } from "@/components/billing/checkout-success"
 import {
   FileText,
   Plus,
@@ -203,12 +204,13 @@ function DashboardContent() {
     return `${Math.round(mb * 10) / 10} MB`
   }
 
-  const isPremium = session?.user?.plan === "PREMIUM"
+  const isPremium = !!session?.user?.access?.isPro
   const tailorLimit = isPremium ? "unlimited" : String(FREE_TAILORS_PER_MONTH)
   const tailorsUsed = session?.user?.monthlyTailors ?? 0
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-black bg-dots-sm">
+      <CheckoutSuccess />
       {/* Enhanced Navigation with Plan Info */}
       <Navigation>
         <div className="flex items-center space-x-4 ml-auto">
@@ -511,8 +513,8 @@ function DashboardContent() {
             {isPremium ? "Pro Plan" : "Free Plan"} • {tailorsUsed}/{tailorLimit} tailors used this month
           </div>
           {!isPremium && (
-            <Link href="/#pricing" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-              Upgrade to Pro ({PRO_PRICE_DISPLAY}) for unlimited tailoring
+            <Link href="/pricing" className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
+              Unlimited tailoring: {PRICING.monthly.display} or {PRICING.pass.amount} for {PASS_DAYS} days
             </Link>
           )}
         </div>

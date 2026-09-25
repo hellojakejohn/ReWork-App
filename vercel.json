@@ -1,3 +1,6 @@
 {
-  "crons": [{ "path": "/api/keepalive", "schedule": "0 14 * * *" }]
+  "crons": [
+    { "path": "/api/keepalive", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/expire-entitlements", "schedule": "15 14 * * *" }
+  ]
 }

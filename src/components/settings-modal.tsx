@@ -1,9 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +9,10 @@ import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from "@/lib/plans"
+import Link from "next/link"
+import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
+import { NO_ACCESS } from "@/lib/entitlement-rules"
+import { AccessSummary, OfferCards } from "@/components/billing/offer-cards"
 import {
   User,
   Crown,
@@ -21,8 +22,6 @@ import {
   Calendar,
   Trash2,
   Settings,
-  Sparkles,
-  CheckCircle,
   CreditCard
 } from "lucide-react"
 import { AvatarColorPicker, UserAvatar } from "@/components/ui/avatar"
@@ -35,76 +34,15 @@ interface SettingsModalProps {
 type TabType = 'account' | 'notifications' | 'privacy' | 'billing'
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { data: session, update } = useSession()
-  const router = useRouter()
+  const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState<TabType>('account')
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [autoOptimization, setAutoOptimization] = useState(false)
   const [dataRetention, setDataRetention] = useState(true)
-  const [isUpgrading, setIsUpgrading] = useState(false)
-  const [isManagingSubscription, setIsManagingSubscription] = useState(false)
   // Avatar state removed - now handled by AvatarColorPicker component
 
-  const isPro = session?.user?.plan === "PREMIUM"
-
-  const handleUpgrade = async () => {
-    try {
-      setIsUpgrading(true)
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session')
-      }
-
-      // Redirect to Stripe Checkout
-      window.location.href = data.url
-    } catch (error) {
-      console.error('Error upgrading:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to upgrade')
-    } finally {
-      setIsUpgrading(false)
-    }
-  }
-
-  const handleManageSubscription = async () => {
-    try {
-      setIsManagingSubscription(true)
-      const response = await fetch('/api/stripe/portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create portal session')
-      }
-
-      // Redirect to Stripe Customer Portal
-      window.location.href = data.url
-    } catch (error) {
-      console.error('Error managing subscription:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to open subscription management')
-    } finally {
-      setIsManagingSubscription(false)
-    }
-  }
-
-  // Check for upgrade success
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('upgraded') === 'true') {
-      toast.success('Welcome to Pro! You now have unlimited tailored resumes.')
-      update() // Refresh session data
-      // Clean up URL
-      router.replace('/dashboard')
-    }
-  }, [router, update])
+  const access = session?.user?.access ?? NO_ACCESS
+  const isPro = access.isPro
 
   // Avatar color is now handled by the AvatarColorPicker component
 
@@ -278,7 +216,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-white mb-2">Usage & Billing</h3>
-              <p className="text-sm text-slate-400 mb-6">Track your usage and manage your subscription.</p>
+              <p className="text-sm text-slate-400 mb-6">Track your usage and manage how you pay for Pro.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
@@ -294,57 +232,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             </div>
 
-            {!isPro && (
-              <div className="p-6 bg-gradient-to-br from-emerald-900/30 to-slate-900/20 border border-emerald-400/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-4">
-                  <Crown className="w-5 h-5 text-emerald-400" />
-                  <span className="text-lg font-semibold text-white">Upgrade to Pro</span>
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                </div>
+            <AccessSummary access={access} />
 
-                <div className="grid grid-cols-1 gap-2 mb-4 text-sm">
-                  {[
-                    `Unlimited tailored resumes (Free: ${FREE_TAILORS_PER_MONTH}/month)`,
-                    "Advanced AI optimization",
-                    "Premium templates & designs",
-                    "Priority customer support",
-                    "Export to multiple formats"
-                  ].map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2 text-slate-300">
-                      <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  onClick={handleUpgrade}
-                  disabled={isUpgrading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
-                >
-                  {isUpgrading ? "Redirecting..." : `Upgrade Now - ${PRO_PRICE_DISPLAY}`}
-                </Button>
-              </div>
-            )}
-
-            {isPro && (
-              <div className="p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
+            {access.source !== "STRIPE_SUBSCRIPTION" && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
                   <Crown className="w-4 h-4 text-emerald-400" />
-                  <span className="font-medium text-emerald-400">Pro Plan Active</span>
+                  <span className="font-semibold text-white">{isPro ? "Extend Pro" : "Go Pro"}</span>
+                  <Link href="/pricing" onClick={onClose} className="ml-auto text-xs text-slate-400 hover:text-white underline">
+                    Compare plans
+                  </Link>
                 </div>
-                <p className="text-sm text-slate-400 mb-3">
-                  Pro plan active - manage billing through customer portal
-                </p>
-                <Button
-                  onClick={handleManageSubscription}
-                  disabled={isManagingSubscription}
-                  variant="outline"
-                  size="sm"
-                  className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                >
-                  {isManagingSubscription ? "Loading..." : "Manage Subscription"}
-                </Button>
+                <OfferCards access={access} compact />
               </div>
             )}
           </div>

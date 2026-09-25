@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { MessageCircle, X, Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { FREE_PLAN_SUMMARY, FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from '@/lib/plans'
+import { FREE_PLAN_SUMMARY, FREE_TAILORS_PER_MONTH, PRO_PLAN_SUMMARY } from '@/lib/plans'
 
 interface ChatMessage {
   id: string
@@ -36,8 +36,8 @@ const FAQS: FAQ[] = [
   },
   {
     id: '3',
-    question: 'What\'s the difference between Free and Premium?',
-    answer: `Free: ${FREE_PLAN_SUMMARY}. Pro: unlimited tailored resumes for ${PRO_PRICE_DISPLAY}.`,
+    question: 'What\'s the difference between Free and Pro?',
+    answer: `Free: ${FREE_PLAN_SUMMARY}. Pro: ${PRO_PLAN_SUMMARY}.`,
     category: 'billing'
   },
   {
@@ -121,7 +121,7 @@ export function ChatBubble({ className }: ChatBubbleProps) {
         } else if (lowerMessage.includes('download') || lowerMessage.includes('limit')) {
           response = `Downloads are unlimited on every plan. Free includes ${FREE_TAILORS_PER_MONTH} tailored resumes per month; Pro is unlimited.`
         } else if (lowerMessage.includes('pricing') || lowerMessage.includes('cost')) {
-          response = `Pro is ${PRO_PRICE_DISPLAY} for unlimited tailored resumes. Free includes ${FREE_TAILORS_PER_MONTH} per month.`
+          response = `Pro: ${PRO_PLAN_SUMMARY}. Free includes ${FREE_TAILORS_PER_MONTH} per month. See /pricing for details.`
         } else {
           response = 'Thanks for your message! Our team will get back to you soon. Check our FAQ above for instant answers.'
         }

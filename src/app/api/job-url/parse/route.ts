@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import * as cheerio from 'cheerio';
-import { openai } from '@/lib/openai';
+import { getOpenAI } from '@/lib/openai';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
+import { FetchTimeoutError, ResponseTooLargeError, UnsafeUrlError, assertSafeUrl, safeFetch } from '@/lib/safe-fetch';
+
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +30,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL provided' }, { status: 400 });
     }
 
-    // Validate URL format
+    // Validate URL format (http(s) only, no private/loopback/metadata hosts). safeFetch
+    // re-checks every resolved IP at connect time and on each redirect.
     let validatedUrl: URL;
     try {
-      validatedUrl = new URL(url);
-      if (!['http:', 'https:'].includes(validatedUrl.protocol)) {
-        throw new Error('Invalid protocol');
-      }
+      validatedUrl = assertSafeUrl(url);
     } catch (error) {
-      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
+      const message = error instanceof UnsafeUrlError ? error.message : 'Invalid URL format';
+      return NextResponse.json({ error: message, success: false }, { status: 400 });
     }
 
     console.log('🌐 Fetching job posting from:', validatedUrl.href);
@@ -64,18 +66,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the webpage
-    const response = await fetch(validatedUrl.href, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      },
-      redirect: 'follow'
-    });
+    let response;
+    try {
+      response = await safeFetch(validatedUrl.href, {
+        maxRedirects: 3,
+        timeoutMs: 8000,
+        maxBytes: 2 * 1024 * 1024,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+    } catch (error) {
+      if (error instanceof UnsafeUrlError) {
+        return NextResponse.json({ error: 'That URL is not allowed', details: error.message, success: false }, { status: 400 });
+      }
+      if (error instanceof FetchTimeoutError) {
+        return NextResponse.json({ error: 'The job page took too long to respond', details: 'Please paste the job description manually.', success: false }, { status: 400 });
+      }
+      if (error instanceof ResponseTooLargeError) {
+        return NextResponse.json({ error: 'The job page is too large to read', details: 'Please paste the job description manually.', success: false }, { status: 400 });
+      }
+      throw error;
+    }
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       // Check if it's a bot detection/blocking response
       if (response.status === 403 || response.status === 429) {
         return NextResponse.json({
@@ -85,10 +103,10 @@ export async function POST(request: NextRequest) {
           isBlockedSite: true
         }, { status: 400 });
       }
-      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch URL: ${response.status}`);
     }
 
-    const html = await response.text();
+    const html = response.text;
 
     // Parse HTML with cheerio
     const $ = cheerio.load(html);
@@ -164,7 +182,7 @@ Important:
 - If any field cannot be determined, use empty string ""
 - Return valid JSON only`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {

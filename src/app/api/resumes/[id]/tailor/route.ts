@@ -8,7 +8,7 @@ import { factGuard } from '@/lib/fact-guard';
 import { coverageReport } from '@/lib/keyword-coverage';
 import { getTailorQuota, incrementTailorCount } from '@/lib/tailor-quota';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
-import { FREE_TAILORS_PER_MONTH, PRO_PRICE_DISPLAY } from '@/lib/plans';
+import { FREE_TAILORS_PER_MONTH, PRICING } from '@/lib/plans';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
 // The Resume row is the MASTER. Tailoring reads from it and writes the result to a
@@ -69,7 +69,7 @@ export async function POST(
     if (!quota.allowed) {
       return NextResponse.json({
         success: false,
-        error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Upgrade to Pro (${PRO_PRICE_DISPLAY}) for unlimited tailoring.`,
+        error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Go Pro for unlimited tailoring: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
         upgradeRequired: true,
         used: quota.used,
         limit: quota.limit

@@ -1,7 +1,7 @@
 // src/lib/pdf-extractor.ts - AI-powered parsing with null byte sanitization
 
 import pdf from 'pdf-parse';
-import { openai } from './openai';
+import { getOpenAI } from './openai';
 
 interface ExtractedContact {
   fullName?: string;
@@ -150,7 +150,7 @@ Return this JSON structure filled with the ACTUAL resume data:
 
 Remember: Extract ONLY what's actually in the resume text. Do NOT make up placeholder data.`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
