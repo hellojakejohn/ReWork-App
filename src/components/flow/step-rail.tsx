@@ -19,7 +19,8 @@ export function StepRail({
       <ol className="flex items-center gap-1 text-[13px]">
         {STEPS.map((label, i) => {
           const done = completed[i]
-          const clickable = i !== current && (done || i < current)
+          // Resume is always reachable: it's where Replace lives.
+          const clickable = i === 0 || (i !== current && (done || i < current))
           return (
             <li key={label} className="flex items-center gap-1">
               {i > 0 && <span aria-hidden className="mx-1 text-slate-600">·</span>}

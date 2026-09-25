@@ -99,7 +99,13 @@ model Resume {
   fileSize              Int?
   thumbnailUrl          String?
   contentType           String?
-  isActive              Boolean          @default(true)
+  isActive              Boolean          @default(true) // false = deleted (soft)
+  // Set when a newer upload replaced this master. Hidden masters stay usable and show
+  // up in Manage resumes, just not in the Resume card's switcher.
+  hiddenAt              DateTime?
+  // "2" = the structured parser (src/lib/parse-resume.ts). Null on rows from the old
+  // extractor, which get a "re-upload" banner.
+  parserVersion         String?
   wordCount             Int?
   lastOptimized         DateTime?
   createdAt             DateTime         @default(now())

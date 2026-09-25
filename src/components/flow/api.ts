@@ -60,20 +60,22 @@ async function streamed<T>(res: Response, onStage: (stage: string) => void, fall
   return outcome
 }
 
-export async function parseResumeInput(input: File | string, onStage: (stage: string) => void) {
+/** `replaces`: id of the master this upload replaces (it gets hidden, not deleted). */
+export async function parseResumeInput(input: File | string, onStage: (stage: string) => void, replaces?: string | null) {
   try {
     const res =
       typeof input === "string"
         ? await fetch("/api/resumes/parse", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: input }),
+            body: JSON.stringify({ text: input, ...(replaces ? { replaces } : {}) }),
           })
         : await fetch("/api/resumes/parse", {
             method: "POST",
             body: (() => {
               const form = new FormData()
               form.append("file", input)
+              if (replaces) form.append("replaces", replaces)
               return form
             })(),
           })
@@ -91,6 +93,20 @@ export async function saveMaster(id: string, resume: ParsedResume): Promise<{ ok
       body: JSON.stringify({ resume }),
     })
     if (!res.ok) return failure(res, "Couldn't save your changes.")
+    return { ok: true, master: (await res.json()).master }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function setMasterHidden(id: string, hidden: boolean): Promise<{ ok: true; master: MasterResumeDTO } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hidden }),
+    })
+    if (!res.ok) return failure(res, "Couldn't update that resume.")
     return { ok: true, master: (await res.json()).master }
   } catch {
     return NETWORK

@@ -1,6 +1,8 @@
 // POST /api/resumes/parse
 //   multipart/form-data { file }   (PDF or DOCX, max 10MB)
 //   application/json { text }      (pasted resume)
+// Either may carry `replaces: <resumeId>`: the new master becomes the active one and the
+// old one is hidden (kept, listed in Manage resumes, deletable).
 // Parses, validates, and saves a new master resume. Responds with an NDJSON stream of
 // real stages (see src/lib/ndjson.ts) ending in { type: 'done', result: MasterResumeDTO }
 // or { type: 'error' }. Nothing is saved if parsing fails.
@@ -16,7 +18,7 @@ import { incrementResumeCount } from '@/lib/resume-count'
 import { generateStorageKey, uploadToStorage } from '@/lib/storage'
 import { parseResume, ResumeParseError, type ParseInput } from '@/lib/parse-resume'
 import { parsedToMaster } from '@/lib/master-resume'
-import { toMasterDTO } from '@/lib/master-dto'
+import { CURRENT_PARSER_VERSION, toMasterDTO } from '@/lib/master-dto'
 import { ndjsonResponse } from '@/lib/ndjson'
 
 export const runtime = 'nodejs'
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (active >= masterLimit) {
       return NextResponse.json(
         {
-          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one to add another, or go Pro for unlimited.`,
+          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one in Manage resumes (account menu) to add another, or go Pro for unlimited.`,
           upgradeRequired: true,
         },
         { status: 403 }
@@ -68,11 +70,14 @@ export async function POST(request: NextRequest) {
   // ----- read input -----
   let input: ParseInput
   let file: File | null = null
+  let replaces: string | null = null
   const contentType = request.headers.get('content-type') || ''
   try {
     if (contentType.includes('multipart/form-data')) {
       const form = await request.formData()
       const value = form.get('file')
+      const replacesValue = form.get('replaces')
+      if (typeof replacesValue === 'string' && replacesValue) replaces = replacesValue
       if (!(value instanceof File)) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
       file = value
       if (file.size > MAX_BYTES) return NextResponse.json({ error: 'That file is over 10MB.' }, { status: 400 })
@@ -84,6 +89,7 @@ export async function POST(request: NextRequest) {
     } else {
       const body = await request.json()
       const text = typeof body?.text === 'string' ? body.text : ''
+      if (typeof body?.replaces === 'string' && body.replaces) replaces = body.replaces
       if (text.length > MAX_TEXT_CHARS) return NextResponse.json({ error: 'That text is too long. Paste just your resume.' }, { status: 400 })
       input = { kind: 'text', text }
     }
@@ -144,6 +150,7 @@ export async function POST(request: NextRequest) {
           },
         } as unknown as Prisma.InputJsonValue,
         structuredDataVersion: 'parse-v1',
+        parserVersion: CURRENT_PARSER_VERSION,
         lastStructuredUpdate: now,
         wordCount: result.sourceText.split(/\s+/).filter(Boolean).length,
         s3Key: storageKey,
@@ -154,6 +161,10 @@ export async function POST(request: NextRequest) {
       },
     })
     await incrementResumeCount(userId)
+    if (replaces && replaces !== row.id) {
+      // updateMany scopes it to this user's own resume; a foreign id is a no-op.
+      await prisma.resume.updateMany({ where: { id: replaces, userId, isActive: true }, data: { hiddenAt: now } })
+    }
 
     send({ type: 'done', result: toMasterDTO(row) })
   })

@@ -23,6 +23,7 @@ export function TailorCard({
   onBack,
   onDone,
   onUpgrade,
+  onReplaceResume,
 }: {
   master: MasterResumeDTO | null
   job: JobDraft | null
@@ -31,6 +32,7 @@ export function TailorCard({
   onBack: () => void
   onDone: (application: ApplicationDetailDTO, tailorsRemaining: number | null) => void
   onUpgrade: (reason?: string) => void
+  onReplaceResume: () => void
 }) {
   const [stage, setStage] = useState<string | null>(null)
   const [error, setError] = useState("")
@@ -72,8 +74,15 @@ export function TailorCard({
               <>
                 <p className="font-semibold text-slate-100">{s.name || master!.title}</p>
                 <p className="text-sm text-slate-400">{s.headline}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {s.roles} roles · {s.projects} projects
+                <p className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
+                  <span>
+                    {s.roles} {s.roles === 1 ? "role" : "roles"} · {s.projects} {s.projects === 1 ? "project" : "projects"}
+                  </span>
+                  {!running && (
+                    <button onClick={onReplaceResume} className="text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline">
+                      Replace resume
+                    </button>
+                  )}
                 </p>
               </>
             ) : (

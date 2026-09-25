@@ -10,7 +10,13 @@ export interface MasterResumeDTO {
   updatedAt: string
   resume: ParsedResume
   needsReview: NeedsReviewItem[]
+  /** Replaced by a newer upload: kept, listed in Manage resumes, not in the switcher. */
+  hidden: boolean
+  /** Read by the old regex extractor; the Resume card asks for a re-upload. */
+  staleParse: boolean
 }
+
+export const CURRENT_PARSER_VERSION = '2'
 
 interface ResumeRowLike {
   id: string
@@ -26,6 +32,14 @@ interface ResumeRowLike {
   skills?: unknown
   projects?: unknown
   additionalSections?: unknown
+  hiddenAt?: Date | null
+  parserVersion?: string | null
+  structuredDataVersion?: string | null
+}
+
+/** Rows from before the structured parser: no parserVersion and not saved as parse-v1. */
+export function isStaleParse(row: { parserVersion?: string | null; structuredDataVersion?: string | null }): boolean {
+  return !row.parserVersion && row.structuredDataVersion !== 'parse-v1'
 }
 
 export function needsReviewOf(originalContent: unknown): NeedsReviewItem[] {
@@ -42,6 +56,8 @@ export function toMasterDTO(row: ResumeRowLike): MasterResumeDTO {
     updatedAt: row.updatedAt.toISOString(),
     resume: masterToParsed(row),
     needsReview: needsReviewOf(row.originalContent),
+    hidden: !!row.hiddenAt,
+    staleParse: isStaleParse(row),
   }
 }
 
