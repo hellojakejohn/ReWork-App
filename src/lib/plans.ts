@@ -3,6 +3,10 @@
 
 // Tailoring is the expensive call (OpenAI), so it's the metered thing.
 export const FREE_TAILORS_PER_MONTH = 3
+// Cover letters are one model call each, cheaper than a tailor. FREE gets one to try.
+export const FREE_COVER_LETTERS_PER_MONTH = 1
+// The tracker shows and manages this many applications on FREE (newest first).
+export const FREE_TRACKER_APPLICATIONS = 10
 // Uploads are unlimited, but FREE accounts can only keep this many master resumes
 // at once so nobody uses uploads as a free parsing API.
 export const FREE_MAX_MASTER_RESUMES = 5
@@ -56,12 +60,36 @@ export function isOfferId(v: unknown): v is OfferId {
 }
 
 export const PLAN_LIMITS = {
-  free: { tailorsPerMonth: FREE_TAILORS_PER_MONTH, masterResumes: FREE_MAX_MASTER_RESUMES },
-  pro: { tailorsPerMonth: Infinity, masterResumes: Infinity },
+  free: {
+    tailorsPerMonth: FREE_TAILORS_PER_MONTH,
+    coverLettersPerMonth: FREE_COVER_LETTERS_PER_MONTH,
+    masterResumes: FREE_MAX_MASTER_RESUMES,
+    trackedApplications: FREE_TRACKER_APPLICATIONS,
+    evidenceInterview: false,
+  },
+  pro: {
+    tailorsPerMonth: Infinity,
+    coverLettersPerMonth: Infinity,
+    masterResumes: Infinity,
+    trackedApplications: Infinity,
+    evidenceInterview: true,
+  },
 } as const
 
 export function tailorLimitFor(isPro: boolean): number {
   return PLAN_LIMITS[isPro ? 'pro' : 'free'].tailorsPerMonth
+}
+
+export function coverLetterLimitFor(isPro: boolean): number {
+  return PLAN_LIMITS[isPro ? 'pro' : 'free'].coverLettersPerMonth
+}
+
+export function trackerLimitFor(isPro: boolean): number {
+  return PLAN_LIMITS[isPro ? 'pro' : 'free'].trackedApplications
+}
+
+export function canUseEvidenceInterview(isPro: boolean): boolean {
+  return PLAN_LIMITS[isPro ? 'pro' : 'free'].evidenceInterview
 }
 
 export function masterResumeLimitFor(isPro: boolean): number {

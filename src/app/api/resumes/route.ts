@@ -4,10 +4,10 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { toMasterDTO } from '@/lib/master-dto'
 import { toApplicationSummary } from '@/lib/application-dto'
-import { getTailorQuota } from '@/lib/tailor-quota'
+import { getCoverLetterQuota, getTailorQuota, quotaDTO } from '@/lib/tailor-quota'
 
 // GET: everything the one-page flow needs on load: master resumes (normalized),
-// recent tailored resumes, and this month's tailor quota.
+// recent tailored resumes, and this month's tailor and cover letter quotas.
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -16,7 +16,7 @@ export async function GET() {
   const userId = session.user.id
 
   try {
-    const [resumes, applications, quota] = await Promise.all([
+    const [resumes, applications, quota, coverLetterQuota] = await Promise.all([
       prisma.resume.findMany({
         where: { userId, isActive: true },
         select: {
@@ -55,18 +55,15 @@ export async function GET() {
         take: 100,
       }),
       getTailorQuota(userId),
+      getCoverLetterQuota(userId),
     ])
 
     return NextResponse.json({
       success: true,
       masters: resumes.map(toMasterDTO),
       applications: applications.map(toApplicationSummary),
-      quota: {
-        isPro: quota.isPro,
-        used: quota.used,
-        limit: Number.isFinite(quota.limit) ? quota.limit : null,
-        remaining: Number.isFinite(quota.remaining) ? quota.remaining : null,
-      },
+      quota: quotaDTO(quota),
+      coverLetterQuota: quotaDTO(coverLetterQuota),
     })
   } catch (error) {
     console.error('❌ Resumes fetch error:', error)
