@@ -1,12 +1,14 @@
 // GET /api/health (admins only): which keys are set, can we reach the DB, and does one
-// cheap OpenAI call succeed. The OpenAI check is what catches an exhausted quota.
+// cheap OpenAI call succeed. The OpenAI check says which failure it is
+// (checks.openai.kind: quota | auth | rate_limit | ...), so an exhausted account or a bad
+// key shows up here before users report "busy".
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { isAdminEmail } from '@/lib/admin'
 import { prisma } from '@/lib/prisma'
 import { getOpenAI } from '@/lib/openai'
-import { classifyAIError } from '@/lib/ai-errors'
+import { classifyAIError, errorCodes, type AIErrorKind } from '@/lib/ai-errors'
 import { parseModel } from '@/lib/parse-resume'
 import { tailorModel } from '@/lib/tailor'
 import { jobExtractModel } from '@/lib/job-resolve/model-extract'
@@ -20,6 +22,7 @@ interface Check {
   ok: boolean
   ms?: number
   detail?: string
+  kind?: AIErrorKind
 }
 
 async function timed(fn: () => Promise<string | void>): Promise<Check> {
@@ -54,20 +57,27 @@ export async function GET() {
       await prisma.$queryRaw`SELECT 1`
     }),
     keys.openai
-      ? timed(async () => {
+      ? (async (): Promise<Check> => {
+          const start = Date.now()
           try {
             const res = await getOpenAI().chat.completions.create({
               model: 'gpt-4o-mini',
               max_tokens: 1,
               messages: [{ role: 'user', content: 'ping' }],
             })
-            return res.model
+            return { ok: true, ms: Date.now() - start, detail: res.model }
           } catch (error) {
             const classified = classifyAIError(error, 'Health check')
-            throw new Error(`${classified.kind}: ${String((error as Error)?.message || '').slice(0, 200)}`)
+            const codes = errorCodes(error)
+            return {
+              ok: false,
+              ms: Date.now() - start,
+              kind: classified.kind,
+              detail: `${classified.kind}${codes.length ? ` (${[...new Set(codes)].join(', ')})` : ''}: ${String((error as Error)?.message || '').slice(0, 200)}`,
+            }
           }
-        })
-      : Promise.resolve<Check>({ ok: false, detail: 'OPENAI_API_KEY is not set' }),
+        })()
+      : Promise.resolve<Check>({ ok: false, kind: 'not_configured', detail: 'OPENAI_API_KEY is not set' }),
   ])
 
   const ok = database.ok && openai.ok && keys.storage && keys.stripe

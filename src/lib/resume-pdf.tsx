@@ -1,8 +1,10 @@
-// PDF for a master or tailored resume, Classic or Modern. Built-in PDF fonts only
-// (Times/Helvetica), single column, real selectable text: what ATS parsers read best.
+// PDF for a master or tailored resume, Classic or Modern, and the matching cover letter.
+// Built-in PDF fonts only (Times/Helvetica), single column, real selectable text: what
+// ATS parsers read best.
 import React from 'react'
 import { Document, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { TEMPLATE_STYLE, toLayout, type TemplateId } from '@/lib/resume-templates'
+import { letterBlocks } from '@/lib/resume-docx'
 import type { ParsedResume } from '@/types/parsed-resume'
 
 function styles(template: TemplateId) {
@@ -53,17 +55,43 @@ function Bullets({ items, s }: { items: string[]; s: ReturnType<typeof styles> }
   )
 }
 
+function Header({ l, s }: { l: ReturnType<typeof toLayout>; s: ReturnType<typeof styles> }) {
+  return (
+    <View style={s.header}>
+      {l.name ? <Text style={s.name}>{l.name}</Text> : null}
+      {l.headline ? <Text style={s.headline}>{l.headline}</Text> : null}
+      {l.contactItems.length ? <Text style={s.contact}>{l.contactItems.join('  |  ')}</Text> : null}
+    </View>
+  )
+}
+
+/** Cover letter with the resume's header. `text`: blocks separated by blank lines. */
+export function CoverLetterPdf({ resume, template, text, date = new Date() }: { resume: ParsedResume; template: TemplateId; text: string; date?: Date }) {
+  const s = styles(template)
+  const l = toLayout(resume)
+  const blocks = letterBlocks(text)
+  return (
+    <Document title={l.name ? `${l.name} Cover Letter` : 'Cover Letter'} author={l.name || undefined}>
+      <Page size="LETTER" style={[s.page, { fontSize: 10.5, lineHeight: 1.45 }]}>
+        <Header l={l} s={s} />
+        <Text style={{ marginTop: 18, marginBottom: 14 }}>{date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</Text>
+        {blocks.map((block, i) => (
+          <Text key={i} style={{ marginBottom: 10 }}>
+            {block}
+          </Text>
+        ))}
+      </Page>
+    </Document>
+  )
+}
+
 export function ResumePdf({ resume, template }: { resume: ParsedResume; template: TemplateId }) {
   const s = styles(template)
   const l = toLayout(resume)
   return (
     <Document title={l.name ? `${l.name} Resume` : 'Resume'} author={l.name || undefined}>
       <Page size="LETTER" style={s.page}>
-        <View style={s.header}>
-          {l.name ? <Text style={s.name}>{l.name}</Text> : null}
-          {l.headline ? <Text style={s.headline}>{l.headline}</Text> : null}
-          {l.contactItems.length ? <Text style={s.contact}>{l.contactItems.join('  |  ')}</Text> : null}
-        </View>
+        <Header l={l} s={s} />
 
         {l.summary ? (
           <View style={s.section}>

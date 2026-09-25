@@ -42,6 +42,9 @@ export interface TailorInput {
   skills: string[] // every skill, flattened in group order
   skillGroups: TailorInputSkillGroup[] // the resume's own grouping, for context
   certifications: string[] // facts: never rewritten, only referenced
+  // Facts the candidate gave in the evidence interview ("about 4,000 (about: <bullet>)").
+  // Allowed like resume text, so their numbers pass the fact guard.
+  evidence?: string[]
 }
 
 // What the model returns (enforced by the JSON schema in src/lib/tailor.ts).

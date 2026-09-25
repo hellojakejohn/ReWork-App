@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { ChevronDown, History, LogOut, Settings, Sparkles, Tag } from "lucide-react"
+import { ChevronDown, FileStack, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { UserAvatar } from "@/components/ui/avatar"
 import {
@@ -18,16 +18,27 @@ import { SettingsModal } from "@/components/settings-modal"
 import { LogoutModal } from "@/components/logout-modal"
 import type { Quota } from "./api"
 
+/** Hooks into the one-page flow. Absent on other views, where the same items link back to it. */
+export interface FlowActions {
+  onLogo: () => void
+  onManageResumes: () => void
+  onStartOver: () => void
+}
+
 export function AppHeader({
   quota,
   recentCount,
   onOpenRecent,
   onUpgrade,
+  flow,
+  view = "flow",
 }: {
   quota: Quota | null
   recentCount: number
-  onOpenRecent: () => void
+  onOpenRecent?: () => void
   onUpgrade: () => void
+  flow: FlowActions | null
+  view?: "flow" | "tracker"
 }) {
   const { data: session } = useSession()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -42,7 +53,17 @@ export function AppHeader({
   return (
     <>
       <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-white/5 bg-slate-950/90 px-4 backdrop-blur sm:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link
+          href="/dashboard"
+          onClick={(e) => {
+            // Already on the flow: reset it in place instead of a no-op navigation.
+            if (flow && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+              e.preventDefault()
+              flow.onLogo()
+            }
+          }}
+          className="flex items-center gap-2"
+        >
           <Logo size="xs" variant="simple" showBadge={false} />
           <span className="text-[15px] font-semibold tracking-tight text-slate-100">ReWork</span>
         </Link>
@@ -50,7 +71,19 @@ export function AppHeader({
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {tailorsText && <span className="hidden text-xs text-slate-400 sm:inline">{tailorsText}</span>}
 
-          {recentCount > 0 && (
+          {view === "tracker" ? (
+            <Link href="/dashboard" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5" title="Tailor">
+              <Wand2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Tailor</span>
+            </Link>
+          ) : (
+            <Link href="/dashboard/tracker" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5" title="Application tracker">
+              <KanbanSquare className="h-4 w-4" />
+              <span className="hidden sm:inline">Tracker</span>
+            </Link>
+          )}
+
+          {recentCount > 0 && onOpenRecent && (
             <button
               onClick={onOpenRecent}
               aria-label="Recent tailored resumes"
@@ -85,8 +118,37 @@ export function AppHeader({
                   {tailorsText && <div className="mt-1 text-xs text-slate-400 sm:hidden">{tailorsText}</div>}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-white/10" />
+                {flow ? (
+                  <>
+                    <DropdownMenuItem onSelect={flow.onManageResumes}>
+                      <FileStack className="mr-2 h-4 w-4" /> Manage resumes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={flow.onStartOver}>
+                      <RotateCcw className="mr-2 h-4 w-4" /> Start over
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard?open=manage">
+                        <FileStack className="mr-2 h-4 w-4" /> Manage resumes
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard?open=start">
+                        <RotateCcw className="mr-2 h-4 w-4" /> Start over
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
                   <Settings className="mr-2 h-4 w-4" /> Settings & billing
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/?home=1">
+                    <Home className="mr-2 h-4 w-4" /> Home
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/pricing">

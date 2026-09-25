@@ -28,6 +28,7 @@ export async function GET(
 
 // PATCH { resume: ParsedResume, title? } from the inline "Fix something" editor.
 // Saving counts as the user having reviewed the parse, so needsReview is cleared.
+// PATCH { hidden: boolean } alone shows/hides a master (Manage resumes -> Set active).
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -38,11 +39,22 @@ export async function PATCH(
   }
   const { id } = await params
 
-  let body: { resume?: unknown; title?: unknown }
+  let body: { resume?: unknown; title?: unknown; hidden?: unknown }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+  if (body.resume === undefined && typeof body.hidden === 'boolean') {
+    const owned = await findOwned(id, session.user.id)
+    if (!owned) {
+      return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+    }
+    const updated = await prisma.resume.update({
+      where: { id: owned.id },
+      data: { hiddenAt: body.hidden ? owned.hiddenAt ?? new Date() : null },
+    })
+    return NextResponse.json({ success: true, master: toMasterDTO(updated) })
   }
   if (!body.resume || typeof body.resume !== 'object' || !('contact' in body.resume)) {
     return NextResponse.json({ error: 'resume is required' }, { status: 400 })

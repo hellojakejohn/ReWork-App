@@ -3,11 +3,12 @@
 // The whole app on one screen: Resume -> Job -> Tailor -> Result, one card at a time,
 // sliding horizontally. Everything fits the viewport; long content scrolls inside its card.
 //
-// Seams for later (out of scope now): a cover letter or evidence interview would be
-// another card after Tailor; an application tracker reads the same Recent list.
+// The cover letter and Word export live inside the Result card, the evidence interview
+// inside the Resume card; the tracker is its own view at /dashboard/tracker.
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
+import { Sparkles } from "lucide-react"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { CheckoutSuccess } from "@/components/billing/checkout-success"
 import { hasContent } from "@/lib/master-dto"
@@ -23,8 +24,9 @@ import {
 } from "./api"
 import { AppHeader } from "./app-header"
 import { StepRail } from "./step-rail"
-import { ResumeCard } from "./resume-card"
-import { JobCard } from "./job-card"
+import { ResumeCard, type ResumeCardRequest } from "./resume-card"
+import { ManageResumesDialog } from "./manage-resumes"
+import { JobCard, jobIsValid } from "./job-card"
 import { TailorCard } from "./tailor-card"
 import { ResultCard } from "./result-card"
 import { RecentDrawer } from "./recent-drawer"
@@ -48,6 +50,12 @@ function writeStored(key: string, value: string) {
   }
 }
 
+/** The remembered master, else the newest one that hasn't been replaced. */
+function pickInitial(masters: MasterResumeDTO[]): MasterResumeDTO | null {
+  const remembered = readStored(ACTIVE_MASTER_KEY)
+  return masters.find((m) => m.id === remembered) ?? masters.find((m) => !m.hidden) ?? masters[0] ?? null
+}
+
 export function OneFlow() {
   const { update: refreshSession } = useSession()
   const [loadError, setLoadError] = useState("")
@@ -55,6 +63,7 @@ export function OneFlow() {
   const [masters, setMasters] = useState<MasterResumeDTO[]>([])
   const [applications, setApplications] = useState<ApplicationSummaryDTO[]>([])
   const [quota, setQuota] = useState<Quota | null>(null)
+  const [coverLetterQuota, setCoverLetterQuota] = useState<Quota | null>(null)
 
   const [step, setStep] = useState(0)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -65,6 +74,8 @@ export function OneFlow() {
 
   const [recentOpen, setRecentOpen] = useState(false)
   const [upgrade, setUpgrade] = useState<{ open: boolean; reason?: string }>({ open: false })
+  const [manageOpen, setManageOpen] = useState(false)
+  const [resumeRequest, setResumeRequest] = useState<ResumeCardRequest | null>(null)
 
   const active = masters.find((m) => m.id === activeId) ?? null
 
@@ -78,8 +89,8 @@ export function OneFlow() {
     setMasters(result.masters)
     setApplications(result.applications)
     setQuota(result.quota)
-    const remembered = readStored(ACTIVE_MASTER_KEY)
-    const initial = result.masters.find((m) => m.id === remembered) ?? result.masters[0] ?? null
+    setCoverLetterQuota(result.coverLetterQuota)
+    const initial = pickInitial(result.masters)
     setActiveId(initial?.id ?? null)
     // Returning users with a usable master start on the Job card.
     if (initial && hasContent(initial.resume)) {
@@ -89,6 +100,45 @@ export function OneFlow() {
     const stored = readStored(TEMPLATE_KEY)
     if (stored === "classic" || stored === "modern") setTemplate(stored)
     setLoaded(true)
+
+    // Links from the tracker: ?open=manage | start, ?application=<id> (open its result),
+    // ?tailor=<id> (tailor a job that was only tracked).
+    const params = new URLSearchParams(window.location.search)
+    const open = params.get("open")
+    const applicationParam = params.get("application")
+    const tailorParam = params.get("tailor")
+    if (open || applicationParam || tailorParam) {
+      for (const key of ["open", "application", "tailor"]) params.delete(key)
+      const query = params.toString()
+      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
+    }
+    if (open === "manage") setManageOpen(true)
+    if (open === "start") {
+      setResumeConfirmed(false)
+      setStep(0)
+      setResumeRequest({ mode: "new", nonce: Date.now() })
+    }
+    if (applicationParam || tailorParam) {
+      const opened = await loadApplication((applicationParam || tailorParam)!)
+      if (!opened.ok) {
+        toast.error(opened.error)
+        return
+      }
+      const app = opened.application
+      if (result.masters.some((m) => m.id === app.resumeId)) {
+        setActiveId(app.resumeId)
+        setResumeConfirmed(true)
+      }
+      const draft: JobDraft = { url: app.jobUrl ?? "", title: app.jobTitle, company: app.company, location: app.jobLocation, description: app.jobDescription }
+      if (applicationParam) {
+        setApplication(app)
+        setJob(draft)
+        setStep(3)
+      } else {
+        setJob({ ...draft, applicationId: app.id })
+        setStep(jobIsValid(draft) ? 2 : 1)
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -117,10 +167,65 @@ export function OneFlow() {
     setApplication(null)
   }
 
+  /** Resume card, in the given mode. The rail and "Replace resume" links land here. */
+  const openResume = (mode: ResumeCardRequest["mode"]) => {
+    setResumeRequest({ mode, nonce: Date.now() })
+    go(0)
+  }
+
+  // Account menu -> Start over: empty dropzone, nothing deleted.
+  const startOver = () => {
+    setJob(null)
+    setApplication(null)
+    setResumeConfirmed(false)
+    openResume("new")
+  }
+
+  // Header logo: back to the card a fresh load would open.
+  const resetFlow = () => {
+    setJob(null)
+    setApplication(null)
+    setRecentOpen(false)
+    if (active && hasContent(active.resume)) {
+      setResumeConfirmed(true)
+      setResumeRequest({ mode: "summary", nonce: Date.now() })
+      go(1)
+    } else {
+      setResumeConfirmed(false)
+      openResume(active ? "summary" : "new")
+    }
+  }
+
+  // Changes tab -> "Make it stronger": the interview for that bullet's master, in the Resume card.
+  const strengthen = (entryId: string, bullet: string) => {
+    if (!quota?.isPro) {
+      setUpgrade({ open: true, reason: "The evidence interview is a Pro feature: it asks for your real numbers and rewrites your weakest bullets with them." })
+      return
+    }
+    if (application && masters.some((m) => m.id === application.resumeId) && application.resumeId !== activeId) {
+      setActiveId(application.resumeId)
+      writeStored(ACTIVE_MASTER_KEY, application.resumeId)
+    }
+    setResumeRequest({ mode: "evidence", focus: { entryId, bullet }, nonce: Date.now() })
+    go(0)
+  }
+
   const upsertMaster = (master: MasterResumeDTO) => {
     setMasters((list) => [master, ...list.filter((m) => m.id !== master.id)])
     setActiveId(master.id)
     writeStored(ACTIVE_MASTER_KEY, master.id)
+  }
+
+  const removeMaster = (id: string) => {
+    const rest = masters.filter((m) => m.id !== id)
+    setMasters(rest)
+    if (activeId === id) {
+      const next = pickInitial(rest)
+      setActiveId(next?.id ?? null)
+      if (next) writeStored(ACTIVE_MASTER_KEY, next.id)
+      setResumeConfirmed(false)
+      setApplication(null)
+    }
   }
 
   const openApplication = async (id: string) => {
@@ -168,7 +273,7 @@ export function OneFlow() {
   if (!loaded) {
     return (
       <div className="flex h-[100dvh] flex-col bg-slate-950">
-        <AppHeader quota={null} recentCount={0} onOpenRecent={() => {}} onUpgrade={() => {}} />
+        <AppHeader quota={null} recentCount={0} onOpenRecent={() => {}} onUpgrade={() => {}} flow={null} />
         <div className="flex flex-1 items-center justify-center p-4">
           {loadError ? (
             <div className="w-full max-w-sm space-y-3 text-center">
@@ -189,26 +294,22 @@ export function OneFlow() {
       active={active}
       masters={masters}
       isActiveStep={step === 0}
-      onParsed={(m) => {
+      onParsed={(m, replacedId) => {
         upsertMaster(m)
+        if (replacedId) setMasters((list) => list.map((x) => (x.id === replacedId ? { ...x, hidden: true } : x)))
         setResumeConfirmed(false)
         setApplication(null) // the old result belongs to a different resume
       }}
       onSaved={upsertMaster}
       onSelect={selectMaster}
-      onDeleted={(id) => {
-        const rest = masters.filter((m) => m.id !== id)
-        setMasters(rest)
-        if (activeId === id) {
-          setActiveId(rest[0]?.id ?? null)
-          setResumeConfirmed(false)
-        }
-      }}
+      onDeleted={removeMaster}
       onConfirm={() => {
         setResumeConfirmed(true)
         go(1)
       }}
       onLimit={(reason) => setUpgrade({ open: true, reason })}
+      request={resumeRequest}
+      isPro={!!quota?.isPro}
     />,
     <JobCard
       key="job"
@@ -229,6 +330,7 @@ export function OneFlow() {
       onBack={() => go(1)}
       onDone={onTailored}
       onUpgrade={(reason) => setUpgrade({ open: true, reason })}
+      onReplaceResume={() => openResume("replace")}
     />,
     <ResultCard
       key="result"
@@ -242,6 +344,21 @@ export function OneFlow() {
         setApplication(null)
         go(1)
       }}
+      isPro={!!quota?.isPro}
+      coverLetterQuota={coverLetterQuota}
+      onCoverLetterQuota={setCoverLetterQuota}
+      onUpgrade={(reason) => setUpgrade({ open: true, reason })}
+      renderChangeExtra={(c) =>
+        c.section !== "summary" && c.before ? (
+          <button
+            onClick={() => strengthen(c.entryId, c.before)}
+            className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-500/10"
+            title="Answer a few questions to add real numbers to this bullet"
+          >
+            <Sparkles className="h-3 w-3" /> Make it stronger
+          </button>
+        ) : null
+      }
     />,
   ]
 
@@ -253,8 +370,9 @@ export function OneFlow() {
         recentCount={applications.length}
         onOpenRecent={() => setRecentOpen(true)}
         onUpgrade={() => setUpgrade({ open: true })}
+        flow={{ onLogo: resetFlow, onManageResumes: () => setManageOpen(true), onStartOver: startOver }}
       />
-      <StepRail current={step} completed={completed} onSelect={go} />
+      <StepRail current={step} completed={completed} onSelect={(i) => (i === 0 ? openResume("summary") : go(i))} />
       <main className="relative min-h-0 flex-1 overflow-clip">
         <div
           className="flex h-full transition-transform duration-300 ease-out motion-reduce:transition-none"
@@ -278,6 +396,19 @@ export function OneFlow() {
         activeId={application?.id ?? null}
         onClose={() => setRecentOpen(false)}
         onOpen={(id) => void openApplication(id)}
+      />
+      <ManageResumesDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        masters={masters}
+        activeId={activeId}
+        onActivate={(m) => {
+          setMasters((list) => [m, ...list.filter((x) => x.id !== m.id)])
+          selectMaster(m.id)
+          setManageOpen(false)
+          openResume("summary")
+        }}
+        onDeleted={removeMaster}
       />
       <UpgradeSheet open={upgrade.open} onOpenChange={(open) => setUpgrade((u) => ({ ...u, open }))} reason={upgrade.reason} />
     </div>

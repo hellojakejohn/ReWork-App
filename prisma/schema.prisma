@@ -62,6 +62,8 @@ model User {
   resumeCountResetAt     DateTime         @default(now())
   monthlyTailors         Int              @default(0)
   tailorsResetAt         DateTime         @default(now())
+  monthlyCoverLetters    Int              @default(0)
+  coverLettersResetAt    DateTime         @default(now())
   lastActiveAt           DateTime         @default(now())
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
@@ -99,7 +101,16 @@ model Resume {
   fileSize              Int?
   thumbnailUrl          String?
   contentType           String?
-  isActive              Boolean          @default(true)
+  isActive              Boolean          @default(true) // false = deleted (soft)
+  // Set when a newer upload replaced this master. Hidden masters stay usable and show
+  // up in Manage resumes, just not in the Resume card's switcher.
+  hiddenAt              DateTime?
+  // "2" = the structured parser (src/lib/parse-resume.ts). Null on rows from the old
+  // extractor, which get a "re-upload" banner.
+  parserVersion         String?
+  // Evidence interview answers (src/lib/evidence.ts): { answers: EvidenceAnswer[] }.
+  // Kept so later tailoring can use them.
+  evidence              Json?
   wordCount             Int?
   lastOptimized         DateTime?
   createdAt             DateTime         @default(now())
@@ -126,30 +137,37 @@ model ResumeVersion {
 }
 
 model JobApplication {
-  id                  String            @id @default(cuid())
-  userId              String
-  resumeId            String
-  jobTitle            String
-  company             String
-  jobDescription      String
-  jobUrl              String?
-  originalContent     Json?
-  optimizedContent    Json?
-  optimizedStructured Json?
-  matchScore          Float?
-  categoryScores      Json?
-  keywords            String[]
-  suggestions         Json?
-  analysisVersion     String?           @default("1.0")
-  lastAnalyzed        DateTime?
-  status              ApplicationStatus @default(DRAFT)
-  appliedAt           DateTime?
-  responseAt          DateTime?
-  generatedPdfUrl     String?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  resume              Resume            @relation(fields: [resumeId], references: [id], onDelete: Cascade)
-  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String            @id @default(cuid())
+  userId               String
+  resumeId             String
+  jobTitle             String
+  company              String
+  jobDescription       String
+  jobUrl               String?
+  originalContent      Json?
+  optimizedContent     Json?
+  optimizedStructured  Json?
+  matchScore           Float?
+  categoryScores       Json?
+  keywords             String[]
+  suggestions          Json?
+  analysisVersion      String?           @default("1.0")
+  lastAnalyzed         DateTime?
+  status               ApplicationStatus @default(DRAFT)
+  appliedAt            DateTime?
+  responseAt           DateTime?
+  generatedPdfUrl      String?
+  // Cover letter (src/lib/cover-letter.ts), edited inline and autosaved.
+  coverLetter          Json?
+  coverLetterUpdatedAt DateTime?
+  // Tracker
+  notes                String?
+  followUpAt           DateTime?
+  statusUpdatedAt      DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  resume               Resume            @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("job_applications")
 }

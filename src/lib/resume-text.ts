@@ -64,6 +64,7 @@ export function tailorInputText(input: TailorInput): string {
     ...input.skills,
     ...(input.skillGroups ?? []).flatMap((g) => [g.group, ...g.items]),
     ...(input.certifications ?? []),
+    ...(input.evidence ?? []),
   ]
   for (const role of input.roles) {
     parts.push(role.title, role.company, role.startDate, role.endDate, role.location, ...role.bullets)

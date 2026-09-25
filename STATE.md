@@ -33,6 +33,22 @@ result (preview, per-bullet accept/revert, keywords, fact-guard warnings, Classi
 The old editor, job-description page, tutorial and chat bubble are gone. `/api/health`
 (admins) checks keys, DB and one OpenAI call.
 
+## Pro features (9/29)
+- Cover letter per job: Result card -> Cover letter tab. Tone, inline edit with autosave,
+  copy, PDF/Word. Fact-checked (numbers, employers, tools, credentials), banned phrases,
+  one regenerate. FREE 1/month, Pro unlimited.
+- Evidence interview (Pro): "Make it stronger" on the Resume card and on each bullet in the
+  Changes tab. Asks for real numbers, rewrites from the answers only, Accept writes to the
+  master. Answers live on Resume.evidence and feed later tailors and cover letters.
+- Tracker at `/dashboard/tracker`: Saved / Applied / Interview / Offer / Rejected, drag or
+  dropdown, notes, follow-up date, add a job by URL, stats row. FREE 10 applications.
+- Word export (Pro): resume and cover letter as .docx from the Download menu.
+- Replace resume / Manage resumes / Start over; old-parser banner (Resume.parserVersion).
+- New env (optional): OPENAI_COVER_LETTER_MODEL, OPENAI_EVIDENCE_MODEL (default to the
+  tailor model).
+- Migrations 20260928000000_resume_replace and 20260929000000_pro_features are written but
+  NOT applied.
+
 ## What's Working ✅
 - Database connected and all 8 tables created ✅
 - Google OAuth authentication ✅

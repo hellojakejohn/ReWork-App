@@ -12,6 +12,7 @@ import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 import { FREE_TAILORS_PER_MONTH, PRICING } from '@/lib/plans';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
+import { evidenceFacts } from '@/lib/evidence-shared';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
 export const runtime = 'nodejs';
@@ -96,6 +97,8 @@ export async function POST(
   };
 
   const input = buildTailorInput(master);
+  const evidence = evidenceFacts(resume.evidence);
+  if (evidence.length > 0) input.evidence = evidence;
   if (input.roles.length === 0 && input.education.length === 0 && input.projects.length === 0) {
     return NextResponse.json({
       error: 'Your resume has no roles, projects or education yet. Add them first.'
@@ -159,24 +162,30 @@ export async function POST(
       keywords: cleaned.targetKeywords,
       suggestions: report as unknown as Prisma.InputJsonValue,
       analysisVersion: 'tailor-v3',
-      status: 'OPTIMIZED' as const,
       lastAnalyzed: new Date()
     };
 
-    // Re-tailor an explicit application; otherwise every tailor is its own application
-    // (the Recent drawer lists them all).
+    // Re-tailor an explicit application (or tailor a job that was only on the tracker);
+    // otherwise every tailor is its own application (the Recent drawer lists them all).
     const existingApplication = requestedApplicationId
-      ? await prisma.jobApplication.findFirst({ where: { id: String(requestedApplicationId), resumeId, userId } })
+      ? await prisma.jobApplication.findFirst({ where: { id: String(requestedApplicationId), userId } })
       : null;
 
     const application = existingApplication
       ? await prisma.jobApplication.update({
           where: { id: existingApplication.id },
-          data: applicationData
+          data: {
+            ...applicationData,
+            resumeId,
+            // Don't pull a card back to Saved on the tracker because it was re-tailored.
+            ...(existingApplication.status === 'DRAFT' ? { status: 'OPTIMIZED' as const, statusUpdatedAt: new Date() } : {})
+          }
         })
       : await prisma.jobApplication.create({
           data: {
             ...applicationData,
+            status: 'OPTIMIZED' as const,
+            statusUpdatedAt: new Date(),
             userId,
             resumeId,
             jobTitle,
