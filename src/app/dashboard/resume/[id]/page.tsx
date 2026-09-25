@@ -34,7 +34,6 @@ import {
   Loader2,
   X,
   Check,
-  Undo2,
   Briefcase,
   User,
   FileText,
@@ -545,10 +544,14 @@ export default function UnifiedEditorPage() {
 
       if (!response.ok) {
         // Handle specific error cases with user-friendly messages
-        if (response.status === 500 && data.error?.includes('AI service')) {
+        if (response.status === 402 && data.upgradeRequired) {
+          toast.error(data.error || 'Monthly tailoring limit reached.', {
+            action: { label: 'Upgrade', onClick: () => router.push('/#pricing') }
+          });
+        } else if (response.status === 500 && data.error?.includes('AI service')) {
           toast.error('AI service temporarily unavailable. Please try again in a moment.');
         } else if (response.status === 429) {
-          toast.error('Service is busy. Please wait a few seconds and try again.');
+          toast.error(data.error || 'Service is busy. Please wait a few seconds and try again.');
         } else if (response.status === 400) {
           toast.error(data.error || 'Invalid request. Please check your inputs.');
         } else {
@@ -568,56 +571,10 @@ export default function UnifiedEditorPage() {
           applicationId: data.applicationId
         });
 
-        try {
-          // Save original content if this is the first tailoring
-          if (!originalContent) {
-            setOriginalContent(resumeData)
-          }
-
-          // Validate and transform the tailored data
-          const validatedData = {
-            ...data.tailoredResume,
-            // Ensure all arrays have items with IDs
-            workExperience: Array.isArray(data.tailoredResume.workExperience)
-              ? data.tailoredResume.workExperience.map((exp: any, index: number) => ({
-                  ...exp,
-                  id: exp.id || `exp_tailored_${index}`,
-                  achievements: Array.isArray(exp.achievements) ? exp.achievements : []
-                }))
-              : [],
-            education: Array.isArray(data.tailoredResume.education)
-              ? data.tailoredResume.education.map((edu: any, index: number) => ({
-                  ...edu,
-                  id: edu.id || `edu_tailored_${index}`
-                }))
-              : [],
-            // Ensure skills is properly structured
-            skills: data.tailoredResume.skills || {
-              technical: [], frameworks: [], tools: [],
-              cloud: [], databases: [], soft: [], certifications: []
-            },
-            // Ensure contact info has required fields
-            contactInfo: data.tailoredResume.contactInfo || resumeData?.contactInfo || {
-              firstName: '', lastName: '', email: '', phone: '', location: ''
-            },
-            // Ensure professional summary is properly structured
-            professionalSummary: data.tailoredResume.professionalSummary || {
-              summary: '', targetRole: '', keyStrengths: [], careerLevel: 'mid'
-            }
-          };
-
-          // Update with tailored content
-          setResumeData(validatedData)
-          setTailoredJobCompany(companyName)
-          setTailoredJobTitle(jobTitle)
-        } catch (transformError) {
-          console.error('❌ Error transforming tailored data:', transformError);
-          toast.error('Failed to apply tailored content. Please try again.');
-          return;
-        }
-
-        // Save the tailored version
-        await saveResume(false) // Don't show save toast to avoid double notifications
+        // The tailored version lives on the JobApplication. The editor keeps showing
+        // the master, which tailoring never modifies.
+        setTailoredJobCompany(companyName)
+        setTailoredJobTitle(jobTitle)
 
         // Show success toast and redirect to dashboard
         toast.success('Resume tailored successfully!')
@@ -645,22 +602,6 @@ export default function UnifiedEditorPage() {
       setIsTailoring(false)
       console.log('🏁 Tailoring process completed');
     }
-  }
-
-  // Handle undo tailoring
-  const handleUndoTailoring = async () => {
-    if (!originalContent) return
-
-    setResumeData(originalContent)
-    setTailoredJobCompany(null)
-    setTailoredJobTitle(null)
-    setOriginalContent(null)
-    setTailoringResults(null)
-    setRightPanelMode('preview')
-
-    // Save the restored version
-    await saveResume()
-    toast.success('Restored original resume')
   }
 
   if (isLoading) {
@@ -694,13 +635,6 @@ export default function UnifiedEditorPage() {
                   <Briefcase className="w-3 h-3" />
                   Tailored for {tailoredJobCompany}
                 </span>
-                <button
-                  onClick={handleUndoTailoring}
-                  className="text-[12px] text-text-secondary hover:text-foreground transition-all flex items-center gap-1 px-2 py-1 rounded hover:bg-white/5"
-                >
-                  <Undo2 className="w-3 h-3" />
-                  Undo
-                </button>
               </div>
             )}
           </div>
@@ -1111,17 +1045,6 @@ export default function UnifiedEditorPage() {
                       Keep Editing
                     </button>
                   </div>
-
-                  {/* Restore Original Button */}
-                  {originalContent && (
-                    <button
-                      onClick={handleUndoTailoring}
-                      className="w-full mt-3 py-2 text-[12px] text-slate-400 hover:text-red-400 transition-all flex items-center justify-center gap-2"
-                    >
-                      <Undo2 className="w-3 h-3" />
-                      Restore Original Resume
-                    </button>
-                  )}
                 </div>
               ) : (
                 /* Job Description Panel */
@@ -1316,12 +1239,6 @@ export default function UnifiedEditorPage() {
                           <Check className="w-3.5 h-3.5" />
                           <span>Tailored for this job</span>
                         </div>
-                        <button
-                          onClick={handleUndoTailoring}
-                          className="text-[11px] text-emerald-400/80 hover:text-emerald-400 transition-all"
-                        >
-                          Undo
-                        </button>
                       </div>
                     </div>
                   )}
