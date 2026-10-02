@@ -1,5 +1,5 @@
 // POST { tone }  -> write (or rewrite) the cover letter for this tailored resume. Metered:
-//                   FREE gets FREE_COVER_LETTERS_PER_MONTH, Pro unlimited.
+//                   FREE gets FREE_COVER_LETTERS_PER_MONTH, Pro fair use.
 // PATCH { text, tone? } -> autosave the user's edits. Not metered.
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -13,10 +13,11 @@ import { CoverLetterError, generateCoverLetter, isCoverLetterTone, readStoredCov
 import { evidenceFacts } from '@/lib/evidence-shared'
 import { getCoverLetterQuota, incrementCoverLetterCount, quotaDTO } from '@/lib/tailor-quota'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
-import { FREE_COVER_LETTERS_PER_MONTH, PRICING } from '@/lib/plans'
+import { FREE_COVER_LETTERS_PER_MONTH, GO_PRO_OFFERS } from '@/lib/plans'
 import { toApplicationDetail } from '@/lib/application-dto'
 import { checkDailyCeiling } from '@/lib/daily-ceiling'
 import { collectUsage, usageProps } from '@/lib/ai-usage'
+import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap'
 import { msSince, track } from '@/lib/track'
 
 export const runtime = 'nodejs'
@@ -72,13 +73,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ success: false, error: ceiling.message }, { status: 429 })
   }
 
+  const ai = await getAIBudget(userId)
+  const paused = await aiPausedCheck(ai, userId, 'cover_letter')
+  if (paused) return NextResponse.json(paused, { status: 429 })
+
   const quota = await getCoverLetterQuota(userId)
   if (!quota.allowed) {
     await track('limit_hit', { kind: 'cover_letter' }, userId)
     return NextResponse.json(
       {
         success: false,
-        error: `Free accounts get ${FREE_COVER_LETTERS_PER_MONTH} cover letter a month. Go Pro for unlimited cover letters: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
+        error: `Free accounts get ${FREE_COVER_LETTERS_PER_MONTH} cover letter a month. Go Pro for a letter with every application: ${GO_PRO_OFFERS}.`,
         upgradeRequired: true,
       },
       { status: 402 }
@@ -98,12 +103,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       job: { title: application.jobTitle, company: application.company, description: application.jobDescription },
       tone,
       extraFacts: evidenceFacts(application.resume.evidence),
-    })
+    }),
+    ai.scope
   )
   let letter: StoredCoverLetter
   try {
     letter = await run
   } catch (error) {
+    await ai.settle(usage().costUsd)
     await track(
       'ai_error',
       {
@@ -122,6 +129,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ success: false, error: "We couldn't write the letter. Please try again." }, { status: 500 })
   }
 
+  await ai.settle(usage().costUsd)
   const updated = await prisma.jobApplication.update({
     where: { id: application.id },
     data: { coverLetter: letter as unknown as Prisma.InputJsonValue, coverLetterUpdatedAt: new Date() },

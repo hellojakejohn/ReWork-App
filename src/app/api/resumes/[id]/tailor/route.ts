@@ -9,9 +9,10 @@ import { coverageReport } from '@/lib/keyword-coverage';
 import { buildChanges } from '@/lib/tailor-changes';
 import { getTailorQuota, incrementTailorCount } from '@/lib/tailor-quota';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
-import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, PRICING } from '@/lib/plans';
+import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, GO_PRO_OFFERS } from '@/lib/plans';
 import { checkDailyCeiling } from '@/lib/daily-ceiling';
 import { collectUsage, usageProps } from '@/lib/ai-usage';
+import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap';
 import { msSince, track } from '@/lib/track';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
@@ -86,13 +87,18 @@ export async function POST(
     return NextResponse.json({ success: false, error: ceiling.message }, { status: 429 });
   }
 
-  // Enforce the monthly limit BEFORE spending an OpenAI call
+  // AI cap: past 100% of this period's allowance, AI pauses until the reset date.
+  const ai = await getAIBudget(userId);
+  const paused = await aiPausedCheck(ai, userId, 'tailor');
+  if (paused) return NextResponse.json(paused, { status: 429 });
+
+  // Enforce the monthly limit BEFORE spending a model call
   const quota = await getTailorQuota(userId);
   if (!quota.allowed) {
     await track('limit_hit', { kind: 'tailor' }, userId);
     return NextResponse.json({
       success: false,
-      error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Go Pro for unlimited tailoring: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
+      error: `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month. Go Pro to tailor for every job: ${GO_PRO_OFFERS}.`,
       upgradeRequired: true,
       used: quota.used,
       limit: quota.limit
@@ -128,12 +134,14 @@ export async function POST(
         input,
         { title: jobTitle, company: actualCompanyName, description: actualJobDescription, location },
         { extraContext, contextTags: Array.isArray(contextTags) ? contextTags : undefined }
-      )
+      ),
+      ai.scope
     );
     let modelResult;
     try {
       modelResult = await modelRun;
     } catch (error) {
+      await ai.settle(usage().costUsd);
       await track('ai_error', {
         feature: 'tailor',
         kind: error instanceof TailorError ? error.kind : 'unexpected',
@@ -148,6 +156,7 @@ export async function POST(
       throw error;
     }
 
+    await ai.settle(usage().costUsd);
     send({ type: 'stage', stage: 'checking' });
     const { cleaned, warnings } = factGuard(input, modelResult.output);
     const coverage = coverageReport(input, cleaned);

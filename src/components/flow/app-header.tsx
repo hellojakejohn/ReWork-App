@@ -47,7 +47,7 @@ export function AppHeader({
   const tailorsText = !quota
     ? ""
     : quota.limit === null
-      ? "Unlimited tailors"
+      ? "Pro: tailor every job"
       : `${quota.remaining} of ${quota.limit} tailors left`
 
   return (

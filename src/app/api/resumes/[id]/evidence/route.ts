@@ -13,8 +13,9 @@ export const maxDuration = 60
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const ctx = await evidenceContext(id, { rateLimit: true })
+  const ctx = await evidenceContext(id, { rateLimit: true, dailyCeiling: true, ai: true })
   if ('error' in ctx) return ctx.error
+  const ai = ctx.ai!
 
   const body = await request.json().catch(() => ({}))
   const resume = masterToParsed(ctx.resume)
@@ -35,17 +36,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     })
   }
 
-  const { run, usage } = collectUsage(() => generateQuestions(candidates, { focused: !!focus }))
+  const { run, usage } = collectUsage(() => generateQuestions(candidates, { focused: !!focus }), ai.scope)
   try {
     const items = await run
+    await track('evidence_started', { ok: true, focused: !!focus }, ctx.userId)
     await track('ai_usage', { feature: 'evidence_questions', ...usageProps(usage()) }, ctx.userId)
     return NextResponse.json({ success: true, items, answers: readStoredEvidence(ctx.resume.evidence).answers })
   } catch (error) {
+    await track('evidence_started', { ok: false, focused: !!focus }, ctx.userId)
     await track('ai_error', { feature: 'evidence', kind: error instanceof EvidenceError ? error.kind : 'unexpected', ...usageProps(usage()) }, ctx.userId)
     if (error instanceof EvidenceError) {
       console.error('❌ Evidence questions error:', error.message)
       return NextResponse.json({ success: false, error: error.userMessage }, { status: error.status })
     }
     throw error
+  } finally {
+    await ai.settle(usage().costUsd)
   }
 }

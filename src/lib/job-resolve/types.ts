@@ -17,7 +17,7 @@ export interface ResolvedJob {
   source: JobSource
 }
 
-export type NeedsPasteReason = 'blocked_site' | 'js_rendered' | 'blocked' | 'unreachable' | 'not_a_job'
+export type NeedsPasteReason = 'linkedin' | 'blocked_site' | 'js_rendered' | 'blocked' | 'unreachable' | 'not_a_job'
 
 export type ResolveResult =
   | { ok: true; job: ResolvedJob }

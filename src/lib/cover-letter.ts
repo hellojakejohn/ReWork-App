@@ -1,24 +1,24 @@
 // Cover letter per job. Same pattern as the tailor engine: model from env, structured
 // output, then a fact guard we trust more than the prompt.
 //
-// Flow: master (TailorInput) + tailored version + job -> OpenAI json_schema (greeting,
+// Flow: master (TailorInput) + tailored version + job -> structured output via src/lib/ai/
+// (provider per AI_COVER_LETTER / plan) (greeting,
 // three paragraphs, sign-off) -> checks (banned phrases, unsupported numbers/names,
 // length) -> one regenerate with the problems spelled out if anything failed -> whatever
 // still fails is removed sentence by sentence and reported as a warning.
-import OpenAI from 'openai'
-import { classifyAIError } from '@/lib/ai-errors'
+import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
+import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
+import { taskRoute } from '@/lib/ai/routing'
 import { normalizeSpace, tailorInputText } from '@/lib/resume-text'
 import { describeFacts, dropUnsupportedSentences, hasUnsupported, splitSentences, unsupportedFacts } from '@/lib/text-facts'
 import type { TailorInput } from '@/types/tailor'
 import type { CoverLetterTone, CoverLetterWarning, StoredCoverLetter } from '@/lib/cover-letter-shared'
-import { recordUsage } from '@/lib/ai-usage'
 
 export * from '@/lib/cover-letter-shared'
 
-export const DEFAULT_COVER_LETTER_MODEL = 'gpt-4o'
-
+/** The configured cover letter model for Pro (AI_COVER_LETTER, else the default routing). */
 export function coverLetterModel(): string {
-  return process.env.OPENAI_COVER_LETTER_MODEL || process.env.OPENAI_TAILOR_MODEL || DEFAULT_COVER_LETTER_MODEL
+  return taskRoute('coverLetter').model
 }
 
 
@@ -277,69 +277,47 @@ export class CoverLetterError extends Error {
     message: string,
     public readonly status: number,
     public readonly userMessage: string,
-    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
-    // response was unusable. Goes on the ai_error event.
-    public readonly kind: string = 'bad_output'
+    // AIErrorKind from classifyAIError ('invalid_output' when the call worked but the
+    // response was unusable). Goes on the ai_error event.
+    public readonly kind: string = 'invalid_output'
   ) {
     super(message)
     this.name = 'CoverLetterError'
   }
 }
 
-let defaultClient: OpenAI | null = null
-function getClient(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
-    throw new CoverLetterError('OPENAI_API_KEY is not configured', 503, "Cover letters are temporarily unavailable, we're on it.", 'not_configured')
-  }
-  defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return defaultClient
-}
+export type CoverLetterOptions = AICallOptions
 
-export interface CoverLetterOptions {
-  client?: OpenAI
-  model?: string
-}
-
-async function callModel(client: OpenAI, model: string, prompt: string): Promise<{ draft: CoverLetterDraft; model: string }> {
-  let completion
+async function callModel(options: CoverLetterOptions, prompt: string): Promise<{ draft: CoverLetterDraft; model: string }> {
   try {
-    completion = await client.chat.completions.create({
-      model,
+    const result = await generateStructured<CoverLetterDraft>({
+      task: 'coverLetter',
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: prompt }],
+      schema: SCHEMA as unknown as Record<string, unknown>,
+      schemaName: 'cover_letter',
+      maxTokens: 1200,
       temperature: 0.5,
-      max_tokens: 1200,
-      response_format: { type: 'json_schema', json_schema: { name: 'cover_letter', strict: true, schema: SCHEMA as unknown as Record<string, unknown> } },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: prompt },
-      ],
+      effort: 'medium',
+      ...callOverrides('coverLetter', options),
     })
+    return { draft: result.data, model: result.model }
   } catch (error) {
+    if (error instanceof AIOutputError) {
+      if (error.reason === 'refusal') {
+        throw new CoverLetterError(`Model refused (${error.model})`, 422, 'The AI declined to write this letter. Check the job description and try again.', 'invalid_output')
+      }
+      throw new CoverLetterError(error.message, 502, "We couldn't write the letter. Please try again.", 'invalid_output')
+    }
     const classified = classifyAIError(error, 'Cover letters')
-    throw new CoverLetterError(String((error as Error)?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage, classified.kind)
-  }
-  recordUsage(completion, model)
-  const choice = completion.choices[0]
-  if (choice?.message?.refusal) {
-    throw new CoverLetterError(`Model refused: ${choice.message.refusal}`, 422, 'The AI declined to write this letter. Check the job description and try again.')
-  }
-  const content = choice?.message?.content
-  if (!content || choice?.finish_reason === 'length') {
-    throw new CoverLetterError('Empty or truncated model response', 502, "We couldn't write the letter. Please try again.")
-  }
-  try {
-    return { draft: JSON.parse(content) as CoverLetterDraft, model: completion.model || model }
-  } catch {
-    throw new CoverLetterError('Model returned invalid JSON', 502, "We couldn't write the letter. Please try again.")
+    throw new CoverLetterError(String((error as Error)?.message || 'Unknown AI error'), classified.status, classified.userMessage, classified.kind)
   }
 }
 
 export async function generateCoverLetter(input: CoverLetterInput, options: CoverLetterOptions = {}): Promise<StoredCoverLetter> {
-  const client = options.client ?? getClient()
-  const model = options.model ?? coverLetterModel()
   const allowedText = allowedSourceText(input)
 
-  let result = await callModel(client, model, buildCoverLetterPrompt(input))
+  let result = await callModel(options, buildCoverLetterPrompt(input))
   const warnings: CoverLetterWarning[] = []
   const problems = checkDraft(result.draft, allowedText)
   if (hasProblems(problems)) {
@@ -347,7 +325,7 @@ export async function generateCoverLetter(input: CoverLetterInput, options: Cove
     // the first draft and let the guard clean it.
     const feedback = feedbackFor(problems)
     try {
-      result = await callModel(client, model, buildCoverLetterPrompt(input, feedback))
+      result = await callModel(options, buildCoverLetterPrompt(input, feedback))
       warnings.push({ type: 'regenerated', message: `Rewrote the letter once: ${feedback.join(' ')}` })
     } catch (error) {
       console.error('[cover-letter] retry failed, guarding the first draft:', (error as Error)?.message)

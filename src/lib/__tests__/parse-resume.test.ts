@@ -242,9 +242,9 @@ describe('parseResume', () => {
     expect(body.temperature).toBe(0)
     expect(body.response_format.json_schema.strict).toBe(true)
     // Text input only: no file part, and the cleaned text (no zero-width chars) is sent.
-    const parts = body.messages[1].content
-    expect(parts.map((p: { type: string }) => p.type)).toEqual(['text'])
-    expect(parts[0].text).not.toMatch(/​/)
+    const content = body.messages[1].content
+    expect(typeof content).toBe('string')
+    expect(content).not.toMatch(/​/)
   })
 
   it('throws a clear error instead of inventing data when the model call fails', async () => {

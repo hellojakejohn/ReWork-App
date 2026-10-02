@@ -1,21 +1,20 @@
 // Tailor a master resume to a job post.
 //
 // Flow: master Resume row -> buildTailorInput (stable ids, bullets as arrays, no contact
-// info) -> OpenAI structured output -> factGuard (src/lib/fact-guard.ts) ->
+// info) -> structured output (src/lib/ai/, provider per AI_TAILOR / plan) -> factGuard (src/lib/fact-guard.ts) ->
 // applyTailorOutput (merge back into the master's own shape, contact info copied).
-import OpenAI from 'openai'
 import type { TailorInput, TailorOutput } from '@/types/tailor'
 import { readSkillGroups } from '@/lib/master-resume'
-import { classifyAIError } from '@/lib/ai-errors'
-import { recordUsage } from '@/lib/ai-usage'
+import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
+import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
+import { taskRoute } from '@/lib/ai/routing'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyRecord = Record<string, any>
 
-export const DEFAULT_TAILOR_MODEL = 'gpt-4o'
-
+/** The configured tailor model for Pro (AI_TAILOR, else the default routing). */
 export function tailorModel(): string {
-  return process.env.OPENAI_TAILOR_MODEL || DEFAULT_TAILOR_MODEL
+  return taskRoute('tailor').model
 }
 
 // The master resume as stored on the Resume row. Shapes vary (older rows use
@@ -225,7 +224,22 @@ const TAILOR_SCHEMA = {
   additionalProperties: false,
 } as const
 
-const SYSTEM_PROMPT = `You are a professional resume writer. You tailor a candidate's real resume to a specific job. You never fabricate anything, and you write in the candidate's natural voice.`
+// Static, so it's cached on Anthropic (src/lib/ai/adapters/anthropic.ts). Everything that
+// changes per request (resume, job, context, evidence) goes in the user message.
+const SYSTEM_PROMPT = `You are a professional resume writer. You tailor a candidate's real resume to a specific job. You never fabricate anything, and you write in the candidate's natural voice.
+
+RULES (all mandatory):
+1. Never fabricate. No new employers, titles, dates, schools, degrees, tools, technologies, certifications, responsibilities, or achievements.
+2. Only keep numbers that already exist in the resume. Never introduce new metrics, percentages, dollar amounts, team sizes, or counts. If a bullet has no number, do not add one.
+3. Never add a tool, technology, or employer the resume doesn't already mention.
+4. Do not copy phrases verbatim from the job description. Use natural, adjacent language.
+5. Return every role, education entry, and project with the same "id" as the input. Copy title, company, startDate, endDate, degree, institution, graduationYear, and project name exactly as given.
+6. Bullets: rewrite each role's bullets to emphasize what matters for this job. Start with a strong action verb, keep each to 1-2 lines. You may reorder bullets by relevance and merge or drop weak ones, but every bullet must be supported by the original bullets for that same role. Keep 3-5 bullets per role when the source has that many.
+7. For every bullet, give a short "reason" (under 15 words) for the change, e.g. "Moved up: matches CI/CD requirement".
+8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume.
+9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"). You may drop irrelevant ones. The resume's grouping is kept for you.
+10. Certifications are facts: mention them in the summary or bullets only if relevant, word for word, never invent one.
+11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.`
 
 export interface TailorJob {
   title: string
@@ -234,11 +248,9 @@ export interface TailorJob {
   location?: string
 }
 
-export interface TailorOptions {
+export interface TailorOptions extends AICallOptions {
   extraContext?: string
   contextTags?: string[]
-  client?: OpenAI
-  model?: string
 }
 
 export function buildTailorPrompt(input: TailorInput, job: TailorJob, options: TailorOptions = {}): string {
@@ -262,22 +274,10 @@ Title: ${job.title}
 Company: ${job.company}
 ${job.location ? `Location: ${job.location}\n` : ''}Description:
 ${job.description}
-${context}
-RULES (all mandatory):
-1. Never fabricate. No new employers, titles, dates, schools, degrees, tools, technologies, certifications, responsibilities, or achievements.
-2. Only keep numbers that already exist in the resume. Never introduce new metrics, percentages, dollar amounts, team sizes, or counts. If a bullet has no number, do not add one.
-3. Never add a tool, technology, or employer the resume doesn't already mention.
-4. Do not copy phrases verbatim from the job description. Use natural, adjacent language.
-5. Return every role, education entry, and project with the same "id" as the input. Copy title, company, startDate, endDate, degree, institution, graduationYear, and project name exactly as given.
-6. Bullets: rewrite each role's bullets to emphasize what matters for this job. Start with a strong action verb, keep each to 1-2 lines. You may reorder bullets by relevance and merge or drop weak ones, but every bullet must be supported by the original bullets for that same role. Keep 3-5 bullets per role when the source has that many.
-7. For every bullet, give a short "reason" (under 15 words) for the change, e.g. "Moved up: matches CI/CD requirement".
-8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume.
-9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"). You may drop irrelevant ones. The resume's grouping is kept for you.
-10. Certifications are facts: mention them in the summary or bullets only if relevant, word for word, never invent one.
-11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.${
+${context}${
     input.evidence?.length
       ? `
-12. "evidence" lists facts the candidate confirmed about specific bullets (the bullet is in parentheses). You may use those numbers and outcomes in the bullet they're about, and nowhere else.`
+EVIDENCE RULE: "evidence" lists facts the candidate confirmed about specific bullets (the bullet is in parentheses). You may use those numbers and outcomes in the bullet they're about, and nowhere else.`
       : ''
   }`
 }
@@ -287,70 +287,47 @@ export class TailorError extends Error {
     message: string,
     public readonly status: number,
     public readonly userMessage: string,
-    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
-    // response was unusable. Goes on the ai_error event.
-    public readonly kind: string = 'bad_output'
+    // AIErrorKind from classifyAIError ('invalid_output' when the call worked but the
+    // response was unusable). Goes on the ai_error event.
+    public readonly kind: string = 'invalid_output'
   ) {
     super(message)
     this.name = 'TailorError'
   }
 }
 
-let defaultClient: OpenAI | null = null
-function getClient(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
-    throw new TailorError('OPENAI_API_KEY is not configured', 503, "Tailoring is temporarily unavailable, we're on it.", 'not_configured')
-  }
-  defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return defaultClient
-}
+const NO_ANSWER = "We didn't get a usable answer back. Please try again; this didn't count toward your limit."
 
 export async function callTailorModel(
   input: TailorInput,
   job: TailorJob,
   options: TailorOptions = {}
 ): Promise<{ output: TailorOutput; model: string }> {
-  const client = options.client ?? getClient()
-  const model = options.model ?? tailorModel()
-
-  let completion
   try {
-    completion = await client.chat.completions.create({
-      model,
+    const result = await generateStructured<TailorOutput>({
+      task: 'tailor',
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: buildTailorPrompt(input, job, options) }],
+      schema: TAILOR_SCHEMA as unknown as Record<string, unknown>,
+      schemaName: 'tailored_resume',
+      maxTokens: 8000,
       temperature: 0.3,
-      max_tokens: 8000,
-      response_format: {
-        type: 'json_schema',
-        json_schema: { name: 'tailored_resume', strict: true, schema: TAILOR_SCHEMA as unknown as Record<string, unknown> },
-      },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: buildTailorPrompt(input, job, options) },
-      ],
+      effort: 'medium',
+      ...callOverrides('tailor', options),
     })
+    return { output: result.data, model: result.model }
   } catch (error: any) {
+    if (error instanceof AIOutputError) {
+      if (error.reason === 'refusal') {
+        throw new TailorError(`Model refused (${error.model})`, 422, "The AI wouldn't tailor for this posting. Check that the job description is a real job ad and try again. This didn't count toward your limit.", 'invalid_output')
+      }
+      if (error.reason === 'truncated') {
+        throw new TailorError('Model output truncated', 400, "That was too much text to tailor in one go. Trim the job description to the role and requirements and try again. This didn't count toward your limit.", 'invalid_output')
+      }
+      throw new TailorError(error.message, 502, NO_ANSWER, 'invalid_output')
+    }
     const classified = classifyAIError(error, 'Tailoring')
-    throw new TailorError(String(error?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage, classified.kind)
-  }
-  recordUsage(completion, model)
-
-  const choice = completion.choices[0]
-  if (choice?.message?.refusal) {
-    throw new TailorError(`Model refused: ${choice.message.refusal}`, 422, "The AI wouldn't tailor for this posting. Check that the job description is a real job ad and try again. This didn't count toward your limit.")
-  }
-  if (choice?.finish_reason === 'length') {
-    throw new TailorError('Model output truncated', 400, "That was too much text to tailor in one go. Trim the job description to the role and requirements and try again. This didn't count toward your limit.")
-  }
-  const content = choice?.message?.content
-  if (!content) {
-    throw new TailorError('Empty model response', 502, "We didn't get a usable answer back. Please try again; this didn't count toward your limit.")
-  }
-
-  try {
-    return { output: JSON.parse(content) as TailorOutput, model: completion.model || model }
-  } catch {
-    throw new TailorError('Model returned invalid JSON', 502, "We didn't get a usable answer back. Please try again; this didn't count toward your limit.")
+    throw new TailorError(String(error?.message || 'Unknown AI error'), classified.status, classified.userMessage, classified.kind)
   }
 }
 

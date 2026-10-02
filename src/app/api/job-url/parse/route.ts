@@ -6,9 +6,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
 import { UnsafeUrlError, assertSafeUrl, safeFetch } from '@/lib/safe-fetch';
-import { resolveJob, type FetchedPage } from '@/lib/job-resolve';
+import { refuseLinkedIn, resolveJob, type FetchedPage } from '@/lib/job-resolve';
 import { extractJobWithModel } from '@/lib/job-resolve/model-extract';
 import { collectUsage, usageProps } from '@/lib/ai-usage';
+import { getAIBudget, type AIBudget } from '@/lib/ai-cap';
+import { providerConfigured, taskRoute } from '@/lib/ai/routing';
 import { msSince, track } from '@/lib/track';
 
 export const runtime = 'nodejs';
@@ -18,6 +20,7 @@ const BROWSER_UA =
 
 async function fetchPage(url: string, accept: 'json' | 'html'): Promise<FetchedPage> {
   const res = await safeFetch(url, {
+    checkUrl: refuseLinkedIn, // never fetch LinkedIn, not even through a redirect
     maxRedirects: 3,
     timeoutMs: 8000,
     maxBytes: 3 * 1024 * 1024,
@@ -64,14 +67,21 @@ export async function POST(request: NextRequest) {
 
   const userId = session.user.id ?? null;
   const start = Date.now();
-  const { run, usage } = collectUsage(() =>
-    resolveJob(validated.href, {
-      fetchPage,
-      extractWithModel: process.env.OPENAI_API_KEY ? extractJobWithModel : undefined
-    })
+  // The model reader is the last resolver. It's skipped (straight to paste) when its
+  // provider has no key or the user's AI is paused by the AI cap.
+  const ai: AIBudget | null = userId ? await getAIBudget(userId) : null;
+  const modelAllowed = providerConfigured(taskRoute('jobExtract').provider) && ai?.state.band !== 'paused';
+  const { run, usage } = collectUsage(
+    () =>
+      resolveJob(validated.href, {
+        fetchPage,
+        extractWithModel: modelAllowed ? extractJobWithModel : undefined
+      }),
+    ai?.scope
   );
   try {
     const result = await run;
+    await ai?.settle(usage().costUsd);
     if (!result.ok) {
       await track('job_fetched', { ok: false, resolver: 'needsPaste', reason: result.reason, ms: msSince(start), ...usageProps(usage()) }, userId);
       return NextResponse.json({ success: false, needsPaste: true, reason: result.reason, message: result.message });
@@ -80,6 +90,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, job: result.job });
   } catch (error) {
     console.error('❌ Job URL resolve error:', error);
+    await ai?.settle(usage().costUsd);
     await track('job_fetched', { ok: false, resolver: 'needsPaste', reason: 'error', ms: msSince(start), ...usageProps(usage()) }, userId);
     return NextResponse.json({
       success: false,

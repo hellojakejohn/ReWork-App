@@ -74,6 +74,7 @@ model User {
   sessions               Session[]
   entitlements           Entitlement[]
   events                 Event[]
+  aiCapOverride          AiCapOverride?
 
   @@map("users")
 }
@@ -226,6 +227,19 @@ model Event {
   @@index([name, createdAt])
   @@index([userId, name, createdAt])
   @@map("events")
+}
+
+// Admin override of one user's AI cap (src/lib/ai-cap.ts), in USD per cap period.
+// Its own table (not a users column) so the app keeps working before the migration is
+// applied: reads of a missing table fail soft, reads of a missing users column wouldn't.
+model AiCapOverride {
+  userId    String   @id
+  capUsd    Float
+  note      String?
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_cap_overrides")
 }
 
 // Processed Stripe webhook events, for idempotency.

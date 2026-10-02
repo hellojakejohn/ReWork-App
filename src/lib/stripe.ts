@@ -1,6 +1,7 @@
 // Lazy Stripe client. Nothing here runs at import, so `next build` works with no env set.
 import Stripe from 'stripe'
 import { NextResponse } from 'next/server'
+import type { Offer } from '@/lib/plans'
 
 let client: Stripe | null = null
 
@@ -64,3 +65,11 @@ export function stripeId(ref: string | { id: string } | null | undefined): strin
 
 /** Stripe statuses that mean the customer already has a subscription we shouldn't duplicate. */
 export const BLOCKING_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid'])
+
+/** The Stripe price id for an offer. The pass reads STRIPE_PRICE_PASS, then the old STRIPE_PRICE_PASS_30D name. */
+export function stripePriceId(offer: Offer): string | null {
+  const primary = process.env[offer.priceEnv]?.trim()
+  if (primary) return primary
+  const legacy = offer.fallbackEnv ? process.env[offer.fallbackEnv]?.trim() : ''
+  return legacy || null
+}
