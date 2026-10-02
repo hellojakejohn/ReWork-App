@@ -13,7 +13,19 @@ interface User {
   resumesCreated: number
   createdAt: string
   lastActiveAt: string
+  ai: {
+    mtdSpendUsd: number
+    periodSpendUsd: number
+    capUsd: number
+    percent: number
+    band: 'normal' | 'downgrade' | 'paused'
+    period: 'monthly' | 'pass' | 'comp' | 'free'
+    resetAt: string
+    overrideUsd: number | null
+  } | null
 }
+
+const usd = (n: number) => `$${n.toFixed(n < 1 ? 3 : 2)}`
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -74,6 +86,31 @@ export default function AdminPage() {
     const data = await response.json().catch(() => ({}))
     if (!response.ok) {
       window.alert(data.error || 'Comp failed')
+      return
+    }
+    await fetchUsers()
+  }
+
+  const setCap = async (user: User) => {
+    const current = user.ai?.overrideUsd
+    const input = window.prompt(
+      `AI cap override for ${user.email}, in USD per cap period (${user.ai?.period ?? 'period'}). Blank = back to the default (${user.ai ? usd(user.ai.capUsd) : 'ratio x net'}).`,
+      current === null || current === undefined ? '' : String(current)
+    )
+    if (input === null) return
+    const capUsd = input.trim() === '' ? null : Number(input)
+    if (capUsd !== null && (!Number.isFinite(capUsd) || capUsd < 0 || capUsd > 1000)) {
+      window.alert('Enter a dollar amount from 0 to 1000, or leave it blank.')
+      return
+    }
+    const response = await fetch(`/api/admin/users/${user.id}/ai-cap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capUsd })
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      window.alert(data.error || 'Saving the cap failed')
       return
     }
     await fetchUsers()
@@ -155,6 +192,12 @@ export default function AdminPage() {
                 Last Active
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                AI spend (MTD)
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                AI cap
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -188,12 +231,32 @@ export default function AdminPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {new Date(user.lastActiveAt).toLocaleDateString()}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {user.ai ? usd(user.ai.mtdSpendUsd) : '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {user.ai ? (
+                    <span title={`${user.ai.period} period, resets ${new Date(user.ai.resetAt).toLocaleDateString()}`}>
+                      {usd(user.ai.periodSpendUsd)} / {usd(user.ai.capUsd)} ({user.ai.percent}%)
+                      {user.ai.band !== 'normal' && <span className="ml-1 text-amber-700">{user.ai.band}</span>}
+                      {user.ai.overrideUsd !== null && <span className="ml-1 text-blue-700">override</span>}
+                    </span>
+                  ) : (
+                    '-'
+                  )}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <button
                     onClick={() => compPro(user)}
                     className="text-blue-600 hover:text-blue-800 underline"
                   >
                     Comp Pro for N days
+                  </button>
+                  <button
+                    onClick={() => setCap(user)}
+                    className="ml-3 text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Set AI cap
                   </button>
                 </td>
               </tr>

@@ -156,3 +156,68 @@ export async function aiPausedCheck(ai: AIBudget, userId: string, feature: strin
   await track('limit_hit', { kind: 'ai_cap', feature, period: ai.state.period.kind }, userId)
   return aiPausedBody(ai)
 }
+
+export interface AdminCapRow {
+  mtdSpendUsd: number // calendar month to date
+  periodSpendUsd: number // since the cap period started
+  capUsd: number
+  percent: number
+  band: CapState['band']
+  period: CapPeriod['kind']
+  resetAt: string
+  overrideUsd: number | null
+}
+
+/** Admin users table: every user's AI spend and cap, in three queries. */
+export async function adminCapRows(userIds: string[], now = new Date()): Promise<Record<string, AdminCapRow>> {
+  if (userIds.length === 0) return {}
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const [entitlements, overrides, calls] = await Promise.all([
+    prisma.entitlement.findMany({
+      where: { userId: { in: userIds }, status: { in: ['ACTIVE', 'PAST_DUE'] } },
+      select: { userId: true, source: true, status: true, startsAt: true, endsAt: true, cancelAtPeriodEnd: true, pastDueAt: true },
+    }),
+    prisma.aiCapOverride.findMany({ where: { userId: { in: userIds } }, select: { userId: true, capUsd: true } }).catch(() => []),
+    // Every ai_call since the earliest possible period start (a pass window is 90 days,
+    // stacked passes start later, so 100 days back covers it).
+    prisma.$queryRaw<{ userId: string; createdAt: Date; costUsd: number }[]>`
+      SELECT "userId", "createdAt", COALESCE((props->>'costUsd')::float8, 0) AS "costUsd"
+      FROM "events"
+      WHERE name = 'ai_call' AND "userId" IS NOT NULL AND "createdAt" >= ${new Date(now.getTime() - 100 * 24 * 60 * 60 * 1000)}`.catch(() => []),
+  ])
+  const overrideBy = new Map(overrides.map((o) => [o.userId, o.capUsd]))
+  const out: Record<string, AdminCapRow> = {}
+  for (const id of userIds) {
+    const period = capPeriod(
+      entitlements.filter((e) => e.userId === id) as Parameters<typeof capPeriod>[0],
+      now
+    )
+    const mine = calls.filter((c) => c.userId === id)
+    const sum = (since: Date) => Math.round(mine.filter((c) => c.createdAt >= since).reduce((s, c) => s + Number(c.costUsd), 0) * 10000) / 10000
+    const state = capState({ period, spentUsd: sum(period.start), overrideUsd: overrideBy.get(id) ?? null, proAlwaysTopModel: proAlwaysTopModel(), downgradeAvailable: downgradeAvailable() })
+    out[id] = {
+      mtdSpendUsd: sum(monthStart),
+      periodSpendUsd: state.spentUsd,
+      capUsd: state.capUsd,
+      percent: state.percent,
+      band: state.band,
+      period: period.kind,
+      resetAt: period.resetAt.toISOString(),
+      overrideUsd: overrideBy.get(id) ?? null,
+    }
+  }
+  return out
+}
+
+/** Admin: set (number) or clear (null) a user's cap override. */
+export async function setCapOverride(userId: string, capUsd: number | null, note?: string): Promise<void> {
+  if (capUsd === null) {
+    await prisma.aiCapOverride.deleteMany({ where: { userId } })
+    return
+  }
+  await prisma.aiCapOverride.upsert({
+    where: { userId },
+    create: { userId, capUsd, note: note ?? null },
+    update: { capUsd, note: note ?? null },
+  })
+}

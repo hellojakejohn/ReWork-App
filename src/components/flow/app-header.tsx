@@ -17,6 +17,7 @@ import {
 import { SettingsModal } from "@/components/settings-modal"
 import { LogoutModal } from "@/components/logout-modal"
 import type { Quota } from "./api"
+import { AIUsageBanner, AIUsageMeter, useAIUsage } from "./ai-usage"
 
 /** Hooks into the one-page flow. Absent on other views, where the same items link back to it. */
 export interface FlowActions {
@@ -43,6 +44,8 @@ export function AppHeader({
   const { data: session } = useSession()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
+  // Quota changes after every tailor/cover letter, so the usage bar refreshes with it.
+  const aiUsage = useAIUsage(`${session?.user?.id}:${quota?.used ?? ""}:${quota?.remaining ?? ""}:${recentCount}`)
 
   const tailorsText = !quota
     ? ""
@@ -116,6 +119,7 @@ export function AppHeader({
                   <div className="truncate text-sm text-slate-100">{session.user?.name}</div>
                   <div className="truncate text-xs text-slate-400">{session.user?.email}</div>
                   {tailorsText && <div className="mt-1 text-xs text-slate-400 sm:hidden">{tailorsText}</div>}
+                  <AIUsageMeter usage={aiUsage} />
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-white/10" />
                 {flow ? (
@@ -164,6 +168,7 @@ export function AppHeader({
           )}
         </div>
       </header>
+      <AIUsageBanner usage={aiUsage} />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <LogoutModal isOpen={logoutOpen} onClose={() => setLogoutOpen(false)} />
     </>
