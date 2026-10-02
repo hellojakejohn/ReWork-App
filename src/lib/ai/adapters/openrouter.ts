@@ -36,7 +36,7 @@ export function openRouterClient(): OpenAI {
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not configured')
   defaultClient ??= new OpenAI({
     apiKey,
-    baseURL: OPENROUTER_BASE_URL,
+    baseURL: process.env.OPENROUTER_BASE_URL?.trim() || OPENROUTER_BASE_URL,
     defaultHeaders: { 'X-Title': 'ReWork', ...(process.env.NEXTAUTH_URL ? { 'HTTP-Referer': process.env.NEXTAUTH_URL } : {}) },
   })
   return defaultClient

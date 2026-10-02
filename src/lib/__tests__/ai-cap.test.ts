@@ -1,6 +1,6 @@
 // AI cap: revenue-linked, per period. Every band, monthly vs pass, the model switch, the
 // override, and the server side with a mocked database.
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const db = vi.hoisted(() => ({
