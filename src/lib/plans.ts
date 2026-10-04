@@ -61,6 +61,11 @@ export const PASS_DAYS = 90
 export const PRO_MONTHLY_PRICE_USD = 15
 export const PASS_PRICE_USD = 29
 
+// AI cap for FREE accounts, in USD per calendar month (src/lib/ai-cap-rules.ts): a flat
+// backstop, since FREE brings in no revenue. Revisit once npm run eval:models has run on
+// real keys: it has to cover a parse, 3 tailors and 1 cover letter on AI_FREE_TIER.
+export const FREE_AI_CAP_USD = 0.5
+
 // Never say "unlimited". Pro is generous, not infinite.
 export const FAIR_USE = 'Fair use: plenty for an active job search'
 

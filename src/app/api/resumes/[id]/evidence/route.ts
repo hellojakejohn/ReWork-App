@@ -9,7 +9,7 @@ import { collectUsage, usageProps } from '@/lib/ai-usage'
 import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

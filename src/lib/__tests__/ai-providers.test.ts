@@ -5,13 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Anthropic from '@anthropic-ai/sdk'
 import { APIError as OpenAIAPIError } from 'openai'
 import { generateStructured, parseAndValidate, callOverrides } from '@/lib/ai'
-import { buildAnthropicRequest, FALLBACK_BETA } from '@/lib/ai/adapters/anthropic'
+import { buildAnthropicRequest, FALLBACK_BETA, refusalFallbackFor } from '@/lib/ai/adapters/anthropic'
 import { buildOpenAIRequest } from '@/lib/ai/adapters/openai'
 import { buildOpenRouterRequest } from '@/lib/ai/adapters/openrouter'
 import { downgradeAvailable, parseRoute, resolveRoute, showPoweredBy, taskRoute } from '@/lib/ai/routing'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { collectUsage } from '@/lib/ai-usage'
-import { modelInfo } from '@/lib/ai/models'
+import { MODELS, modelInfo } from '@/lib/ai/models'
 
 const SCHEMA = {
   type: 'object',
@@ -94,7 +94,7 @@ describe('anthropic adapter', () => {
     expect(body).not.toHaveProperty('temperature') // Opus 5.5 rejects temperature
     expect(body.system).toEqual([{ type: 'text', text: 'You tailor resumes.', cache_control: { type: 'ephemeral' } }])
     expect(body.betas).toEqual([FALLBACK_BETA])
-    expect(body.fallbacks).toBe('default')
+    expect(body.fallbacks).toEqual([{ model: 'claude-sonnet-5-5' }])
     expect(body.max_tokens).toBeGreaterThan(1000) // thinking headroom
     expect(body.max_tokens).toBeLessThanOrEqual(16000)
   })
@@ -141,6 +141,60 @@ describe('anthropic adapter', () => {
     expect(error.reason).toBe('invalid')
     vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(classifyAIError(error).kind).toBe('invalid_output')
+  })
+
+  it('refusal fallback stays on Anthropic: Opus 5.5 -> Sonnet 5.5, never OpenAI or OpenRouter', async () => {
+    expect(FALLBACK_BETA).toBe('server-side-fallback-2026-06-01') // the array form's beta
+    expect(refusalFallbackFor('claude-opus-5-5')).toBe('claude-sonnet-5-5')
+    // Sonnet 5.5 only accepts the category-routed "default" form, so it gets no fallback.
+    expect(refusalFallbackFor('claude-sonnet-5-5')).toBeNull()
+    const sonnet = buildAnthropicRequest({ model: 'claude-sonnet-5-5', system: 's', messages: [{ role: 'user', content: 'x' }], files: [], schema: SCHEMA, schemaName: 'x', maxTokens: 10 })
+    expect(sonnet).not.toHaveProperty('fallbacks')
+    expect(sonnet).not.toHaveProperty('betas')
+
+    // Every configured fallback, anywhere in the table, is an Anthropic model.
+    for (const m of Object.values(MODELS)) {
+      if (!m.refusalFallback) continue
+      expect(m.provider).toBe('anthropic')
+      expect(modelInfo(m.refusalFallback).provider).toBe('anthropic')
+    }
+    // Even a misconfigured entry pointing elsewhere is dropped, not sent.
+    const original = MODELS['claude-opus-5-5'].refusalFallback
+    try {
+      for (const bad of ['gpt-4o', 'moonshotai/kimi-k2.6']) {
+        MODELS['claude-opus-5-5'].refusalFallback = bad
+        expect(refusalFallbackFor('claude-opus-5-5')).toBeNull()
+        const body = buildAnthropicRequest({ model: 'claude-opus-5-5', system: 's', messages: [{ role: 'user', content: 'x' }], files: [], schema: SCHEMA, schemaName: 'x', maxTokens: 10 })
+        expect(body).not.toHaveProperty('fallbacks')
+      }
+    } finally {
+      MODELS['claude-opus-5-5'].refusalFallback = original
+    }
+
+    // A refusal that survives the server-side fallback is an error, not a hop to another provider.
+    process.env.OPENAI_API_KEY = 'sk-test'
+    process.env.OPENROUTER_API_KEY = 'or-test'
+    const refused = anthropicMock(anthropicReply('', { stop_reason: 'refusal', model: 'claude-sonnet-5-5' }))
+    const openai = chatMock(chatReply(JSON.stringify(GOOD)))
+    const openrouter = chatMock(chatReply(JSON.stringify(GOOD), 'moonshotai/kimi-k2.6'))
+    const error = await generateStructured({
+      ...base,
+      route: { provider: 'anthropic', model: 'claude-opus-5-5' },
+      clients: { anthropic: refused.client, openai: openai.client, openrouter: openrouter.client },
+    }).catch((e) => e)
+    expect(error).toBeInstanceOf(AIOutputError)
+    expect(error).toMatchObject({ reason: 'refusal', provider: 'anthropic' })
+    expect(refused.create).toHaveBeenCalledTimes(1)
+    expect(openai.create).not.toHaveBeenCalled()
+    expect(openrouter.create).not.toHaveBeenCalled()
+  })
+
+  it('prices a fallback answer at the model that served it', async () => {
+    const { client } = anthropicMock(anthropicReply(JSON.stringify(GOOD), { model: 'claude-sonnet-5-5' }))
+    const res = await generateStructured({ ...base, route: { provider: 'anthropic', model: 'claude-opus-5-5' }, clients: { anthropic: client } })
+    expect(res.model).toBe('claude-sonnet-5-5')
+    // Sonnet prices: 1000 * 2 + 200 * 10 + 500 * 0.2 = 4100 per 1M
+    expect(res.costUsd).toBeCloseTo(0.0041, 6)
   })
 
   it('maps refusal and max_tokens stop reasons', async () => {

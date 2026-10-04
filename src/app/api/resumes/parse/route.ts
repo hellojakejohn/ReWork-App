@@ -26,7 +26,7 @@ import { CURRENT_PARSER_VERSION, toMasterDTO } from '@/lib/master-dto'
 import { ndjsonResponse } from '@/lib/ndjson'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 
 const PDF = 'application/pdf'
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

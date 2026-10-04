@@ -8,15 +8,24 @@
 // - Opus 5.5 / Sonnet 5.5 think on every call and reject temperature; `effort` controls
 //   depth. Thinking tokens bill as output and count toward max_tokens, so the answer
 //   budget gets headroom.
-// - Refusals: `fallbacks: "default"` (beta server-side-fallback-2026-07-01) re-runs a
-//   safety-classifier decline on Anthropic's recommended fallback model server-side.
+// - Refusals: a safety-classifier decline is re-run server-side on the model's named
+//   Anthropic fallback (models.ts refusalFallback: Opus 5.5 -> Sonnet 5.5), using the
+//   array form of `fallbacks` (beta server-side-fallback-2026-06-01). Same provider only:
+//   resume text never goes to OpenAI or OpenRouter because Claude declined.
 import Anthropic from '@anthropic-ai/sdk'
 import { modelInfo } from '@/lib/ai/models'
 import type { Adapter, AdapterRequest, AdapterResult } from '@/lib/ai/types'
 
 // Non-streaming requests stay at or under 16k so the SDK's HTTP timeout logic is happy.
 const MAX_NON_STREAMING = 16_000
-export const FALLBACK_BETA = 'server-side-fallback-2026-07-01'
+export const FALLBACK_BETA = 'server-side-fallback-2026-06-01'
+
+/** The refusal fallback for a model, or null. Only ever an Anthropic model. */
+export function refusalFallbackFor(model: string): string | null {
+  const fallback = modelInfo(model, 'anthropic').refusalFallback
+  if (!fallback || fallback === model) return null
+  return modelInfo(fallback).provider === 'anthropic' && fallback.startsWith('claude-') ? fallback : null
+}
 
 export function anthropicMaxTokens(answerTokens: number): number {
   return Math.min(MAX_NON_STREAMING, answerTokens * 2 + 2000)
@@ -25,6 +34,7 @@ export function anthropicMaxTokens(answerTokens: number): number {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function buildAnthropicRequest(req: AdapterRequest): Record<string, any> {
   const info = modelInfo(req.model, 'anthropic')
+  const fallback = refusalFallbackFor(req.model)
   const messages = req.messages.map((m, i) => {
     if (i !== 0 || m.role !== 'user' || req.files.length === 0) return { role: m.role, content: m.content }
     return {
@@ -49,7 +59,7 @@ export function buildAnthropicRequest(req: AdapterRequest): Record<string, any> 
       ...(req.effort ? { effort: req.effort } : {}),
     },
     ...(info.temperature && req.temperature !== undefined ? { temperature: req.temperature } : {}),
-    ...(info.refusalFallback ? { betas: [FALLBACK_BETA], fallbacks: 'default' } : {}),
+    ...(fallback ? { betas: [FALLBACK_BETA], fallbacks: [{ model: fallback }] } : {}),
   }
 }
 

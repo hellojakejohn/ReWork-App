@@ -27,9 +27,10 @@ export interface ModelInfo {
   strictSchema: boolean
   // OpenAI only: reasoning models take max_completion_tokens instead of max_tokens.
   maxCompletionTokens?: boolean
-  // Anthropic only: send `fallbacks: "default"` so a safety-classifier decline is re-run
-  // server-side on Anthropic's recommended fallback model instead of failing the call.
-  refusalFallback?: boolean
+  // Anthropic only: the model a safety-classifier decline is re-run on, server-side, inside
+  // the same call (beta server-side-fallback). Always another Anthropic model: resume text
+  // never crosses to a different provider because of a refusal. No entry = no fallback.
+  refusalFallback?: string
 }
 
 const ANTHROPIC_PRICING = 'https://platform.claude.com/docs/en/about-claude/pricing'
@@ -48,7 +49,7 @@ export const MODELS: Record<string, ModelInfo> = {
     temperature: false, // removed on Opus 5.5: any temperature is a 400
     pdf: true,
     strictSchema: true,
-    refusalFallback: true,
+    refusalFallback: 'claude-sonnet-5-5',
   },
   'claude-sonnet-5-5': {
     id: 'claude-sonnet-5-5',
@@ -63,9 +64,11 @@ export const MODELS: Record<string, ModelInfo> = {
     temperature: false, // non-default values are a 400 on Sonnet 5.5
     pdf: true,
     strictSchema: true,
-    refusalFallback: true,
+    // No fallback: Sonnet 5.5 only takes Anthropic's category-routed "default" form, not a
+    // named model. A Sonnet refusal surfaces as the feature's "the AI declined" message.
   },
-  // Not routed to; here so a refusal fallback served by it is priced right.
+  // Not routed to or used as a fallback. Kept so old ai_call events and any served-by
+  // model we don't route to are priced right.
   'claude-opus-4-8': {
     id: 'claude-opus-4-8',
     provider: 'anthropic',

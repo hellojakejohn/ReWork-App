@@ -7,20 +7,20 @@
 //   Pro Monthly  one cap per subscription period (~$9.99 at $15), resets with the period
 //   Job Hunt Pass ONE cap for the whole 90-day window (~$19.50 at $29), not per 30 days
 //   Comp          like Pro Monthly, per calendar month
-//   FREE          flat $0.25 backstop per calendar month
+//   FREE          flat backstop per calendar month (FREE_AI_CAP_USD in plans.ts, $0.50)
 //
 // Bands (users never see dollars, only a percent and a reset date):
 //   under 75%    routing as configured (Pro = Opus)
 //   75% to 100%  paid calls run on AI_FREE_TIER (Sonnet 5.5), with a small banner
 //                (AI_PRO_ALWAYS_OPUS=true turns this step off)
 //   100%         AI pauses until the reset date; downloads, tracker, editing still work
-import { CONTACT_EMAIL, PASS_PRICE_USD, PRO_MONTHLY_PRICE_USD } from '@/lib/plans'
+import { CONTACT_EMAIL, FREE_AI_CAP_USD, PASS_PRICE_USD, PRO_MONTHLY_PRICE_USD } from '@/lib/plans'
 import { isLive, type EntitlementLike, type EntitlementSource } from '@/lib/entitlement-rules'
 
 export const STRIPE_PERCENT = 0.029
 export const STRIPE_FIXED_USD = 0.3
 export const DEFAULT_CAP_RATIO = 0.7
-export const FREE_CAP_USD = 0.25
+export const FREE_CAP_USD = FREE_AI_CAP_USD
 export const DOWNGRADE_AT = 0.75
 
 export function aiCapRatio(raw = process.env.AI_CAP_RATIO): number {

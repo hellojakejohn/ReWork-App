@@ -20,7 +20,7 @@ import { evidenceFacts } from '@/lib/evidence-shared';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300; // Vercel Pro; Opus 5.5 thinks on every call
 
 // The Resume row is the MASTER. Tailoring reads from it and writes the result to a
 // JobApplication; it never writes the master's structured fields.

@@ -21,7 +21,7 @@ import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap'
 import { msSince, track } from '@/lib/track'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 
 const MAX_TEXT = 6000
 

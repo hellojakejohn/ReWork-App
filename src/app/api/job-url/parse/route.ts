@@ -14,6 +14,7 @@ import { providerConfigured, taskRoute } from '@/lib/ai/routing';
 import { msSince, track } from '@/lib/track';
 
 export const runtime = 'nodejs';
+export const maxDuration = 300; // Vercel Pro; the model reader can be slow on long pages
 
 const BROWSER_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';

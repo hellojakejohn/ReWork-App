@@ -32,6 +32,7 @@ import {
   pausedMessage,
 } from '@/lib/ai-cap-rules'
 import { getAIBudget, usageDTO } from '@/lib/ai-cap'
+import { FREE_AI_CAP_USD } from '@/lib/plans'
 import { collectUsage, recordUsage, usageRecord } from '@/lib/ai-usage'
 import { resolveRoute } from '@/lib/ai/routing'
 
@@ -49,7 +50,8 @@ describe('net revenue and caps', () => {
     expect(capUsd(monthly)).toBe(9.99) // about $9.99 per monthly period
     expect(capUsd(pass)).toBe(19.5) // about $19.50 for the whole 90-day window
     expect(capUsd(capPeriod([], now))).toBe(FREE_CAP_USD)
-    expect(FREE_CAP_USD).toBe(0.25)
+    expect(FREE_CAP_USD).toBe(0.5)
+    expect(FREE_CAP_USD).toBe(FREE_AI_CAP_USD) // the number lives in plans.ts
   })
 
   it('reads AI_CAP_RATIO, ignoring nonsense', () => {
@@ -131,10 +133,11 @@ describe('bands', () => {
     expect(state(8, { downgradeAvailable: false }).downgraded).toBe(false)
   })
 
-  it('FREE: pauses at the $0.25 backstop, never "downgrades" (already on the free tier)', () => {
+  it('FREE: pauses at the $0.50 backstop, never "downgrades" (already on the free tier)', () => {
     const free = capPeriod([], now)
-    expect(capState({ period: free, spentUsd: 0.2, downgradeAvailable: true })).toMatchObject({ band: 'downgrade', downgraded: false, isPaid: false })
-    expect(capState({ period: free, spentUsd: 0.25 }).band).toBe('paused')
+    expect(capState({ period: free, spentUsd: 0.2 }).band).toBe('normal')
+    expect(capState({ period: free, spentUsd: 0.4, downgradeAvailable: true })).toMatchObject({ band: 'downgrade', downgraded: false, isPaid: false })
+    expect(capState({ period: free, spentUsd: 0.5 }).band).toBe('paused')
   })
 
   it('a $0 override pauses on the first cent', () => {
@@ -233,7 +236,7 @@ describe('getAIBudget (server, mocked db)', () => {
     db.spent = 0.1
     const ai = await getAIBudget('u2')
     expect(ai.tier).toBe('free')
-    expect(ai.state.capUsd).toBe(0.25)
+    expect(ai.state.capUsd).toBe(0.5)
     expect(resolveRoute('coverLetter', ai.scope.routing).model).toBe('claude-sonnet-5-5')
   })
 })

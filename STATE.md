@@ -15,7 +15,7 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 - Daily ceilings for everyone, Pro included (abuse guard): 20 tailors, 20 cover letters,
   10 parses, 10 evidence interviews per UTC day.
 - AI cap per user (the money guard): AI_CAP_RATIO (0.70) x net revenue for the period
-  (Pro ~$9.99/month, pass ~$19.50 for its whole 90 days, FREE $0.25/month). 75%: paid calls
+  (Pro ~$9.99/month, pass ~$19.50 for its whole 90 days, FREE $0.50/month, revisit after the real eval). 75%: paid calls
   run on AI_FREE_TIER with a header banner. 100%: AI pauses until the reset date; downloads,
   tracker and editing keep working. Users see a percent, never dollars. Admin can override
   per user. `src/lib/ai-cap-rules.ts`.
@@ -85,10 +85,10 @@ anthropic:claude-sonnet-5-5.
 
 ## Known gaps / next
 - Rate limiting is an in-memory speed bump per lambda; daily ceilings and the AI cap are the real caps.
-- Existing $9 subscribers stay on their Stripe price until migrated in Stripe, but their AI
-  cap is computed from the $15 price (up to ~$1.55/month of cap above their net).
-- AI routes keep maxDuration 60. Opus 5.5 thinks on every call; if the eval shows tailor or
-  parse latency near that, raise maxDuration (needs Vercel Fluid compute / plan support).
+- AI routes (parse, job URL, tailor, cover letter, evidence) run with maxDuration 300 (Vercel
+  Pro), since Opus 5.5 thinks on every call.
+- Refusal fallback is same-provider only: Opus 5.5 -> Sonnet 5.5 server-side. Sonnet 5.5 has
+  none. Nothing ever falls back to OpenAI or OpenRouter (resume PII).
 - OpenRouter is wired but not in the privacy policy; update /privacy before routing
   production traffic there.
 - LinkedIn job URLs are never fetched (also not through redirects): straight to paste.
