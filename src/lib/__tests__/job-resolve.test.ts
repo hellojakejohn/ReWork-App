@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { matchAtsUrl, parseAtsResponse } from '@/lib/job-resolve/ats'
 import { extractJsonLdJob } from '@/lib/job-resolve/json-ld'
 import { extractPageMeta, htmlToText } from '@/lib/job-resolve/html-text'
-import { resolveJob, type FetchedPage } from '@/lib/job-resolve'
+import { isLinkedInHost, LinkedInUrlError, refuseLinkedIn, resolveJob, type FetchedPage } from '@/lib/job-resolve'
 
 const fixture = (name: string) => readFileSync(path.join(__dirname, 'fixtures/jobs', name), 'utf8')
 
@@ -285,9 +285,39 @@ describe('resolveJob chain', () => {
     expect(result).toMatchObject({ ok: true, job: { source: 'json-ld', title: 'Senior Backend Engineer' } })
   })
 
-  it('returns needsPaste for Indeed/LinkedIn/Glassdoor without fetching', async () => {
+  it('never fetches LinkedIn: straight to paste with a one-line explanation', async () => {
     const fetchPage = pages({})
-    for (const url of ['https://www.indeed.com/viewjob?jk=abc', 'https://www.linkedin.com/jobs/view/123', 'https://www.glassdoor.com/job-listing/x']) {
+    for (const url of [
+      'https://www.linkedin.com/jobs/view/123',
+      'https://linkedin.com/jobs/view/123?refId=x',
+      'https://uk.linkedin.com/jobs/view/abc',
+      'https://www.LinkedIn.com/comm/jobs/view/1',
+      'https://lnkd.in/gAbCdEf',
+    ]) {
+      const result = await resolveJob(url, { fetchPage })
+      expect(result).toMatchObject({ ok: false, needsPaste: true, reason: 'linkedin' })
+      if (!result.ok) expect(result.message).toMatch(/We don't read LinkedIn pages\..*paste/)
+    }
+    expect(fetchPage).not.toHaveBeenCalled()
+  })
+
+  it('stops a redirect into LinkedIn before it is requested', async () => {
+    expect(isLinkedInHost('www.linkedin.com')).toBe(true)
+    expect(isLinkedInHost('notlinkedin.com')).toBe(false)
+    expect(isLinkedInHost('linkedin.com.evil.io')).toBe(false)
+    expect(() => refuseLinkedIn(new URL('https://www.linkedin.com/jobs/view/1'))).toThrow(LinkedInUrlError)
+    expect(() => refuseLinkedIn(new URL('https://boards.greenhouse.io/acme/jobs/1'))).not.toThrow()
+    // A company page that redirects to LinkedIn: the fetcher throws, the chain says paste.
+    const fetchPage = vi.fn(async () => {
+      throw new LinkedInUrlError()
+    })
+    const result = await resolveJob('https://jobs.example.com/apply/42', { fetchPage })
+    expect(result).toMatchObject({ ok: false, needsPaste: true, reason: 'linkedin' })
+  })
+
+  it('returns needsPaste for Indeed/Glassdoor without fetching', async () => {
+    const fetchPage = pages({})
+    for (const url of ['https://www.indeed.com/viewjob?jk=abc', 'https://www.glassdoor.com/job-listing/x']) {
       const result = await resolveJob(url, { fetchPage })
       expect(result).toMatchObject({ ok: false, needsPaste: true, reason: 'blocked_site' })
     }

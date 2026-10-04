@@ -19,7 +19,7 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li>ReWork is run by one person, Jakob Johnson, in Saint Paul, Minnesota.</li>
           <li>We store your resume, the jobs you tailor for, and what we write for you, so you can come back to it.</li>
-          <li>Resume and job text is sent to OpenAI’s API to do the rewriting. OpenAI doesn’t use API data to train its models.</li>
+          <li>Resume and job text is sent to an AI provider’s paid API (Anthropic or OpenAI) to do the rewriting. Neither uses API data to train its models.</li>
           <li>We don’t sell your data, show ads, or share your resume with employers.</li>
           <li>You can download everything or delete your account any time from Settings, Your data.</li>
         </ul>
@@ -96,10 +96,13 @@ export default function PrivacyPage() {
             <strong>Vercel</strong>: hosts the website and API, keeps request logs, and provides cookieless page-view analytics.
           </li>
           <li>
-            <strong>OpenAI</strong>: when you parse a resume, tailor, write a cover letter, run the evidence interview or fetch some job pages, the
-            relevant text is sent to OpenAI’s API to generate the result. Under OpenAI’s API data policy, data sent through the API is not used to
-            train their models. OpenAI may keep API data for a limited time to monitor for abuse, under its own policy (see{" "}
-            <a href="https://openai.com/policies/privacy-policy/" rel="noopener noreferrer">OpenAI’s privacy policy</a>).
+            <strong>Anthropic and OpenAI</strong>: when you parse a resume, tailor, write a cover letter, run the evidence interview or fetch some
+            job pages, the relevant text is sent to one of these providers’ APIs (Anthropic’s Claude API by default) to generate the result. Under
+            their commercial API terms, data sent through the API is not used to train their models. Each may keep API data for a limited time to
+            monitor for abuse, under its own policy (see{" "}
+            <a href="https://www.anthropic.com/legal/privacy" rel="noopener noreferrer">Anthropic’s privacy policy</a> and{" "}
+            <a href="https://openai.com/policies/privacy-policy/" rel="noopener noreferrer">OpenAI’s privacy policy</a>). We never send your
+            resume to free or community AI services.
           </li>
           <li>
             <strong>Stripe</strong>: payments, receipts, subscriptions and the billing portal. Stripe is responsible for your card details.

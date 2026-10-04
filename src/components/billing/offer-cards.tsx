@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { CheckCircle, Crown, Loader2, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { OFFER_IDS, PASS_DAYS, PRICING, PRO_FEATURES, type OfferId } from "@/lib/plans"
+import { OFFER_IDS, PRICING, PRO_FEATURES, type OfferId } from "@/lib/plans"
 import { describeAccess, type Access } from "@/lib/entitlement-rules"
 import { openPortal, startCheckout } from "@/lib/billing-client"
 
@@ -47,7 +47,7 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
     }
     if (subscribed) return { label: "Included in your subscription", disabled: true }
     return {
-      label: onPass ? `Add ${PASS_DAYS} more days (${PRICING.pass.amount})` : `Buy pass for ${PRICING.pass.amount}`,
+      label: onPass ? `Add 3 more months (${PRICING.pass.amount})` : `Get 3 months for ${PRICING.pass.amount}`,
       onClick: () => run("pass", () => startCheckout("pass", returnTo)),
       note: onPass ? `Stacks onto your current pass: ${describeAccess(access)}.` : undefined,
     }
@@ -59,12 +59,13 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
         const offer = PRICING[id]
         const a = action(id)
         const Icon = id === "monthly" ? Crown : Ticket
+        const featured = id === "pass"
         const busy = pending === id || (id === "monthly" && pending === "portal")
         return (
           <div
             key={id}
             className={`flex flex-col rounded-lg border p-5 ${
-              id === "monthly" ? "border-emerald-500/40 bg-emerald-900/10" : "border-white/10 bg-slate-800/40"
+              featured ? "border-emerald-500/40 bg-emerald-900/10" : "border-white/10 bg-slate-800/40"
             }`}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -75,6 +76,7 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
               {offer.amount}
               <span className="text-sm font-normal text-slate-400 ml-1">{offer.period}</span>
             </div>
+            {offer.headline && <p className="text-sm font-medium text-emerald-300 mt-1">{offer.headline}</p>}
             <p className="text-xs text-slate-400 mt-1">{offer.cadence}</p>
             <p className="text-sm text-slate-300 mt-3">{offer.blurb}</p>
             {!compact && (
@@ -92,7 +94,7 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
                 onClick={a.onClick}
                 disabled={a.disabled || pending !== null}
                 className={`w-full ${
-                  id === "monthly"
+                  featured
                     ? "bg-emerald-600 hover:bg-emerald-500 text-white"
                     : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
                 }`}

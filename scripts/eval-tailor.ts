@@ -2,14 +2,16 @@
 //
 // For each fixture in scripts/fixtures/ it runs the real tailor call, the fact guard,
 // and keyword coverage, then prints warnings, coverage before/after, and the summary +
-// first role's bullets side by side. Needs OPENAI_API_KEY (and optionally
-// OPENAI_TAILOR_MODEL); skips cleanly without it. Makes real, billed API calls.
+// first role's bullets side by side. Uses the AI_TAILOR routing (src/lib/ai/routing.ts)
+// and needs that provider's key; skips cleanly without it. Makes real, billed API calls.
+// To compare models, use npm run eval:models.
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { it } from 'vitest'
 import { buildTailorInput, callTailorModel, tailorModel, type MasterResume, type TailorJob } from '@/lib/tailor'
 import { factGuard } from '@/lib/fact-guard'
 import { coverageReport } from '@/lib/keyword-coverage'
+import { PROVIDER_KEY_ENV, providerConfigured, taskRoute } from '@/lib/ai/routing'
 
 interface Fixture {
   name: string
@@ -49,9 +51,9 @@ const fixtures: Fixture[] = readdirSync(FIXTURE_DIR)
   .sort()
   .map((f) => JSON.parse(readFileSync(path.join(FIXTURE_DIR, f), 'utf8')))
 
-if (!process.env.OPENAI_API_KEY) {
+if (!providerConfigured(taskRoute('tailor').provider)) {
   it('eval:tailor', () => {
-    console.log('OPENAI_API_KEY is not set; skipping tailor eval. Set it (and optionally OPENAI_TAILOR_MODEL) to run.')
+    console.log(`${PROVIDER_KEY_ENV[taskRoute('tailor').provider]} is not set; skipping tailor eval. Set it (and optionally AI_TAILOR) to run.`)
   })
 } else {
   for (const fixture of fixtures) {

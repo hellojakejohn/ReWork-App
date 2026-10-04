@@ -120,7 +120,7 @@ export function CoverLetterPanel({
   const quotaLine = !quota
     ? ""
     : quota.limit === null
-      ? "Unlimited cover letters"
+      ? "Pro: a letter for every job"
       : `${quota.remaining} of ${quota.limit} free cover letter${quota.limit === 1 ? "" : "s"} left this month`
 
   const tones = (
@@ -156,7 +156,7 @@ export function CoverLetterPanel({
           <div className="space-y-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
             <p className="text-slate-200">You&apos;ve used your free cover letter this month. Pro writes one for every job.</p>
             <PrimaryButton onClick={() => onUpgrade()}>
-              <Sparkles className="h-4 w-4" /> Get unlimited cover letters
+              <Sparkles className="h-4 w-4" /> Get a letter for every job
             </PrimaryButton>
           </div>
         ) : (

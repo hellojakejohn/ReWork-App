@@ -29,13 +29,19 @@ import {
   canUseEvidenceInterview,
   FREE_FEATURES,
   PRO_FEATURES,
+  PRO_PLAN_SUMMARY,
+  FREE_PLAN_SUMMARY,
+  GO_PRO_OFFERS,
+  PRICING,
+  PASS_DAYS,
+  OFFER_IDS,
   coverLetterLimitFor,
   trackerLimitFor,
 } from '@/lib/plans'
 import { getCoverLetterQuota, getTailorQuota, incrementCoverLetterCount, isNewMonth, quotaDTO, quotaFrom } from '@/lib/tailor-quota'
 
 describe('plan limits', () => {
-  it('has the advertised FREE limits and unlimited Pro', () => {
+  it('has the advertised FREE limits and no monthly cap on Pro', () => {
     expect(FREE_TAILORS_PER_MONTH).toBe(3)
     expect(FREE_COVER_LETTERS_PER_MONTH).toBe(1)
     expect(FREE_TRACKER_APPLICATIONS).toBe(10)
@@ -51,7 +57,22 @@ describe('plan limits', () => {
 
   it('pricing copy states the same limits', () => {
     expect(FREE_FEATURES).toEqual(['3 tailored resumes per month', '1 cover letter per month', 'Application tracker for up to 10 jobs', 'PDF downloads'])
-    expect(PRO_FEATURES.join(' ')).toMatch(/Unlimited tailored resumes.*Unlimited cover letters.*Evidence interview.*Unlimited application tracker.*PDF \+ Word/)
+    expect(PRO_FEATURES.join(' ')).toMatch(/every job you apply to.*Cover letters.*Evidence interview.*Track every application.*PDF \+ Word.*Fair use: plenty for an active job search/)
+  })
+
+  it('never says "unlimited" in pricing copy', () => {
+    const copy = [...PRO_FEATURES, ...FREE_FEATURES, PRO_PLAN_SUMMARY, FREE_PLAN_SUMMARY, GO_PRO_OFFERS, ...Object.values(PRICING).flatMap((o) => [o.blurb, o.cadence, o.display, o.headline ?? ''])]
+    expect(copy.join(' ')).not.toMatch(/unlimited/i)
+  })
+
+  it('has the new prices: Pro $15/month, Job Hunt Pass $29 for 90 days, pass first', () => {
+    expect(PRICING.monthly).toMatchObject({ priceUsd: 15, amount: '$15', display: '$15/month', priceEnv: 'STRIPE_PRICE_PRO_MONTHLY' })
+    expect(PRICING.pass).toMatchObject({ priceUsd: 29, amount: '$29', priceEnv: 'STRIPE_PRICE_PASS', fallbackEnv: 'STRIPE_PRICE_PASS_30D' })
+    expect(PRICING.pass.headline).toBe('3 months of Pro. Pay once. Never renews.')
+    expect(PASS_DAYS).toBe(90)
+    expect(OFFER_IDS[0]).toBe('pass')
+    // The pass's reason to exist: cheaper than two months of Pro.
+    expect(PRICING.pass.priceUsd).toBeLessThan(PRICING.monthly.priceUsd * 2)
   })
 })
 

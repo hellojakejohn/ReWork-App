@@ -1,6 +1,6 @@
 "use client"
 
-// Funnel, errors, OpenAI spend and Pro counts for the admin page. Plain tables.
+// Funnel, errors, AI spend (by day and by model) and Pro counts for the admin page. Plain tables.
 import { useEffect, useState } from "react"
 import type { AnalyticsReport, WindowDays } from "@/lib/admin-analytics"
 
@@ -88,7 +88,7 @@ export function AnalyticsPanel() {
             </div>
             <div className={box}>
               <div className="text-2xl font-bold">{usd(report.spendTotalUsd)}</div>
-              <div className="text-sm text-gray-600">OpenAI spend estimate, {report.days} days</div>
+              <div className="text-sm text-gray-600">AI spend estimate, {report.days} days</div>
             </div>
           </div>
 
@@ -141,7 +141,7 @@ export function AnalyticsPanel() {
 
             <div className="overflow-hidden rounded-lg border bg-white">
               <table className="w-full">
-                <caption className="px-3 pt-3 text-left text-sm font-semibold">OpenAI spend by day (estimate from token counts)</caption>
+                <caption className="px-3 pt-3 text-left text-sm font-semibold">AI spend by day (estimate from token counts)</caption>
                 <thead className="bg-gray-50">
                   <tr>
                     <th className={th}>Day (UTC)</th>
@@ -163,6 +163,39 @@ export function AnalyticsPanel() {
                       <td className={td}>{row.calls}</td>
                       <td className={td}>{row.tokensIn.toLocaleString()}</td>
                       <td className={td}>{row.tokensOut.toLocaleString()}</td>
+                      <td className={td}>{usd(row.costUsd)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-hidden rounded-lg border bg-white">
+              <table className="w-full">
+                <caption className="px-3 pt-3 text-left text-sm font-semibold">AI spend by model (ai_call events, prices in models.ts)</caption>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className={th}>Model</th>
+                    <th className={th}>Calls</th>
+                    <th className={th}>Tokens in / cached / out</th>
+                    <th className={th}>Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {report.spendByModel.length === 0 && (
+                    <tr>
+                      <td className={td} colSpan={4}>No model calls logged yet.</td>
+                    </tr>
+                  )}
+                  {report.spendByModel.map((row) => (
+                    <tr key={`${row.provider}:${row.model}`}>
+                      <td className={td}>
+                        {row.model} <span className="text-gray-500">({row.provider})</span>
+                      </td>
+                      <td className={td}>{row.calls}</td>
+                      <td className={td}>
+                        {row.tokensIn.toLocaleString()} / {row.cachedIn.toLocaleString()} / {row.tokensOut.toLocaleString()}
+                      </td>
                       <td className={td}>{usd(row.costUsd)}</td>
                     </tr>
                   ))}

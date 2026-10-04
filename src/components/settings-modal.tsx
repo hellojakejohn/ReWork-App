@@ -115,7 +115,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <div className="p-4 bg-slate-800/30 border border-white/10 rounded-lg">
                     <p className="text-sm text-slate-400 mb-1">Tailors this month</p>
                     <p className="text-2xl font-bold text-white">
-                      {session?.user?.monthlyTailors ?? 0} / {isPro ? "Unlimited" : FREE_TAILORS_PER_MONTH}
+                      {session?.user?.monthlyTailors ?? 0} / {isPro ? "fair use" : FREE_TAILORS_PER_MONTH}
                     </p>
                   </div>
                   <div className="p-4 bg-slate-800/30 border border-white/10 rounded-lg">

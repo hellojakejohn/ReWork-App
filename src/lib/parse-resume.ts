@@ -1,24 +1,25 @@
 // Resume parsing: file -> structured resume, validated against the file's own text.
 //
-// PDF: the PDF itself goes to the model as a file input (it sees the layout, which matters
-// for two-column and date-column designs) plus cleaned positional text from pdfjs as a
-// second input. DOCX and pasted text: text only. Output is strict json_schema, then
-// validateParsedResume() drops anything that isn't in the source text.
+// PDF: the PDF itself goes to the model (Anthropic document block / OpenAI file input; it
+// sees the layout, which matters for two-column and date-column designs) plus cleaned
+// positional text from pdfjs as a second input. Text-only providers (OpenRouter) get the
+// cleaned text alone. DOCX and pasted text: text only. Output is schema-constrained JSON
+// (src/lib/ai/), then validateParsedResume() drops anything that isn't in the source text.
+//
+// Routing: AI_PARSE for everyone (no plan override), see src/lib/ai/routing.ts.
 //
 // There is no fallback parser. If the model call fails we say so and the user retries;
 // we never invent data to fill the gap.
-import type OpenAI from 'openai'
-import { getOpenAI } from '@/lib/openai'
-import { classifyAIError } from '@/lib/ai-errors'
+import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
+import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
+import { taskRoute } from '@/lib/ai/routing'
 import { validateParsedResume } from '@/lib/parse-validate'
 import { cleanSourceText, extractDocxText, extractPdfText } from '@/lib/resume-source-text'
 import type { ParseResult, ParsedResume } from '@/types/parsed-resume'
-import { recordUsage } from '@/lib/ai-usage'
 
-export const DEFAULT_PARSE_MODEL = 'gpt-4o'
-
+/** The configured parse model (AI_PARSE, else the default routing). */
 export function parseModel(): string {
-  return process.env.OPENAI_PARSE_MODEL || DEFAULT_PARSE_MODEL
+  return taskRoute('parse').model
 }
 
 export const PARSE_FAILED_MESSAGE = "We couldn't read that file, try again or paste your resume text."
@@ -28,9 +29,9 @@ export class ResumeParseError extends Error {
     message: string,
     public readonly status: number,
     public readonly userMessage: string,
-    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
-    // response was unusable. Goes on the ai_error event.
-    public readonly kind: string = 'bad_output'
+    // AIErrorKind from classifyAIError ('invalid_output' when the call worked but the
+    // response was unusable), or a parse-specific kind. Goes on the ai_error event.
+    public readonly kind: string = 'invalid_output'
   ) {
     super(message)
     this.name = 'ResumeParseError'
@@ -150,9 +151,7 @@ async function sourceTextFor(input: ParseInput): Promise<string> {
   }
 }
 
-export interface ParseOptions {
-  client?: OpenAI
-  model?: string
+export interface ParseOptions extends AICallOptions {
   onStage?: (stage: ParseStage) => void
 }
 
@@ -174,51 +173,29 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
   }
 
   options.onStage?.('reading')
-  const model = options.model ?? parseModel()
-  const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = []
-  if (input.kind === 'pdf') {
-    content.push({
-      type: 'file',
-      file: { filename: input.filename || 'resume.pdf', file_data: `data:application/pdf;base64,${input.buffer.toString('base64')}` },
-    })
-  }
-  content.push({ type: 'text', text: userPrompt(sourceText, input.kind === 'pdf') })
-
-  let completion
+  let result
   try {
-    const client = options.client ?? getOpenAI()
-    completion = await client.chat.completions.create({
-      model,
+    result = await generateStructured<ParsedResume>({
+      task: 'parse',
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt(sourceText, input.kind === 'pdf') }],
+      files: input.kind === 'pdf' ? [{ kind: 'pdf', data: input.buffer, filename: input.filename || 'resume.pdf' }] : [],
+      schema: PARSE_SCHEMA as unknown as Record<string, unknown>,
+      schemaName: 'parsed_resume',
+      maxTokens: 8000,
       temperature: 0,
-      max_completion_tokens: 8000,
-      response_format: {
-        type: 'json_schema',
-        json_schema: { name: 'parsed_resume', strict: true, schema: PARSE_SCHEMA as unknown as Record<string, unknown> },
-      },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content },
-      ],
+      effort: 'low', // copying, not writing
+      ...callOverrides('parse', options),
     })
   } catch (error) {
+    if (error instanceof AIOutputError) {
+      throw new ResumeParseError(`Parse model returned no usable output (${error.reason})`, 502, PARSE_FAILED_MESSAGE, 'invalid_output')
+    }
     const classified = classifyAIError(error, 'Resume reading')
-    const userMessage = classified.kind === 'rate_limit' || classified.kind === 'unavailable' ? PARSE_FAILED_MESSAGE : classified.userMessage
-    throw new ResumeParseError(`Parse model call failed: ${String((error as Error)?.message)}`, classified.status, userMessage, classified.kind)
+    const busy = classified.kind === 'rate_limit' || classified.kind === 'overloaded' || classified.kind === 'unavailable'
+    throw new ResumeParseError(`Parse model call failed: ${String((error as Error)?.message)}`, classified.status, busy ? PARSE_FAILED_MESSAGE : classified.userMessage, classified.kind)
   }
-  recordUsage(completion, model)
-
-  const choice = completion.choices[0]
-  const raw = choice?.message?.content
-  if (choice?.message?.refusal || choice?.finish_reason === 'length' || !raw) {
-    throw new ResumeParseError(`Parse model returned no usable output (${choice?.finish_reason})`, 502, PARSE_FAILED_MESSAGE)
-  }
-
-  let parsed: ParsedResume
-  try {
-    parsed = JSON.parse(raw) as ParsedResume
-  } catch {
-    throw new ResumeParseError('Parse model returned invalid JSON', 502, PARSE_FAILED_MESSAGE)
-  }
+  const parsed = result.data
 
   options.onStage?.('checking')
   const { resume, needsReview } = validateParsedResume(parsed, sourceText)
@@ -228,5 +205,5 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
     throw new ResumeParseError('Parsed resume has no content', 422, PARSE_FAILED_MESSAGE, 'empty')
   }
 
-  return { resume, needsReview, sourceText, model: completion.model || model }
+  return { resume, needsReview, sourceText, model: result.model }
 }

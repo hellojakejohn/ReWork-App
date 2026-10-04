@@ -1,0 +1,10 @@
+{
+  "name": "Greenhouse-style SWE posting",
+  "source": "Written for the eval in the shape of a Greenhouse job board posting (boards.greenhouse.io). Fictional company.",
+  "job": {
+    "title": "Software Engineer, Product (Full Stack)",
+    "company": "Tallgrass Health",
+    "location": "Minneapolis, MN or Remote (US)",
+    "description": "About Tallgrass Health\nTallgrass Health builds scheduling and intake software for independent physical therapy clinics. Over 900 clinics use Tallgrass to book patients, collect forms and get paid.\n\nAbout the role\nWe're hiring a full-stack Software Engineer to join our Product Engineering team. You'll own features from the database to the UI, work directly with clinic owners, and ship to production several times a week.\n\nWhat you'll do\n• Build and ship customer-facing features in TypeScript, React and Next.js\n• Design APIs and data models in Node.js and PostgreSQL (we use Prisma)\n• Integrate third-party services, including Stripe for payments and Twilio for SMS reminders\n• Write tests (Jest, Playwright) and keep our CI pipeline green\n• Review code and help keep our codebase simple\n• Take part in a light on-call rotation (one week every two months)\n\nWhat we're looking for\n• 2+ years building production web applications\n• Strong TypeScript and React\n• Experience with relational databases and SQL\n• Comfort owning a feature end to end, including talking to users\n• Clear written communication; we're a remote-first team\n\nNice to have\n• Experience with Next.js App Router\n• Payments or billing experience (Stripe)\n• Healthcare or HIPAA experience\n• Docker and AWS\n\nCompensation and benefits\nThe salary range for this role is $115,000 - $140,000, plus equity. Medical, dental and vision, 401(k) with 4% match, and a $1,500 annual learning budget.\n\nTallgrass Health is an equal opportunity employer."
+  }
+}
