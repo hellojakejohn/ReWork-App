@@ -67,7 +67,8 @@ describe('plan limits', () => {
 
   it('has the new prices: Pro $15/month, Job Hunt Pass $29 for 90 days, pass first', () => {
     expect(PRICING.monthly).toMatchObject({ priceUsd: 15, amount: '$15', display: '$15/month', priceEnv: 'STRIPE_PRICE_PRO_MONTHLY' })
-    expect(PRICING.pass).toMatchObject({ priceUsd: 29, amount: '$29', priceEnv: 'STRIPE_PRICE_PASS', fallbackEnv: 'STRIPE_PRICE_PASS_30D' })
+    expect(PRICING.pass).toMatchObject({ priceUsd: 29, amount: '$29', priceEnv: 'STRIPE_PRICE_PASS' })
+    expect(PRICING.pass).not.toHaveProperty('fallbackEnv')
     expect(PRICING.pass.headline).toBe('3 months of Pro. Pay once. Never renews.')
     expect(PASS_DAYS).toBe(90)
     expect(OFFER_IDS[0]).toBe('pass')

@@ -79,9 +79,8 @@ export interface Offer {
   period: string // "/month" or "one-time"
   display: string // "$15/month"
   cadence: string // short phrase for fine print
-  // Env var holding the Stripe price id; fallbackEnv is an older name still read.
+  // Env var holding the Stripe price id. /api/health checks its amount against priceUsd.
   priceEnv: 'STRIPE_PRICE_PRO_MONTHLY' | 'STRIPE_PRICE_PASS'
-  fallbackEnv?: 'STRIPE_PRICE_PASS_30D'
   mode: 'subscription' | 'payment'
   headline?: string
   blurb: string
@@ -97,7 +96,6 @@ export const PRICING: Record<OfferId, Offer> = {
     display: `$${PASS_PRICE_USD} for 3 months`,
     cadence: `${PASS_DAYS} days of Pro. Never renews.`,
     priceEnv: 'STRIPE_PRICE_PASS',
-    fallbackEnv: 'STRIPE_PRICE_PASS_30D',
     mode: 'payment',
     headline: '3 months of Pro. Pay once. Never renews.',
     blurb: `Cheaper than 2 months of Pro ($${PRO_MONTHLY_PRICE_USD * 2}). Nothing to cancel.`,
