@@ -1,8 +1,36 @@
-// next.config.js (FIXED FOR PDF.JS)
-
 import type { NextConfig } from 'next';
 
+// Enforced on every response: no framing (clickjacking), no MIME sniffing, no full
+// URLs in Referer. The full CSP below is report-only until we've watched the console
+// for violations; frame-ancestors is enforced separately because browsers ignore it
+// in a report-only policy.
+const CSP_REPORT_ONLY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "frame-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
+  "frame-ancestors 'none'",
+].join('; ');
+
+const SECURITY_HEADERS = [
+  { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+  { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+];
+
 const config: NextConfig = {
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+  },
   eslint: {
     // Lint errors fail the build. Warnings don't.
     ignoreDuringBuilds: false,
@@ -46,12 +74,6 @@ const config: NextConfig = {
 
   images: {
     dangerouslyAllowSVG: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'cdnjs.cloudflare.com',
-      },
-    ],
   },
 };
 
