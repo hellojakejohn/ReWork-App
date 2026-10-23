@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of the `ai-providers` branch (October 2026). History lives in git.
+Current truth as of the `launch-blockers` branch (on top of `ai-providers`, October 2026). History lives in git.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -24,7 +24,7 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 - All numbers live in `src/lib/plans.ts`.
 
 ## Tech stack
-Next.js 15.3 (App Router), TypeScript, Tailwind, Radix UI, Prisma 6.8.2 on Supabase Postgres
+Next.js 15.5 (App Router), TypeScript, Tailwind, Radix UI, Prisma 6.8.2 on Supabase Postgres
 (us-west-2, project ref oxedndnmssyuffkfkcug), Supabase Storage, NextAuth v4 (Google,
 database sessions), Stripe, @react-pdf/renderer, docx, Vercel (+ Analytics, Cron).
 AI: one provider layer in `src/lib/ai/` (`generateStructured`). Anthropic (default when
@@ -58,27 +58,43 @@ task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
   Users table: month-to-date AI spend, period cap, and a per-user cap override.
 
 ## Migrations
-Applied by hand in the Supabase SQL editor. Written but NOT applied yet:
-- `20260928000000_resume_replace`
-- `20260929000000_pro_features`
-- `20260930000000_events` (events table, RLS on)
-- `20261002000000_ai_cap_overrides` (per-user AI cap override, RLS on)
+Applied by hand in the Supabase SQL editor (never `prisma migrate deploy`: the folder is out
+of sync with Prisma's history table). Checked 2026-10-23 on project oxedndnmssyuffkfkcug
+("ReWork Solutions"): everything through `20260930000000_events` is applied and RLS is on
+for all 11 tables (no policies; Prisma bypasses RLS as the table owner).
+Not applied yet:
+- `20261002000000_ai_cap_overrides` (per-user AI cap override, RLS on). Until it is,
+  overrides can't be saved; every user gets the default cap.
 
-Until `events` is applied, tracking logs and drops events, and daily ceilings AND the AI cap
-fail open (spend reads as 0, so nobody is ever downgraded or paused). Apply it before relying
-on the cap. Until `ai_cap_overrides` is applied, overrides can't be saved.
+Daily ceilings and the AI cap still fail open if `events` can't be read (DB blip).
 
 ## Environment
 See README.md for the full table. Required in production: DATABASE_URL, NEXTAUTH_URL,
 NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY (and
 OPENAI_API_KEY / OPENROUTER_API_KEY only if a task routes there), NEXT_PUBLIC_SUPABASE_URL,
 SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
-STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; the old
-STRIPE_PRICE_PASS_30D name is still read), CRON_SECRET. Recommended: AI_FREE_TIER=
-anthropic:claude-sonnet-5-5.
+STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; no fallback name),
+CRON_SECRET (crons refuse every request without it). AI_FREE_TIER defaults to
+anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set.
+
+## Billing guards
+- The webhook grants a pass or a new subscription only for the configured price ids;
+  subscriptions already tracked keep syncing after a price change (`src/lib/stripe-sync.ts`).
+- `/api/health` (admins) fetches both Stripe prices and fails unless amount, currency and
+  type match `plans.ts`. Check it after every price or env change.
+- Monthly tailor/cover letter uses are reserved atomically before the model call and given
+  back on failure (`reserveMonthly` in `src/lib/tailor-quota.ts`).
+
+## Security
+- Headers on every response (`next.config.ts`): frame-ancestors 'none' + X-Frame-Options,
+  nosniff, strict-origin-when-cross-origin, and a full CSP in report-only. Watch the
+  console for violations, then enforce it.
+- Auth redirects are same-origin only and keep deep links (`src/lib/auth-redirect.ts`).
+- Uploads are identified by magic bytes, not name/MIME (`src/lib/upload-kind.ts`).
 
 ## Checks
-- `npx tsc --noEmit` clean, `npm test` (Vitest, offline), `npm run build` with no app env.
+- `npx tsc --noEmit` clean, `npm test` (Vitest, offline), `npx next lint` 0 errors (lint now
+  runs during `next build`), `npm run build` with no app env.
 - Lighthouse mobile on `/` (local prod build): performance 99-100, accessibility 100,
   SEO 100, best practices 96 (only the local 404 of the Vercel Analytics script).
   Simulated LCP 1.8-2.1 s, observed about 0.2 s.
@@ -94,5 +110,6 @@ anthropic:claude-sonnet-5-5.
 - LinkedIn job URLs are never fetched (also not through redirects): straight to paste.
 - Landing example is hand-built from `scripts/fixtures/restaurant-manager-to-ops-coordinator.json`
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
-- npm audit findings and the Prisma 7 upgrade are parked (needs explicit OK).
+- npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
+  openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
 - Out of scope for launch: job feed, post-a-job, crypto payments, interview prep.
