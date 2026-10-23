@@ -54,9 +54,9 @@ export function htmlToText(html: string, { strip = true }: { strip?: boolean } =
   $(BLOCKS).each((_, el) => {
     $(el).prepend('\n').append('\n')
   })
-  const root = $('body').length ? $('body') : $.root()
+  const text = $('body').length ? $('body').text() : $.root().text()
   // One block per line; callers add blank lines between sections they assemble.
-  return cleanLines(root.text(), { keepBlankLines: false })
+  return cleanLines(text, { keepBlankLines: false })
 }
 
 export interface PageMeta {

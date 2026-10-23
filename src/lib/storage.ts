@@ -95,30 +95,6 @@ export async function uploadToStorage(
   }
 }
 
-// Generate signed URL for secure file access
-export async function getSignedDownloadUrl(key: string, expiresIn: number = 3600) {
-  try {
-    const { data, error } = await getSupabase().storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(key, expiresIn)
-
-    if (error) {
-      throw error
-    }
-
-    return {
-      success: true,
-      url: data.signedUrl,
-    }
-  } catch (error) {
-    console.error('Supabase signed URL error:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
-  }
-}
-
 // Delete file from Supabase Storage
 export async function deleteFromStorage(key: string) {
   try {
@@ -167,27 +143,6 @@ export function getContentType(fileName: string): string {
   }
 }
 
-// Download file from Supabase Storage
-export async function downloadFromStorage(key: string): Promise<Buffer | null> {
-  try {
-    const { data, error } = await getSupabase().storage
-      .from(BUCKET_NAME)
-      .download(key)
-
-    if (error) {
-      throw error
-    }
-
-    // Convert Blob to Buffer
-    const arrayBuffer = await data.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    return buffer
-  } catch (error) {
-    console.error('Supabase download error:', error)
-    return null
-  }
-}
 /**
  * Account deletion: removes every file under the user's folder plus any keys the
  * database knows about. Never throws; returns how many were removed and any error.
