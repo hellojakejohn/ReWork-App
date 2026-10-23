@@ -118,12 +118,12 @@ export async function deleteFromStorage(key: string) {
 }
 
 // Generate unique storage key for a file
-export function generateStorageKey(userId: string, originalFileName: string): string {
+// The extension comes from the detected file kind, never from the user's file name.
+export function generateStorageKey(userId: string, kind: 'pdf' | 'docx'): string {
   const timestamp = Date.now()
   const randomId = Math.random().toString(36).substring(2, 8)
-  const fileExtension = originalFileName.split('.').pop()
 
-  return `users/${userId}/resumes/${timestamp}-${randomId}.${fileExtension}`
+  return `users/${userId}/resumes/${timestamp}-${randomId}.${kind}`
 }
 
 // Helper to get file content type

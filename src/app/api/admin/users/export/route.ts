@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminEmail } from '@/lib/admin'
+import { csvField } from '@/lib/csv'
 
 export async function GET() {
   try {
@@ -54,7 +55,7 @@ export async function GET() {
 
     const csvContent = [
       csvHeaders.join(','),
-      ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+      ...csvRows.map(row => row.map(csvField).join(','))
     ].join('\n')
 
     return new NextResponse(csvContent, {
