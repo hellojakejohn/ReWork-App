@@ -51,8 +51,7 @@ export async function ensureBucketExists() {
 export async function uploadToStorage(
   file: Buffer,
   key: string,
-  contentType: string,
-  metadata?: Record<string, string>
+  contentType: string
 ) {
   try {
     // Ensure bucket exists

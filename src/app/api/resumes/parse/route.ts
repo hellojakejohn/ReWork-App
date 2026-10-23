@@ -137,10 +137,7 @@ export async function POST(request: NextRequest) {
     let storageKey: string | null = null
     if (file && input.kind !== 'text') {
       const key = generateStorageKey(userId, file.name)
-      const upload = await uploadToStorage(input.buffer, key, input.kind === 'pdf' ? PDF : DOCX, {
-        'user-id': userId,
-        'original-filename': file.name,
-      }).catch((error) => ({ success: false, error: String(error) }))
+      const upload = await uploadToStorage(input.buffer, key, input.kind === 'pdf' ? PDF : DOCX).catch((error) => ({ success: false, error: String(error) }))
       if (upload.success) storageKey = key
       else console.error('[parse] storage upload failed, saving without file:', upload.error)
     }

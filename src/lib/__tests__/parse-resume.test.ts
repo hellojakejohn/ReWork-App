@@ -238,6 +238,7 @@ describe('parseResume', () => {
     expect(stages).toEqual(['extracting', 'reading', 'checking'])
     expect(result.resume.contact.links).toHaveLength(2)
     expect(result.needsReview).toHaveLength(1)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body = (create.mock.calls[0] as unknown as [Record<string, any>])[0]
     expect(body.temperature).toBe(0)
     expect(body.response_format.json_schema.strict).toBe(true)

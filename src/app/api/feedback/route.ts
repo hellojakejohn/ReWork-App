@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Optional: Admin endpoint to fetch feedback (implement later if needed)
   return NextResponse.json(
     { error: 'Method not implemented' },

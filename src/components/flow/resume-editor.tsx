@@ -43,7 +43,7 @@ function Field({
       {flagged &&
         review!.map((r, i) => (
           <span key={i} className="mt-1 block text-xs text-amber-300">
-            We left out “{r.value}”: {r.reason.toLowerCase()} Add it here if it's right.
+            We left out “{r.value}”: {r.reason.toLowerCase()} Add it here if it&apos;s right.
           </span>
         ))}
     </label>
