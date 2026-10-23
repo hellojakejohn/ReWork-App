@@ -43,6 +43,17 @@ export const INPUT_LIMITS = {
   jobDescriptionChars: 20_000,
 } as const
 
+// Caps on the short tailor fields, clipped server-side (they go into the prompt).
+export const TAILOR_FIELD_LIMITS = {
+  jobTitle: 200,
+  company: 200,
+  location: 200,
+  extraContext: 1000,
+  contextTags: 10,
+  contextTagChars: 40,
+  jobUrl: 2000,
+} as const
+
 export const INPUT_LIMIT_MESSAGES = {
   resumeFile: 'That file is over 4 MB. Try exporting a smaller PDF, or paste your resume text instead.',
   resumeText: 'That text is over 30,000 characters, which is longer than any resume. Paste just your resume.',

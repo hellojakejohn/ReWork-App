@@ -6,9 +6,34 @@ const db = vi.hoisted(() => ({
   isPro: false,
 }))
 
+// Evaluates the where clauses reserveMonthly uses (equals, lt, gte, gt) against db.user,
+// one row, like Postgres would for a single conditional UPDATE.
+type Cond = { lt?: number | Date; gte?: number | Date; gt?: number | Date }
+const matches = (where: Record<string, unknown>) =>
+  Object.entries(where).every(([key, cond]) => {
+    if (key === 'id') return true
+    const v = db.user[key] as number | Date
+    const c = cond as Cond
+    if (c.lt !== undefined && !(v < c.lt)) return false
+    if (c.gte !== undefined && !(v >= c.gte)) return false
+    if (c.gt !== undefined && !(v > c.gt)) return false
+    return true
+  })
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
+      updateMany: vi.fn(async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        if (!matches(where)) return { count: 0 }
+        for (const [key, value] of Object.entries(data)) {
+          const v = value as { increment?: number; decrement?: number }
+          db.user[key] =
+            v && typeof v === 'object' && 'increment' in v ? (db.user[key] as number) + v.increment!
+            : v && typeof v === 'object' && 'decrement' in v ? (db.user[key] as number) - v.decrement!
+            : value
+        }
+        return { count: 1 }
+      }),
       findUnique: vi.fn(async () => ({ ...db.user })),
       update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         for (const [key, value] of Object.entries(data)) {
@@ -38,7 +63,7 @@ import {
   coverLetterLimitFor,
   trackerLimitFor,
 } from '@/lib/plans'
-import { getCoverLetterQuota, getTailorQuota, incrementCoverLetterCount, isNewMonth, quotaDTO, quotaFrom } from '@/lib/tailor-quota'
+import { getCoverLetterQuota, getTailorQuota, isNewMonth, quotaDTO, quotaFrom, reserveMonthly } from '@/lib/tailor-quota'
 
 describe('plan limits', () => {
   it('has the advertised FREE limits and no monthly cap on Pro', () => {
@@ -98,7 +123,7 @@ describe('quotaFrom', () => {
   })
 })
 
-describe('getCoverLetterQuota / incrementCoverLetterCount', () => {
+describe('getCoverLetterQuota / reserveMonthly', () => {
   beforeEach(() => {
     db.isPro = false
     db.user = { monthlyTailors: 0, tailorsResetAt: new Date(), monthlyCoverLetters: 0, coverLettersResetAt: new Date() }
@@ -106,7 +131,7 @@ describe('getCoverLetterQuota / incrementCoverLetterCount', () => {
 
   it('uses its own counter, not the tailor one', async () => {
     expect((await getCoverLetterQuota('u1')).allowed).toBe(true)
-    await incrementCoverLetterCount('u1')
+    expect(await reserveMonthly('u1', 'coverLetter', false)).not.toBeNull()
     expect(db.user.monthlyCoverLetters).toBe(1)
     expect(db.user.monthlyTailors).toBe(0)
     expect((await getCoverLetterQuota('u1')).allowed).toBe(false)
@@ -116,13 +141,29 @@ describe('getCoverLetterQuota / incrementCoverLetterCount', () => {
   it('starts a fresh month at 1 when the reset date is last month', async () => {
     db.user.monthlyCoverLetters = 7
     db.user.coverLettersResetAt = new Date(Date.UTC(2000, 0, 1))
-    await incrementCoverLetterCount('u1')
+    expect(await reserveMonthly('u1', 'coverLetter', false)).not.toBeNull()
     expect(db.user.monthlyCoverLetters).toBe(1)
   })
 
-  it('lets Pro write as many as they want', async () => {
+  it('lets Pro write as many as they want (still counted)', async () => {
     db.isPro = true
     db.user.monthlyCoverLetters = 40
     expect((await getCoverLetterQuota('u1')).allowed).toBe(true)
+    expect(await reserveMonthly('u1', 'coverLetter', true)).not.toBeNull()
+    expect(db.user.monthlyCoverLetters).toBe(41)
+  })
+
+  it('lets only the free allowance through when requests race', async () => {
+    const results = await Promise.all(Array.from({ length: 6 }, () => reserveMonthly('u1', 'tailor', false)))
+    expect(results.filter(Boolean)).toHaveLength(FREE_TAILORS_PER_MONTH)
+    expect(db.user.monthlyTailors).toBe(FREE_TAILORS_PER_MONTH)
+  })
+
+  it('gives the use back when nothing was saved, once', async () => {
+    const r = await reserveMonthly('u1', 'tailor', false)
+    expect(db.user.monthlyTailors).toBe(1)
+    await r!.release()
+    await r!.release()
+    expect(db.user.monthlyTailors).toBe(0)
   })
 })

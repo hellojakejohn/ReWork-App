@@ -42,22 +42,55 @@ export async function getMonthlyQuota(userId: string, feature: MeteredFeature): 
   return quotaFrom(row[f.count] as number, row[f.resetAt] as Date, access.isPro, feature)
 }
 
-/** Call only after the result has been saved. */
-export async function incrementMonthly(userId: string, feature: MeteredFeature): Promise<void> {
+const startOfUtcMonth = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
+
+export interface Reservation {
+  /** Give the use back (the model call failed or nothing was saved). Safe to call twice. */
+  release: () => Promise<void>
+}
+
+/**
+ * Takes one use BEFORE the model call, atomically, so parallel requests can't all pass a
+ * read-then-increment check. Returns null when the limit is reached. Each step is a single
+ * conditional UPDATE: a new month resets the counter to 1; otherwise it increments only
+ * while under the limit (Pro has no limit but is still counted).
+ */
+export async function reserveMonthly(userId: string, feature: MeteredFeature, isPro: boolean, now = new Date()): Promise<Reservation | null> {
   const f = FIELDS[feature]
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { [f.resetAt]: true } })
-  if (!user) return
-  const resetAt = (user as unknown as Record<string, Date>)[f.resetAt]
-  await prisma.user.update({
-    where: { id: userId },
-    data: isNewMonth(resetAt) ? { [f.count]: 1, [f.resetAt]: new Date() } : { [f.count]: { increment: 1 } },
-  })
+  const monthStart = startOfUtcMonth(now)
+  const limit = f.limitFor(isPro)
+
+  let reserved = (
+    await prisma.user.updateMany({
+      where: { id: userId, [f.resetAt]: { lt: monthStart } },
+      data: { [f.count]: 1, [f.resetAt]: now },
+    })
+  ).count === 1
+  if (!reserved && limit > 0) {
+    reserved = (
+      await prisma.user.updateMany({
+        where: { id: userId, [f.resetAt]: { gte: monthStart }, ...(Number.isFinite(limit) ? { [f.count]: { lt: limit } } : {}) },
+        data: { [f.count]: { increment: 1 } },
+      })
+    ).count === 1
+  }
+  if (!reserved) return null
+
+  let released = false
+  return {
+    release: async () => {
+      if (released) return
+      released = true
+      await prisma.user.updateMany({
+        where: { id: userId, [f.resetAt]: { gte: monthStart }, [f.count]: { gt: 0 } },
+        data: { [f.count]: { decrement: 1 } },
+      })
+    },
+  }
 }
 
 export const getTailorQuota = (userId: string) => getMonthlyQuota(userId, 'tailor')
-export const incrementTailorCount = (userId: string) => incrementMonthly(userId, 'tailor')
 export const getCoverLetterQuota = (userId: string) => getMonthlyQuota(userId, 'coverLetter')
-export const incrementCoverLetterCount = (userId: string) => incrementMonthly(userId, 'coverLetter')
 
 /** JSON-safe quota for the client (null = unlimited). */
 export function quotaDTO(q: MonthlyQuota) {
