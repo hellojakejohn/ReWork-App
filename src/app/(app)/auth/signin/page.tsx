@@ -10,6 +10,8 @@ import { Logo } from "@/components/ui/logo"
 function SignInContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
+  // Deep link to come back to; the server's redirect callback keeps it same-origin.
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const [providers, setProviders] = useState<Record<string, { id: string; name: string; type: string }> | null>(null)
 
   useEffect(() => {
@@ -57,7 +59,7 @@ function SignInContent() {
               <div className="space-y-3">
                 {providers.google && (
                   <Button
-                    onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
+                    onClick={() => signIn('google', { callbackUrl })}
                     className="w-full bg-white text-black hover:bg-white/90 border-0 h-12 font-medium text-base transition-all hover:shadow-lg hover:shadow-white/20"
                     size="lg"
                   >

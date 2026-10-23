@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { getAccess } from "@/lib/entitlements"
 import { isAdminEmail } from "@/lib/admin"
 import { track } from "@/lib/track"
+import { safeRedirect } from "@/lib/auth-redirect"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -18,13 +19,8 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
   },
   callbacks: {
-    redirect: async ({ url, baseUrl }) => {
-      // Always redirect to dashboard after successful sign in
-      if (url.startsWith(baseUrl)) {
-        return `${baseUrl}/dashboard`
-      }
-      return url
-    },
+    // Same-origin only, deep links kept (src/lib/auth-redirect.ts).
+    redirect: async ({ url, baseUrl }) => safeRedirect(url, baseUrl),
     session: async ({ session, user }) => {
       if (session?.user && user) {
         session.user.id = user.id
