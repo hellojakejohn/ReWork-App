@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Brand kit source files (shipped copies live in public/brand)
+/brand-kit/

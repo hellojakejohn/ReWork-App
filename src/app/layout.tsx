@@ -20,10 +20,7 @@ export const metadata: Metadata = {
   openGraph: { ...OG_DEFAULTS, title: TITLE, description: DESCRIPTION },
   twitter: { ...TWITTER_DEFAULTS, title: TITLE, description: DESCRIPTION },
   robots: { index: true, follow: true },
-  icons: {
-    icon: [{ url: '/rework-logo-simple-cropped.png', type: 'image/png' }],
-    apple: [{ url: '/rework-logo-simple-cropped.png' }],
-  },
+  // Icons come from the file conventions: app/favicon.ico, app/icon.svg, app/apple-icon.png.
 }
 
 export default function RootLayout({
