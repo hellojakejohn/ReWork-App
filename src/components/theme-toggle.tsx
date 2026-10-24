@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Monitor, Moon, Sun } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Segmented } from "@/components/ui/segmented"
 import { THEME_CHANGE_EVENT, THEME_CHOICES, readThemeChoice, setThemeChoice, type ThemeChoice } from "@/lib/theme"
 
 const LABELS: Record<ThemeChoice, string> = { light: "Light", dark: "Dark", system: "System" }
@@ -42,27 +42,23 @@ export function useResolvedTheme(): "light" | "dark" {
 export function ThemeToggle({ className }: { className?: string }) {
   const choice = useThemeChoice()
   return (
-    <div role="radiogroup" aria-label="Theme" className={cn("flex rounded-full bg-surface-raised p-0.5", className)}>
-      {THEME_CHOICES.map((value) => {
+    <Segmented
+      label="Theme"
+      value={choice}
+      onChange={setThemeChoice}
+      className={className}
+      options={THEME_CHOICES.map((value) => {
         const Icon = ICONS[value]
-        const active = value === choice
-        return (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => setThemeChoice(value)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1 rounded-full px-2 py-1 text-xs font-semibold transition-colors",
-              active ? "bg-surface text-text shadow-sm" : "text-text-muted hover:text-text"
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" aria-hidden />
-            {LABELS[value]}
-          </button>
-        )
+        return {
+          id: value,
+          label: (
+            <>
+              <Icon className="h-3.5 w-3.5" aria-hidden />
+              {LABELS[value]}
+            </>
+          ),
+        }
       })}
-    </div>
+    />
   )
 }

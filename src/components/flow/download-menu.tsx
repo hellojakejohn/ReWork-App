@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { WORD_EXPORT_UPSELL } from "@/lib/plans"
 import type { ApplicationDetailDTO } from "./api"
-import { primaryButtonClass } from "./ui"
+import { buttonVariants } from "@/components/ui/button"
 
 export function downloadLinks(application: ApplicationDetailDTO, template: TemplateId) {
   const resume = `/api/resumes/${application.resumeId}/download?applicationId=${application.id}&template=${template}`
@@ -44,7 +44,7 @@ export function DownloadMenu({
 }) {
   const links = downloadLinks(application, template)
   const hasLetter = !!application.coverLetter
-  const item = "cursor-pointer text-slate-200 focus:bg-white/10 focus:text-white"
+  const item = "cursor-pointer"
   // Word is Pro: FREE sees the option with a badge that opens the upgrade sheet.
   const word = (href: string, text: string) =>
     isPro ? (
@@ -56,26 +56,26 @@ export function DownloadMenu({
     ) : (
       <DropdownMenuItem className={item} onSelect={() => onUpgrade(WORD_EXPORT_UPSELL)}>
         <FileType className="mr-2 h-4 w-4" /> {text}
-        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-xs font-semibold uppercase text-emerald-300">Pro</span>
+        <span className="ml-auto rounded-full bg-sage px-1.5 text-xs font-semibold text-text">Pro</span>
       </DropdownMenuItem>
     )
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={cn(primaryButtonClass, className)}>
+      <DropdownMenuTrigger className={cn(buttonVariants({ variant: "inverse" }), className)}>
         <Download className="h-4 w-4" /> {label} <ChevronDown className="h-3.5 w-3.5" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 border-white/10 bg-slate-900 text-slate-200">
-        <DropdownMenuLabel className="text-xs font-normal text-slate-400">PDF for humans, Word for application portals.</DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-white/10" />
-        <DropdownMenuLabel className="text-xs uppercase tracking-wide text-slate-500">Resume</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel className="text-xs font-normal text-text-muted">PDF for humans, Word for application portals.</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-semibold text-text-muted">Resume</DropdownMenuLabel>
         <DropdownMenuItem asChild className={item}>
           <a href={links.resumePdf}>
             <FileText className="mr-2 h-4 w-4" /> Resume PDF
           </a>
         </DropdownMenuItem>
         {word(links.resumeDocx, "Resume Word (.docx)")}
-        <DropdownMenuSeparator className="bg-white/10" />
-        <DropdownMenuLabel className="text-xs uppercase tracking-wide text-slate-500">Cover letter</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-semibold text-text-muted">Cover letter</DropdownMenuLabel>
         {hasLetter ? (
           <>
             <DropdownMenuItem asChild className={item}>
@@ -86,7 +86,7 @@ export function DownloadMenu({
             {word(links.letterDocx, "Cover letter Word (.docx)")}
           </>
         ) : (
-          <DropdownMenuItem disabled className="text-xs text-slate-500">
+          <DropdownMenuItem disabled className="text-xs text-text-muted">
             Write one in the Cover letter tab first
           </DropdownMenuItem>
         )}
