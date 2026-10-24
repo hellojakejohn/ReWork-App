@@ -60,11 +60,12 @@ task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
 ## Migrations
 Applied by hand in the Supabase SQL editor (never `prisma migrate deploy`: the folder is out
 of sync with Prisma's history table). Checked 2026-10-23 on project oxedndnmssyuffkfkcug
-("ReWork Solutions"): everything through `20260930000000_events` is applied and RLS is on
-for all 11 tables (no policies; Prisma bypasses RLS as the table owner).
-Not applied yet:
-- `20261002000000_ai_cap_overrides` (per-user AI cap override, RLS on). Until it is,
-  overrides can't be saved; every user gets the default cap.
+("ReWork Solutions"): RLS is on for all 12 tables (no policies; Prisma bypasses RLS as the
+table owner).
+2026-10-24: `20261002000000_ai_cap_overrides` and `20261024000000_db_hardening` (FK indexes,
+and no table grants for Supabase's anon/authenticated roles) applied. Everything in the
+folder is now applied. New tables: enable RLS and repeat the REVOKE (Supabase grants those
+roles on new tables by default).
 
 Daily ceilings and the AI cap still fail open if `events` can't be read (DB blip).
 
