@@ -10,7 +10,7 @@ export function BetaBadge({
   className?: string 
 }) {
   const badgeClasses = {
-    xs: 'text-[9px] px-1.5 py-0.5',
+    xs: 'text-xs px-1.5 py-0.5',
     small: 'text-xs px-2 py-0.5',
     medium: 'text-sm px-2.5 py-1',
     large: 'text-base px-3 py-1.5'
@@ -66,7 +66,7 @@ export function Logo({
   
   // Beta badge size based on logo size
   const badgeClasses = {
-    xs: 'text-[9px] px-1.5 py-0.5',
+    xs: 'text-xs px-1.5 py-0.5',
     small: 'text-xs px-2 py-0.5',
     medium: 'text-sm px-2.5 py-1',
     large: 'text-base px-3 py-1.5'

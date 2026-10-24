@@ -42,10 +42,10 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
 
         {/* Content */}
         <div className="text-center mb-6">
-          <h2 className="text-[18px] font-semibold text-white mb-2">
+          <h2 className="text-lg font-semibold text-white mb-2">
             Sign Out?
           </h2>
-          <p className="text-[13px] text-slate-400">
+          <p className="text-sm text-slate-400">
             Are you sure you want to sign out of your account?
           </p>
         </div>
@@ -54,13 +54,13 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 text-[13px] font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-all"
+            className="flex-1 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleLogout}
-            className="flex-1 px-4 py-2 text-[13px] font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-all"
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-all"
           >
             Sign Out
           </button>

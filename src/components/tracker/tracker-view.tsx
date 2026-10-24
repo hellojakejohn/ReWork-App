@@ -55,7 +55,7 @@ function Column({ id, label, count, children }: { id: TrackerColumn; label: stri
     >
       <h2 className="flex items-center justify-between px-3 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
         {label}
-        <span className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] font-medium text-slate-400">{count}</span>
+        <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs font-medium text-slate-400">{count}</span>
       </h2>
       <div className="min-h-[120px] flex-1 space-y-2 overflow-y-auto px-2 pb-2">{children}</div>
     </section>
@@ -178,7 +178,7 @@ export function TrackerView() {
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-1.5">
               <dd className="text-base font-semibold text-slate-100">{value}</dd>
-              <dt className="text-[11px] text-slate-500">{label}</dt>
+              <dt className="text-xs text-slate-500">{label}</dt>
             </div>
           ))}
         </dl>

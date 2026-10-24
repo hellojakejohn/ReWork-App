@@ -202,7 +202,7 @@ export function CoverLetterPanel({
 
       <textarea
         aria-label="Cover letter"
-        className={cn(inputClass, "min-h-[340px] font-serif text-[14px] leading-relaxed")}
+        className={cn(inputClass, "min-h-[340px] font-serif text-sm leading-relaxed")}
         value={text}
         onChange={(e) => edit(e.target.value)}
         onBlur={() => void flush()}

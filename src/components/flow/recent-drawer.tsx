@@ -62,7 +62,7 @@ export function RecentDrawer({
               >
                 <p className="truncate text-sm font-medium text-slate-100">{a.jobTitle}</p>
                 <p className="truncate text-xs text-slate-400">{a.company}</p>
-                <p className="mt-1 flex justify-between text-[11px] text-slate-500">
+                <p className="mt-1 flex justify-between text-xs text-slate-500">
                   <span>{new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   {a.coverageAfter !== null && (
                     <span>

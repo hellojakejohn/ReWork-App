@@ -16,7 +16,7 @@ export function StepRail({
 }) {
   return (
     <nav aria-label="Progress" className="flex h-10 shrink-0 items-center justify-center px-4">
-      <ol className="flex items-center gap-1 text-[13px]">
+      <ol className="flex items-center gap-1 text-sm">
         {STEPS.map((label, i) => {
           const done = completed[i]
           // Resume is always reachable: it's where Replace lives.
@@ -35,7 +35,7 @@ export function StepRail({
                   clickable ? "cursor-pointer" : "cursor-default"
                 )}
               >
-                {done && i !== current ? <Check className="h-3.5 w-3.5" /> : <span className="w-3.5 text-center text-[11px]">{i + 1}</span>}
+                {done && i !== current ? <Check className="h-3.5 w-3.5" /> : <span className="w-3.5 text-center text-xs">{i + 1}</span>}
                 {label}
               </button>
             </li>

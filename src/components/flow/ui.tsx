@@ -127,7 +127,7 @@ export function StageList({ stages, current }: { stages: { id: string; label: st
         return (
           <li key={stage.id} className="flex items-center gap-2.5 text-sm">
             {state === "done" ? (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950">✓</span>
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-slate-950">✓</span>
             ) : state === "active" ? (
               <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
             ) : (

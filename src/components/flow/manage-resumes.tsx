@@ -70,9 +70,9 @@ export function ManageResumesDialog({
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-2 truncate text-sm font-medium text-slate-100">
                     {m.title}
-                    {isActive && <span className="rounded-full bg-emerald-500/15 px-2 text-[11px] text-emerald-300">Active</span>}
-                    {m.hidden && !isActive && <span className="rounded-full bg-white/5 px-2 text-[11px] text-slate-400">Replaced</span>}
-                    {m.staleParse && <span className="rounded-full bg-amber-400/10 px-2 text-[11px] text-amber-300">Old parser</span>}
+                    {isActive && <span className="rounded-full bg-emerald-500/15 px-2 text-xs text-emerald-300">Active</span>}
+                    {m.hidden && !isActive && <span className="rounded-full bg-white/5 px-2 text-xs text-slate-400">Replaced</span>}
+                    {m.staleParse && <span className="rounded-full bg-amber-400/10 px-2 text-xs text-amber-300">Old parser</span>}
                   </p>
                   <p className="truncate text-xs text-slate-500">
                     {[s.headline, `${s.roles} ${s.roles === 1 ? "role" : "roles"}`, `added ${day(m.createdAt)}`].filter(Boolean).join(" · ")}

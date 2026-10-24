@@ -68,7 +68,7 @@ export function AppHeader({
           className="flex items-center gap-2"
         >
           <Logo size="xs" variant="simple" showBadge={false} />
-          <span className="text-[15px] font-semibold tracking-tight text-slate-100">ReWork</span>
+          <span className="text-base font-semibold tracking-tight text-slate-100">ReWork</span>
         </Link>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">

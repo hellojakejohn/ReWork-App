@@ -40,7 +40,7 @@ export function ResumeDocument({
   const font = t.serif ? "'Times New Roman', Times, serif" : "Helvetica, Arial, sans-serif"
   const Heading = ({ children }: { children: React.ReactNode }) => (
     <h3
-      className="mt-4 mb-1.5 pb-0.5 text-[13px] font-bold uppercase tracking-[0.08em]"
+      className="mt-4 mb-1.5 pb-0.5 text-sm font-bold uppercase tracking-[0.08em]"
       style={{ color: t.accent, borderBottom: `${t.serif ? 1 : 0.75}px solid ${t.rule}` }}
     >
       {children}
@@ -61,13 +61,13 @@ export function ResumeDocument({
     <div ref={outer} className="w-full overflow-hidden" style={{ height: height * scale }}>
       <div
         ref={inner}
-        className="origin-top-left bg-white text-[13px] leading-[1.4] text-gray-900 shadow-lg"
+        className="origin-top-left bg-white text-sm leading-[1.4] text-gray-900 shadow-lg"
         style={{ width: PAGE_WIDTH, minHeight: 1056, padding: "52px 60px", fontFamily: font, transform: `scale(${scale})` }}
       >
         <header className={t.centered ? "text-center" : ""}>
-          {l.name && <h1 className="text-[26px] font-bold" style={{ letterSpacing: t.serif ? "0.04em" : 0 }}>{l.name}</h1>}
-          {l.headline && <p className="text-[14px]" style={{ color: t.serif ? "#374151" : t.accent }}>{l.headline}</p>}
-          {l.contactItems.length > 0 && <p className="mt-1 text-[12px] text-gray-600">{l.contactItems.join("  |  ")}</p>}
+          {l.name && <h1 className="text-2xl font-bold" style={{ letterSpacing: t.serif ? "0.04em" : 0 }}>{l.name}</h1>}
+          {l.headline && <p className="text-sm" style={{ color: t.serif ? "#374151" : t.accent }}>{l.headline}</p>}
+          {l.contactItems.length > 0 && <p className="mt-1 text-xs text-gray-600">{l.contactItems.join("  |  ")}</p>}
         </header>
 
         {l.summary && (
@@ -86,7 +86,7 @@ export function ResumeDocument({
                   <span className="font-bold">{[e.title, e.company].filter(Boolean).join(", ")}</span>
                   <span className="shrink-0 text-gray-600">{e.dates}</span>
                 </div>
-                {e.location && <p className="text-[12px] italic text-gray-600">{e.location}</p>}
+                {e.location && <p className="text-xs italic text-gray-600">{e.location}</p>}
                 <Bullets items={e.bullets} />
               </div>
             ))}
@@ -106,7 +106,7 @@ export function ResumeDocument({
                   <span className="shrink-0 text-gray-600">{p.dates}</span>
                 </div>
                 <Bullets items={p.bullets} />
-                {p.tech && <p className="text-[12px] italic text-gray-600">{p.tech}</p>}
+                {p.tech && <p className="text-xs italic text-gray-600">{p.tech}</p>}
               </div>
             ))}
           </section>

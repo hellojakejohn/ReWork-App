@@ -37,9 +37,9 @@ export function UserAvatar({ userId, className = "", size = 'md', name }: UserAv
     .join('')
 
   const sizeClasses = {
-    sm: 'w-6 h-6 text-[10px]',
-    md: 'w-7 h-7 text-[11px]',
-    lg: 'w-16 h-16 text-[20px]'
+    sm: 'w-6 h-6 text-xs',
+    md: 'w-7 h-7 text-xs',
+    lg: 'w-16 h-16 text-xl'
   }
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export function AvatarColorPicker({ userId }: { userId?: string }) {
 
   return (
     <div className="space-y-3">
-      <label className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+      <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
         Avatar Color
       </label>
       <div className="flex gap-2">
@@ -100,7 +100,7 @@ export function AvatarColorPicker({ userId }: { userId?: string }) {
           <button
             key={color}
             onClick={() => handleColorSelect(color)}
-            className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white font-semibold text-[13px] transition-all ${
+            className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white font-semibold text-sm transition-all ${
               selectedColor === color
                 ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900'
                 : 'hover:scale-110'

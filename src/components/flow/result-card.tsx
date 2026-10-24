@@ -254,7 +254,7 @@ export function ResultCard({
                 )}
               >
                 {t.label}
-                {t.count ? <span className="ml-1.5 rounded-full bg-white/10 px-1.5 text-[11px]">{t.count}</span> : null}
+                {t.count ? <span className="ml-1.5 rounded-full bg-white/10 px-1.5 text-xs">{t.count}</span> : null}
               </button>
             ))}
           </div>

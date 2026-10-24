@@ -1,11 +1,26 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Newsreader, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 import { OG_DEFAULTS, SITE_URL, TWITTER_DEFAULTS } from '@/lib/site'
 import { THEME_SCRIPT } from '@/lib/theme'
 
-const inter = Inter({ subsets: ['latin'] })
+// Headings and big claims: Newsreader (optical sizes). UI: Plus Jakarta Sans.
+// PDF/DOCX exports keep their own fonts (ATS-neutral).
+// Variable font (one file covers 500 and 600) so the optical-size axis can load.
+const serif = Newsreader({
+  subsets: ['latin'],
+  style: ['normal'],
+  axes: ['opsz'],
+  variable: '--font-serif',
+  display: 'swap',
+})
+const sans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  variable: '--font-sans',
+  display: 'swap',
+})
 
 const TITLE = 'ReWork: tailor your resume to any job. Nothing made up.'
 const DESCRIPTION = 'Upload your resume, paste a job link, get a tailored resume and cover letter. Every rewrite is fact-checked against your real resume.'
@@ -39,11 +54,11 @@ export default function RootLayout({
   return (
     // The inline script sets .dark before first paint; suppressHydrationWarning covers
     // the class React didn't render.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${serif.variable} ${sans.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className={inter.className}>
+      <body>
         {children}
         <Analytics />
       </body>

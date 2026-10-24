@@ -85,7 +85,7 @@ export function AIUsageMeter({ usage }: { usage: AIUsage | null }) {
   const reset = new Date(usage.resetAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
   return (
     <div className="mt-2" title={`Resets ${reset}`}>
-      <div className="flex items-center justify-between text-[11px] text-slate-400">
+      <div className="flex items-center justify-between text-xs text-slate-400">
         <span>Monthly usage</span>
         <span>{usage.percent}%</span>
       </div>

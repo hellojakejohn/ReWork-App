@@ -254,7 +254,7 @@ export function EvidenceInterview({
               <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
                 <p className="mb-1 text-xs font-medium text-slate-500">
                   {item.entryLabel}
-                  {item.weakness && <span className="ml-2 rounded-full bg-amber-400/10 px-2 text-[11px] text-amber-300">{item.weakness}</span>}
+                  {item.weakness && <span className="ml-2 rounded-full bg-amber-400/10 px-2 text-xs text-amber-300">{item.weakness}</span>}
                 </p>
                 <p className="text-sm text-slate-100">{item.bullet}</p>
               </div>

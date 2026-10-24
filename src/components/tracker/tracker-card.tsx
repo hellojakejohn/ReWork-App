@@ -63,7 +63,7 @@ export function TrackerCard({
     ) : (
       <DropdownMenuItem className={menuItem} onSelect={() => onUpgrade(WORD_EXPORT_UPSELL)}>
         <Download className="mr-2 h-4 w-4" /> {text}
-        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-semibold uppercase text-emerald-300">Pro</span>
+        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-xs font-semibold uppercase text-emerald-300">Pro</span>
       </DropdownMenuItem>
     )
   // Links inside a draggable card: don't let a click start a drag.
@@ -106,7 +106,7 @@ export function TrackerCard({
         </DropdownMenu>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
         <span>{statusLine(app)}</span>
         {app.coverageAfter !== null && app.tailored && (
           <span>

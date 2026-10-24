@@ -409,7 +409,7 @@ export function ResumeCard({
       <CardFooter>
         <SecondaryButton className="mr-auto" onClick={() => openEvidence(null)} disabled={empty}>
           <Sparkles className="h-4 w-4 text-emerald-300" /> Make it stronger
-          {!isPro && <span className="rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-semibold uppercase text-emerald-300">Pro</span>}
+          {!isPro && <span className="rounded-full bg-emerald-500/15 px-1.5 text-xs font-semibold uppercase text-emerald-300">Pro</span>}
         </SecondaryButton>
         <SecondaryButton onClick={startEdit}>Fix something</SecondaryButton>
         <PrimaryButton disabled={!canConfirm} onClick={onConfirm}>Looks good</PrimaryButton>

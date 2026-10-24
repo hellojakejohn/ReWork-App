@@ -56,7 +56,7 @@ export function DownloadMenu({
     ) : (
       <DropdownMenuItem className={item} onSelect={() => onUpgrade(WORD_EXPORT_UPSELL)}>
         <FileType className="mr-2 h-4 w-4" /> {text}
-        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-[10px] font-semibold uppercase text-emerald-300">Pro</span>
+        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-xs font-semibold uppercase text-emerald-300">Pro</span>
       </DropdownMenuItem>
     )
   return (
@@ -67,7 +67,7 @@ export function DownloadMenu({
       <DropdownMenuContent align="end" className="w-64 border-white/10 bg-slate-900 text-slate-200">
         <DropdownMenuLabel className="text-xs font-normal text-slate-400">PDF for humans, Word for application portals.</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-white/10" />
-        <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-slate-500">Resume</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs uppercase tracking-wide text-slate-500">Resume</DropdownMenuLabel>
         <DropdownMenuItem asChild className={item}>
           <a href={links.resumePdf}>
             <FileText className="mr-2 h-4 w-4" /> Resume PDF
@@ -75,7 +75,7 @@ export function DownloadMenu({
         </DropdownMenuItem>
         {word(links.resumeDocx, "Resume Word (.docx)")}
         <DropdownMenuSeparator className="bg-white/10" />
-        <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-slate-500">Cover letter</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs uppercase tracking-wide text-slate-500">Cover letter</DropdownMenuLabel>
         {hasLetter ? (
           <>
             <DropdownMenuItem asChild className={item}>
