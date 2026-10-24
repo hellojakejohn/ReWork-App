@@ -2,6 +2,7 @@
 
 // One application on the tracker: what it is, where it stands, links back into the flow,
 // downloads, notes and a follow-up date.
+import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, MoreHorizontal, StickyNote, Trash2, Wand2 } from "lucide-react"
@@ -54,7 +55,7 @@ export function TrackerCard({
   const due = app.followUpAt && app.followUpAt <= todayISO() && !["offer", "rejected"].includes(columnOf(app.status))
   const resume = `/api/resumes/${app.resumeId}/download?applicationId=${app.id}&template=${template}`
   const letter = `/api/resumes/applications/${app.id}/cover-letter/download?template=${template}`
-  const menuItem = "cursor-pointer text-slate-200 focus:bg-white/10 focus:text-white"
+  const menuItem = "cursor-pointer text-text focus:bg-surface-raised focus:text-text"
   const word = (href: string, text: string) =>
     isPro ? (
       <DropdownMenuItem asChild className={menuItem}>
@@ -63,27 +64,27 @@ export function TrackerCard({
     ) : (
       <DropdownMenuItem className={menuItem} onSelect={() => onUpgrade(WORD_EXPORT_UPSELL)}>
         <Download className="mr-2 h-4 w-4" /> {text}
-        <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 text-xs font-semibold uppercase text-emerald-300">Pro</span>
+        <span className="ml-auto rounded-full bg-sage px-1.5 text-xs font-semibold text-text">Pro</span>
       </DropdownMenuItem>
     )
   // Links inside a draggable card: don't let a click start a drag.
   const stop = { onPointerDown: (e: React.PointerEvent) => e.stopPropagation(), onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation() }
 
   return (
-    <div className={cn("rounded-xl border border-white/10 bg-slate-900 p-3 text-sm shadow-sm", dragging && "opacity-40")}>
+    <div className={cn("rounded-card border border-border bg-surface p-3 text-sm shadow-sm", dragging && "opacity-40")}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-slate-100">{app.company}</p>
-          <p className="truncate text-xs text-slate-400">{app.jobTitle}</p>
+          <p className="truncate font-medium text-text">{app.company}</p>
+          <p className="truncate text-xs text-text-muted">{app.jobTitle}</p>
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger {...stop} className="rounded-md p-1 text-slate-500 hover:bg-white/5 hover:text-slate-200" aria-label={`More for ${app.company}`}>
+          <DropdownMenuTrigger {...stop} className="rounded-md p-1 text-text-muted hover:bg-surface-raised hover:text-text" aria-label={`More for ${app.company}`}>
             <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 border-white/10 bg-slate-900 text-slate-200">
+          <DropdownMenuContent align="end" className="w-56 border-border bg-surface text-text">
             {app.tailored ? (
               <>
-                <DropdownMenuLabel className="text-xs font-normal text-slate-400">PDF for humans, Word for application portals.</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs font-normal text-text-muted">PDF for humans, Word for application portals.</DropdownMenuLabel>
                 <DropdownMenuItem asChild className={menuItem}>
                   <a href={resume}><FileText className="mr-2 h-4 w-4" /> Resume PDF</a>
                 </DropdownMenuItem>
@@ -96,25 +97,25 @@ export function TrackerCard({
                     {word(`${letter}&format=docx`, "Cover letter Word")}
                   </>
                 )}
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator className="bg-surface-raised" />
               </>
             ) : null}
-            <DropdownMenuItem onSelect={onDelete} className="cursor-pointer text-red-300 focus:bg-red-500/10 focus:text-red-200">
+            <DropdownMenuItem onSelect={onDelete} className="cursor-pointer text-accent-strong focus:bg-removed focus:text-accent-strong">
               <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-muted">
         <span>{statusLine(app)}</span>
         {app.coverageAfter !== null && app.tailored && (
           <span>
-            · <span className="text-emerald-300">{app.coverageAfter}%</span> keywords
+            · <span className="text-success">{app.coverageAfter}%</span> keywords
           </span>
         )}
         {app.followUpAt && (
-          <span className={cn("flex items-center gap-1", due ? "text-amber-300" : "")}>
+          <span className={cn("flex items-center gap-1", due ? "text-warn" : "")}>
             · <CalendarClock className="h-3 w-3" /> {due ? "Follow up" : "Follow-up"} {day(`${app.followUpAt}T12:00:00`)}
           </span>
         )}
@@ -122,26 +123,30 @@ export function TrackerCard({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs" {...stop}>
         {app.tailored ? (
-          <Link href={`/dashboard?application=${app.id}`} className="rounded-md border border-white/10 px-2 py-1 text-slate-200 hover:bg-white/5">
-            Open result
-          </Link>
+          <Button asChild variant="secondary" size="sm" className="h-7 px-2.5">
+            <Link href={`/dashboard?application=${app.id}`}>Open result</Link>
+          </Button>
         ) : (
-          <Link href={`/dashboard?tailor=${app.id}`} className="flex items-center gap-1 rounded-md border border-emerald-500/30 px-2 py-1 text-emerald-300 hover:bg-emerald-500/10">
-            <Wand2 className="h-3 w-3" /> Tailor for it
-          </Link>
+          <Button asChild size="sm" className="h-7 px-2.5">
+            <Link href={`/dashboard?tailor=${app.id}`}>
+              <Wand2 className="h-3 w-3" /> Tailor for it
+            </Link>
+          </Button>
         )}
         {app.jobUrl && (
-          <a href={app.jobUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-md px-2 py-1 text-slate-400 hover:bg-white/5 hover:text-slate-200">
+          <a href={app.jobUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full px-2 py-1 text-text-muted hover:bg-surface-raised hover:text-text">
             Posting <ExternalLink className="h-3 w-3" />
           </a>
         )}
-        <button
+        <Button
+          variant="text"
+          size="sm"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className={cn("ml-auto flex items-center gap-1 rounded-md px-2 py-1 hover:bg-white/5", app.notes ? "text-slate-200" : "text-slate-400")}
+          className={cn("ml-auto h-7 px-2", app.notes && "text-text")}
         >
           <StickyNote className="h-3 w-3" /> Notes <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-        </button>
+        </Button>
       </div>
 
       {/* Status on small screens, where dragging between columns isn't practical. */}
@@ -150,7 +155,7 @@ export function TrackerCard({
         <select
           value={columnOf(app.status)}
           onChange={(e) => onMove(e.target.value as TrackerColumn)}
-          className="w-full rounded-md border border-white/10 bg-slate-950 px-2 py-1.5 text-xs text-slate-200"
+          className="w-full rounded-md border border-border bg-bg px-2 py-1.5 text-xs text-text"
         >
           {TRACKER_COLUMNS.map((c) => (
             <option key={c.id} value={c.id}>
@@ -168,15 +173,15 @@ export function TrackerCard({
             onChange={(e) => setNotes(e.target.value)}
             onBlur={() => notes !== app.notes && onSave({ notes })}
             placeholder="Recruiter name, referral, what they asked…"
-            className="min-h-[72px] w-full rounded-md border border-white/10 bg-slate-950/60 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/60 focus:outline-none"
+            className="min-h-[72px] w-full rounded-md border border-border bg-bg px-2 py-1.5 text-xs text-text placeholder:text-text-muted focus:border-text focus:outline-none"
           />
-          <label className="flex items-center gap-2 text-xs text-slate-400">
+          <label className="flex items-center gap-2 text-xs text-text-muted">
             Follow up on
             <input
               type="date"
               value={app.followUpAt ?? ""}
               onChange={(e) => onSave({ followUpAt: e.target.value || null })}
-              className="rounded-md border border-white/10 bg-slate-950 px-2 py-1 text-xs text-slate-200 [color-scheme:dark]"
+              className="rounded-md border border-border bg-bg px-2 py-1 text-xs text-text [color-scheme:dark]"
             />
           </label>
         </div>

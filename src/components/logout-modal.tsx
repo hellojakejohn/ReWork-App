@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import { signOut } from "next-auth/react"
 import { LogOut, X } from "lucide-react"
 
@@ -19,51 +20,42 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-[rgb(var(--shadow)/0.45)] backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-md p-6 bg-slate-900 border border-white/10 rounded-lg shadow-2xl">
+      <div className="relative z-10 w-full max-w-md p-6 bg-surface border border-border rounded-panel shadow-float">
         {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1 text-slate-400 hover:text-white transition-colors"
-        >
+        <Button variant="text" size="icon-sm" onClick={onClose} aria-label="Close" className="absolute top-4 right-4">
           <X className="w-4 h-4" />
-        </button>
+        </Button>
 
         {/* Icon */}
         <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center">
-            <LogOut className="w-6 h-6 text-red-400" />
+          <div className="w-12 h-12 bg-sage rounded-full flex items-center justify-center">
+            <LogOut className="w-6 h-6 text-text" />
           </div>
         </div>
 
         {/* Content */}
         <div className="text-center mb-6">
-          <h2 className="text-lg font-semibold text-white mb-2">
-            Sign Out?
+          <h2 className="font-serif text-2xl font-semibold text-text mb-2">
+            Sign out?
           </h2>
-          <p className="text-sm text-slate-400">
-            Are you sure you want to sign out of your account?
+          <p className="text-sm text-text-muted">
+            Your resumes and results stay saved for next time.
           </p>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-all"
-          >
+          <Button variant="secondary" className="flex-1" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleLogout}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-all"
-          >
-            Sign Out
-          </button>
+          </Button>
+          <Button variant="inverse" className="flex-1" onClick={handleLogout}>
+            Sign out
+          </Button>
         </div>
       </div>
     </div>

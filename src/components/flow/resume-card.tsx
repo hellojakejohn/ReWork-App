@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { useSession } from "next-auth/react"
@@ -12,7 +13,7 @@ import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/li
 import { deleteMaster, parseResumeInput, saveMaster, type EvidenceFocus, type MasterResumeDTO } from "./api"
 import { ResumeEditor } from "./resume-editor"
 import { EvidenceInterview } from "./evidence-interview"
-import { Card, CardBody, CardFooter, CardHeader, ErrorNote, PrimaryButton, ReviewDot, SecondaryButton, StageList, inputClass } from "./ui"
+import { Card, CardBody, CardFooter, CardHeader, ErrorNote, ReviewDot, StageList, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 
 const PARSE_STAGES = [
@@ -188,18 +189,18 @@ export function ResumeCard({
         />
         <CardBody className="flex flex-col gap-4">
           {masters.length === 0 && mode === "new" && (
-            <p className="text-sm text-emerald-300">
+            <p className="rounded-input bg-sage px-3 py-2 text-sm text-text">
               Welcome{firstName ? `, ${firstName}` : ""}. Start with your resume, then paste a job link. {isPro ? "" : `You have ${FREE_TAILORS_PER_MONTH} free tailors this month.`}
             </p>
           )}
           {mode === "parsing" ? (
             <div className="space-y-5">
-              <p className="flex items-center gap-2 text-sm text-slate-300">
-                <FileText className="h-4 w-4 text-slate-400" /> {fileName}
+              <p className="flex items-center gap-2 text-sm text-text-secondary">
+                <FileText className="h-4 w-4 text-text-muted" /> {fileName}
               </p>
               <div className="space-y-2" aria-hidden>
                 {[80, 55, 90, 70, 60].map((w, i) => (
-                  <div key={i} className="h-3 animate-pulse rounded bg-white/5" style={{ width: `${w}%` }} />
+                  <div key={i} className="h-3 animate-pulse rounded bg-surface-raised" style={{ width: `${w}%` }} />
                 ))}
               </div>
               <StageList stages={PARSE_STAGES} current={stage} />
@@ -214,15 +215,15 @@ export function ResumeCard({
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => (e.key === " " ? open() : undefined)}
-                  className={`flex min-h-[220px] flex-1 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
-                    isDragActive ? "border-emerald-400 bg-emerald-500/5" : "border-white/15 hover:border-white/30"
+                  className={`flex min-h-[220px] flex-1 cursor-pointer flex-col items-center justify-center gap-3 rounded-card border-2 border-dashed p-6 text-center transition-colors ${
+                    isDragActive ? "border-success bg-success-tint" : "border-input hover:border-text-muted"
                   }`}
                 >
                   <input {...getInputProps()} />
-                  <Upload className="h-8 w-8 text-slate-400" />
+                  <Upload className="h-8 w-8 text-text-muted" />
                   <div>
-                    <p className="text-base font-medium text-slate-100">Drop your resume here</p>
-                    <p className="text-sm text-slate-400">or click to choose a file. PDF or DOCX, up to 4 MB.</p>
+                    <p className="text-base font-medium text-text">Drop your resume here</p>
+                    <p className="text-sm text-text-muted">or click to choose a file. PDF or DOCX, up to 4 MB.</p>
                   </div>
                 </div>
               ) : (
@@ -236,18 +237,18 @@ export function ResumeCard({
                   />
                   {pasteText.length > INPUT_LIMITS.resumeTextChars && <ErrorNote>{INPUT_LIMIT_MESSAGES.resumeText}</ErrorNote>}
                   <div className="flex justify-end">
-                    <PrimaryButton
+                    <Button
                       disabled={pasteText.trim().length < 80 || pasteText.length > INPUT_LIMITS.resumeTextChars}
                       onClick={() => void parse(pasteText)}
                     >
                       Read my resume
-                    </PrimaryButton>
+                    </Button>
                   </div>
                 </div>
               )}
-              <button type="button" onClick={() => setPasteOpen((v) => !v)} className="self-center text-sm text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline">
+              <Button type="button" variant="text" className="self-center" onClick={() => setPasteOpen((v) => !v)}>
                 {pasteOpen ? "Upload a file instead" : "or paste text"}
-              </button>
+              </Button>
             </>
           )}
         </CardBody>
@@ -288,8 +289,8 @@ export function ResumeCard({
           <ResumeEditor value={draft} needsReview={active.needsReview} onChange={setDraft} />
         </CardBody>
         <CardFooter>
-          <SecondaryButton onClick={() => setMode("summary")}>Cancel</SecondaryButton>
-          <PrimaryButton loading={saving} onClick={() => void saveEdit()}>Save</PrimaryButton>
+          <Button variant="secondary" onClick={() => setMode("summary")}>Cancel</Button>
+          <Button loading={saving} onClick={() => void saveEdit()}>Save</Button>
         </CardFooter>
       </Card>
     )
@@ -305,7 +306,7 @@ export function ResumeCard({
       <CardHeader
         title="Your resume"
         subtitle={toCheck > 0 ? (
-          <span className="flex items-center gap-1.5 text-amber-300">
+          <span className="flex items-center gap-1.5 text-warn">
             <ReviewDot /> {toCheck === 1 ? "1 thing to check" : `${toCheck} things to check`}
           </span>
         ) : "Here's what we read."}
@@ -316,7 +317,7 @@ export function ResumeCard({
                 aria-label="Switch resume"
                 value={active.id}
                 onChange={(e) => onSelect(e.target.value)}
-                className="max-w-[10rem] rounded-md border border-white/10 bg-slate-950 px-2 py-1 text-xs text-slate-300"
+                className="max-w-[10rem] rounded-full border border-input bg-surface px-2.5 py-1 text-xs text-text-secondary"
               >
                 {switchable.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -325,40 +326,43 @@ export function ResumeCard({
                 ))}
               </select>
             )}
-            <button
-              onClick={() => openNew(true)}
-              title="Upload a new version; this one is kept in Manage resumes"
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-slate-300 hover:bg-white/5 hover:text-white"
-            >
+            <Button variant="text" size="sm" onClick={() => openNew(true)} title="Upload a new version; this one is kept in Manage resumes">
               <RefreshCw className="h-3.5 w-3.5" /> Replace
-            </button>
-            <button onClick={() => openNew(false)} title="Add another resume" className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white">
+            </Button>
+            <Button variant="text" size="icon" onClick={() => openNew(false)} title="Add another resume" aria-label="Add another resume">
               <Plus className="h-4 w-4" />
-            </button>
-            <button onClick={() => void remove(active.id)} title="Delete this resume" className="rounded-md p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-300">
+            </Button>
+            <Button
+              variant="text"
+              size="icon"
+              onClick={() => void remove(active.id)}
+              title="Delete this resume"
+              aria-label="Delete this resume"
+              className="hover:bg-removed hover:text-accent-strong"
+            >
               <Trash2 className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         }
       />
       <CardBody className="space-y-4">
         {error && <ErrorNote>{error}</ErrorNote>}
         {active.staleParse && (
-          <div className="flex items-start gap-3 rounded-lg border border-amber-400/25 bg-amber-400/10 p-3 text-sm">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-            <p className="flex-1 text-amber-100">This resume was read by our old parser. Re-upload it for much better results.</p>
-            <button onClick={() => openNew(true)} className="shrink-0 rounded-md bg-amber-300 px-2.5 py-1 text-xs font-semibold text-slate-950 hover:bg-amber-200">
+          <div className="flex items-start gap-3 rounded-input border border-warn/30 bg-warn-tint p-3 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warn" />
+            <p className="flex-1 text-text">This resume was read by our old parser. Re-upload it for much better results.</p>
+            <Button size="sm" variant="inverse" onClick={() => openNew(true)}>
               Re-upload
-            </button>
+            </Button>
           </div>
         )}
         <div>
-          <p className="flex items-center gap-2 text-xl font-semibold text-white">
-            {s.name || <span className="text-slate-500">No name found</span>}
+          <p className="flex items-center gap-2 font-serif text-2xl font-semibold text-text">
+            {s.name || <span className="text-text-muted">No name found</span>}
             {active.needsReview.some((n) => n.field === "contact.fullName") && <ReviewDot title="Check your name" />}
           </p>
-          {s.headline && <p className="text-sm text-emerald-300">{s.headline}</p>}
-          <p className="mt-1 text-xs text-slate-500">{[active.resume.contact.email, active.resume.contact.location].filter(Boolean).join(" · ")}</p>
+          {s.headline && <p className="text-sm text-text-secondary">{s.headline}</p>}
+          <p className="mt-1 text-xs text-text-muted">{[active.resume.contact.email, active.resume.contact.location].filter(Boolean).join(" · ")}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
@@ -366,20 +370,20 @@ export function ResumeCard({
             [s.projects, s.projects === 1 ? "project" : "projects"],
             [active.resume.education.length, "education"],
           ].map(([n, label]) => (
-            <div key={String(label)} className="rounded-lg border border-white/5 bg-white/[0.02] py-2">
-              <div className="text-lg font-semibold text-slate-100">{n}</div>
-              <div className="text-xs text-slate-400">{label}</div>
+            <div key={String(label)} className="rounded-input border border-border bg-surface-raised py-2">
+              <div className="font-serif text-2xl font-semibold text-text">{n}</div>
+              <div className="text-xs text-text-muted">{label}</div>
             </div>
           ))}
         </div>
         {active.resume.experience.length > 0 && (
           <ul className="space-y-1 text-sm">
             {active.resume.experience.slice(0, 4).map((e) => (
-              <li key={e.id} className="flex items-center gap-2 text-slate-300">
+              <li key={e.id} className="flex items-center gap-2 text-text-secondary">
                 {active.needsReview.some((n) => n.entryId === e.id) && <ReviewDot title="Check this role" />}
                 <span className="truncate">
                   {e.title}
-                  {e.company && <span className="text-slate-500"> · {e.company}</span>}
+                  {e.company && <span className="text-text-muted"> · {e.company}</span>}
                 </span>
               </li>
             ))}
@@ -388,16 +392,16 @@ export function ResumeCard({
         {s.topSkills.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {s.topSkills.map((skill) => (
-              <span key={skill} className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs text-slate-300">
+              <span key={skill} className="rounded-full bg-surface-raised px-2.5 py-0.5 text-xs text-text-secondary">
                 {skill}
               </span>
             ))}
           </div>
         )}
         {toCheck > 0 && (
-          <div className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-sm">
-            <p className="mb-1 font-medium text-amber-200">We left these out because they aren&apos;t in your file:</p>
-            <ul className="space-y-0.5 text-amber-100/80">
+          <div className="rounded-input border border-warn/30 bg-warn-tint p-3 text-sm">
+            <p className="mb-1 font-medium text-warn">We left these out because they aren&apos;t in your file:</p>
+            <ul className="space-y-0.5 text-text">
               {active.needsReview.map((n, i) => (
                 <li key={i} className="truncate">“{n.value}”</li>
               ))}
@@ -407,12 +411,12 @@ export function ResumeCard({
         {empty && <ErrorNote>We didn&apos;t find any roles, projects or education. Use “Fix something” to add them, or upload again.</ErrorNote>}
       </CardBody>
       <CardFooter>
-        <SecondaryButton className="mr-auto" onClick={() => openEvidence(null)} disabled={empty}>
-          <Sparkles className="h-4 w-4 text-emerald-300" /> Make it stronger
-          {!isPro && <span className="rounded-full bg-emerald-500/15 px-1.5 text-xs font-semibold uppercase text-emerald-300">Pro</span>}
-        </SecondaryButton>
-        <SecondaryButton onClick={startEdit}>Fix something</SecondaryButton>
-        <PrimaryButton disabled={!canConfirm} onClick={onConfirm}>Looks good</PrimaryButton>
+        <Button variant="secondary" className="mr-auto" onClick={() => openEvidence(null)} disabled={empty}>
+          <Sparkles className="h-4 w-4" /> Make it stronger
+          {!isPro && <span className="rounded-full bg-sage px-1.5 text-xs font-semibold text-text">Pro</span>}
+        </Button>
+        <Button variant="secondary" onClick={startEdit}>Fix something</Button>
+        <Button disabled={!canConfirm} onClick={onConfirm}>Looks good</Button>
       </CardFooter>
     </Card>
   )

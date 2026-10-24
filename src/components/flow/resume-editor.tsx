@@ -3,6 +3,7 @@
 // Inline "Fix something" editor inside the Resume card. Plain fields, one list per
 // section; bullets and details are one per line. Fields the validator flagged show a
 // yellow dot with what we dropped and why.
+import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Plus, Trash2 } from "lucide-react"
 import type { NeedsReviewItem, ParsedResume } from "@/types/parsed-resume"
@@ -31,7 +32,7 @@ function Field({
   const flagged = review && review.length > 0
   return (
     <label className="block">
-      <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
+      <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-text-muted">
         {flagged && <ReviewDot title="Check this" />}
         {label}
       </span>
@@ -42,7 +43,7 @@ function Field({
       )}
       {flagged &&
         review!.map((r, i) => (
-          <span key={i} className="mt-1 block text-xs text-amber-300">
+          <span key={i} className="mt-1 block text-xs text-warn">
             We left out “{r.value}”: {r.reason.toLowerCase()} Add it here if it&apos;s right.
           </span>
         ))}
@@ -52,13 +53,13 @@ function Field({
 
 function Section({ title, onAdd, children }: { title: string; onAdd?: () => void; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 border-t border-white/5 pt-4 first:border-t-0 first:pt-0">
+    <section className="space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
+        <h3 className="text-sm font-semibold text-text">{title}</h3>
         {onAdd && (
-          <button type="button" onClick={onAdd} className="flex items-center gap-1 text-xs text-emerald-300 hover:text-emerald-200">
+          <Button type="button" variant="text" size="sm" onClick={onAdd}>
             <Plus className="h-3.5 w-3.5" /> Add
-          </button>
+          </Button>
         )}
       </div>
       {children}
@@ -68,15 +69,17 @@ function Section({ title, onAdd, children }: { title: string; onAdd?: () => void
 
 function Entry({ onRemove, children }: { onRemove: () => void; children: React.ReactNode }) {
   return (
-    <div className="relative space-y-2 rounded-lg border border-white/5 bg-white/[0.02] p-3">
-      <button
+    <div className="relative space-y-2 rounded-input border border-border bg-surface-raised p-3">
+      <Button
         type="button"
+        variant="text"
+        size="icon-sm"
         onClick={onRemove}
         aria-label="Remove"
-        className="absolute right-2 top-2 rounded p-1 text-slate-500 hover:bg-red-500/10 hover:text-red-300"
+        className="absolute right-2 top-2 hover:bg-removed hover:text-accent-strong"
       >
         <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      </Button>
       {children}
     </div>
   )
@@ -155,7 +158,7 @@ export function ResumeEditor({
                 <Field label="Start" value={exp.startDate} onChange={(v) => update({ startDate: v })} placeholder="Jan 2022" />
                 <Field label="End" value={exp.current ? "" : exp.endDate} onChange={(v) => update({ endDate: v, current: false })} placeholder={exp.current ? "Present" : "Mar 2024"} />
                 <Field label="Location" value={exp.location} onChange={(v) => update({ location: v })} />
-                <label className="flex items-end gap-2 pb-2 text-sm text-slate-300">
+                <label className="flex items-end gap-2 pb-2 text-sm text-text-secondary">
                   <input type="checkbox" checked={exp.current} onChange={(e) => update({ current: e.target.checked, endDate: e.target.checked ? "" : exp.endDate })} />
                   I work here now
                 </label>

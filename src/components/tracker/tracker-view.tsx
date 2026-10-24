@@ -2,6 +2,7 @@
 
 // /dashboard/tracker: every application on a board. Drag between columns on desktop, a
 // status dropdown on small screens. Moves are optimistic and roll back on failure.
+import { Button } from "@/components/ui/button"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -24,7 +25,7 @@ import type { TemplateId } from "@/lib/resume-templates"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { AppHeader } from "@/components/flow/app-header"
 import { deleteTracked, loadTracker, updateTracked, type TrackerCardDTO, type TrackerData } from "@/components/flow/api"
-import { ErrorNote, PrimaryButton, SecondaryButton } from "@/components/flow/ui"
+import { ErrorNote } from "@/components/flow/ui"
 import { TrackerCard } from "./tracker-card"
 import { AddJobDialog } from "./add-job-dialog"
 
@@ -51,11 +52,11 @@ function Column({ id, label, count, children }: { id: TrackerColumn; label: stri
     <section
       ref={setNodeRef}
       aria-label={label}
-      className={cn("flex min-h-0 w-full flex-col rounded-2xl border bg-slate-900/40 transition-colors", isOver ? "border-emerald-400/50 bg-emerald-500/5" : "border-white/5")}
+      className={cn("flex min-h-0 w-full flex-col rounded-panel border bg-surface transition-colors", isOver ? "border-success/40 bg-success-tint" : "border-border")}
     >
-      <h2 className="flex items-center justify-between px-3 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="flex items-center justify-between px-3 pb-2 pt-3 text-xs font-semibold uppercase tracking-wide text-text-muted">
         {label}
-        <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs font-medium text-slate-400">{count}</span>
+        <span className="rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-text-muted">{count}</span>
       </h2>
       <div className="min-h-[120px] flex-1 space-y-2 overflow-y-auto px-2 pb-2">{children}</div>
     </section>
@@ -162,13 +163,13 @@ export function TrackerView() {
   const dragged = dragId ? apps.find((a) => a.id === dragId) : null
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-950">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg">
       <AppHeader quota={null} recentCount={0} onUpgrade={() => setUpgrade({ open: true })} flow={null} view="tracker" />
 
       <div className="flex shrink-0 flex-wrap items-end gap-3 px-4 pb-3 pt-4 sm:px-6">
         <div className="mr-auto">
-          <h1 className="text-lg font-semibold text-slate-100">Applications</h1>
-          <p className="text-sm text-slate-400">Everything you&apos;re applying to, in one place.</p>
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-text">Applications</h1>
+          <p className="text-sm text-text-muted">Everything you&apos;re applying to, in one place.</p>
         </div>
         <dl className="flex gap-2 text-center">
           {[
@@ -176,13 +177,13 @@ export function TrackerView() {
             ["Interviews", stats.interviews],
             ["Response rate", stats.responseRate === null ? "–" : `${stats.responseRate}%`],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-1.5">
-              <dd className="text-base font-semibold text-slate-100">{value}</dd>
-              <dt className="text-xs text-slate-500">{label}</dt>
+            <div key={label} className="rounded-card bg-surface px-3 py-1.5">
+              <dd className="font-serif text-xl font-semibold text-text">{value}</dd>
+              <dt className="text-xs text-text-muted">{label}</dt>
             </div>
           ))}
         </dl>
-        <PrimaryButton
+        <Button
           onClick={() =>
             atLimit
               ? setUpgrade({ open: true, reason: `Free accounts can track up to ${FREE_TRACKER_APPLICATIONS} applications. Pro tracks every job.` })
@@ -190,17 +191,17 @@ export function TrackerView() {
           }
         >
           <Plus className="h-4 w-4" /> Add a job
-        </PrimaryButton>
+        </Button>
       </div>
 
       {data && data.limit !== null && data.total > data.limit && (
-        <div className="mx-4 mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-2 text-sm sm:mx-6">
-          <p className="flex-1 text-slate-200">
+        <div className="mx-4 mb-3 flex flex-wrap items-center gap-3 rounded-card bg-surface-raised px-4 py-2 text-sm sm:mx-6">
+          <p className="flex-1 text-text">
             Showing your {data.limit} newest of {data.total} applications. Pro tracks all of them.
           </p>
-          <SecondaryButton className="py-1.5" onClick={() => setUpgrade({ open: true })}>
-            <Sparkles className="h-3.5 w-3.5 text-emerald-300" /> Go Pro
-          </SecondaryButton>
+          <Button variant="secondary" size="sm" onClick={() => setUpgrade({ open: true })}>
+            <Sparkles className="h-3.5 w-3.5" /> Go Pro
+          </Button>
         </div>
       )}
 
@@ -208,25 +209,25 @@ export function TrackerView() {
         {error ? (
           <div className="mx-auto max-w-sm space-y-3 pt-10 text-center">
             <ErrorNote>{error}</ErrorNote>
-            <SecondaryButton onClick={() => void load()}>Try again</SecondaryButton>
+            <Button variant="secondary" onClick={() => void load()}>Try again</Button>
           </div>
         ) : !data ? (
           <div className="grid h-full grid-cols-1 gap-3 md:grid-cols-5">
             {TRACKER_COLUMNS.map((c) => (
-              <div key={c.id} className="hidden h-64 animate-pulse rounded-2xl border border-white/5 bg-white/[0.02] md:block" />
+              <div key={c.id} className="hidden h-64 animate-pulse rounded-panel border border-border bg-surface-raised md:block" />
             ))}
           </div>
         ) : apps.length === 0 ? (
           <div className="mx-auto max-w-md space-y-3 pt-12 text-center">
-            <p className="text-slate-200">Nothing tracked yet.</p>
-            <p className="text-sm text-slate-400">Every resume you tailor lands here as Saved. You can also add jobs you applied to elsewhere.</p>
+            <p className="text-text">Nothing tracked yet.</p>
+            <p className="text-sm text-text-muted">Every resume you tailor lands here as Saved. You can also add jobs you applied to elsewhere.</p>
             <div className="flex justify-center gap-2">
-              <Link href="/dashboard" className="inline-flex items-center rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/5">
-                Tailor a resume
-              </Link>
-              <PrimaryButton onClick={() => setAdding(true)}>
+              <Button asChild variant="secondary">
+                <Link href="/dashboard">Tailor a resume</Link>
+              </Button>
+              <Button onClick={() => setAdding(true)}>
                 <Plus className="h-4 w-4" /> Add a job
-              </PrimaryButton>
+              </Button>
             </div>
           </div>
         ) : (
@@ -249,22 +250,20 @@ export function TrackerView() {
             <div className="flex h-full flex-col md:hidden">
               <div role="tablist" className="mb-2 flex shrink-0 gap-1 overflow-x-auto">
                 {TRACKER_COLUMNS.map((c) => (
-                  <button
+                  <Button
                     key={c.id}
                     role="tab"
                     aria-selected={mobileColumn === c.id}
+                    size="sm"
+                    variant={mobileColumn === c.id ? "inverse" : "text"}
                     onClick={() => setMobileColumn(c.id)}
-                    className={cn(
-                      "shrink-0 rounded-full px-3 py-1 text-xs",
-                      mobileColumn === c.id ? "bg-white/10 text-white" : "text-slate-400 hover:text-slate-200"
-                    )}
                   >
-                    {c.label} <span className="text-slate-500">{byColumn[c.id].length}</span>
-                  </button>
+                    {c.label} <span className="opacity-70">{byColumn[c.id].length}</span>
+                  </Button>
                 ))}
               </div>
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto" role="tabpanel">
-                {byColumn[mobileColumn].length === 0 && <p className="p-4 text-center text-sm text-slate-500">Nothing here yet.</p>}
+                {byColumn[mobileColumn].length === 0 && <p className="p-4 text-center text-sm text-text-muted">Nothing here yet.</p>}
                 {byColumn[mobileColumn].map((app) => (
                   <TrackerCard key={app.id} {...cardProps(app)} />
                 ))}

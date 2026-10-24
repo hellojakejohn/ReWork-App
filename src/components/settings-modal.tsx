@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
-import { Crown, CreditCard, Download, Loader2, Settings, Shield, Trash2, User } from "lucide-react"
+import { Crown, CreditCard, Download, Settings, Shield, Trash2, User } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,12 +36,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-900/95 backdrop-blur-xl border border-white/20 max-w-[900px] w-[calc(100vw-2rem)] h-[min(600px,calc(100vh-2rem))] p-0 overflow-hidden">
+      <DialogContent className="bg-surface border border-border max-w-[900px] w-[calc(100vw-2rem)] h-[min(600px,calc(100vh-2rem))] p-0 overflow-hidden">
         <div className="flex h-full flex-col sm:flex-row">
-          <div className="sm:w-48 bg-slate-800/50 border-b sm:border-b-0 sm:border-r border-white/10 p-4">
+          <div className="sm:w-48 bg-surface-raised border-b sm:border-b-0 sm:border-r border-border p-4">
             <DialogHeader className="mb-4 sm:mb-6">
-              <DialogTitle className="text-white text-lg flex items-center gap-2">
-                <Settings className="w-4 h-4 text-slate-300" />
+              <DialogTitle className="text-text flex items-center gap-2">
+                <Settings className="w-4 h-4 text-text-secondary" />
                 Settings
               </DialogTitle>
             </DialogHeader>
@@ -49,17 +49,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               {TABS.map((tab) => {
                 const Icon = tab.icon
                 return (
-                  <button
+                  <Button
                     key={tab.id}
                     data-tab={tab.id}
+                    variant={activeTab === tab.id ? "inverse" : "text"}
+                    size="sm"
+                    aria-current={activeTab === tab.id ? "page" : undefined}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 sm:gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors sm:w-full ${
-                      activeTab === tab.id ? "bg-white/10 text-white border border-white/20" : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`}
+                    className="justify-start text-sm sm:w-full"
                   >
                     <Icon className="w-4 h-4" />
                     {tab.label}
-                  </button>
+                  </Button>
                 )
               })}
             </nav>
@@ -69,17 +70,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {activeTab === "account" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Account</h3>
+                  <h3 className="text-lg font-semibold text-text mb-4">Account</h3>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="settings-name" className="text-slate-300 text-sm">Name</Label>
-                      <Input id="settings-name" value={session?.user?.name || ""} className="mt-1 bg-slate-800/50 border-slate-600 text-white" readOnly />
+                      <Label htmlFor="settings-name" className="text-text-secondary text-sm">Name</Label>
+                      <Input id="settings-name" value={session?.user?.name || ""} className="mt-1 bg-surface-raised" readOnly />
                     </div>
                     <div>
-                      <Label htmlFor="settings-email" className="text-slate-300 text-sm">Email</Label>
-                      <Input id="settings-email" value={session?.user?.email || ""} className="mt-1 bg-slate-800/50 border-slate-600 text-white" readOnly />
+                      <Label htmlFor="settings-email" className="text-text-secondary text-sm">Email</Label>
+                      <Input id="settings-email" value={session?.user?.email || ""} className="mt-1 bg-surface-raised" readOnly />
                     </div>
-                    <p className="text-xs text-slate-500">Your name and email come from your Google account.</p>
+                    <p className="text-xs text-text-muted">Your name and email come from your Google account.</p>
                     <div className="flex items-center gap-3">
                       <Badge variant={isPro ? "default" : "secondary"} className="text-sm">
                         {isPro ? (
@@ -92,14 +93,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         )}
                       </Badge>
                       {session?.user?.createdAt && (
-                        <span className="text-sm text-slate-400">Member since {new Date(session.user.createdAt).toLocaleDateString()}</span>
+                        <span className="text-sm text-text-muted">Member since {new Date(session.user.createdAt).toLocaleDateString()}</span>
                       )}
                     </div>
                   </div>
                 </div>
-                <Separator className="bg-white/10" />
+                <Separator />
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">Avatar color</h3>
+                  <h3 className="text-lg font-semibold text-text mb-4">Avatar color</h3>
                   <AvatarColorPicker userId={session?.user?.id} />
                 </div>
               </div>
@@ -108,28 +109,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {activeTab === "billing" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Plan & billing</h3>
-                  <p className="text-sm text-slate-400">Your usage this month and how you pay for Pro.</p>
+                  <h3 className="text-lg font-semibold text-text mb-2">Plan & billing</h3>
+                  <p className="text-sm text-text-muted">Your usage this month and how you pay for Pro.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-800/30 border border-white/10 rounded-lg">
-                    <p className="text-sm text-slate-400 mb-1">Tailors this month</p>
-                    <p className="text-2xl font-bold text-white">
+                  <div className="p-4 bg-surface-raised rounded-card">
+                    <p className="text-sm text-text-muted mb-1">Tailors this month</p>
+                    <p className="font-serif text-3xl text-text">
                       {session?.user?.monthlyTailors ?? 0} / {isPro ? "fair use" : FREE_TAILORS_PER_MONTH}
                     </p>
                   </div>
-                  <div className="p-4 bg-slate-800/30 border border-white/10 rounded-lg">
-                    <p className="text-sm text-slate-400 mb-1">Tailored resumes, all time</p>
-                    <p className="text-2xl font-bold text-white">{session?.user?.resumesOptimized ?? 0}</p>
+                  <div className="p-4 bg-surface-raised rounded-card">
+                    <p className="text-sm text-text-muted mb-1">Tailored resumes, all time</p>
+                    <p className="font-serif text-3xl text-text">{session?.user?.resumesOptimized ?? 0}</p>
                   </div>
                 </div>
                 <AccessSummary access={access} />
                 {access.source !== "STRIPE_SUBSCRIPTION" && (
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <Crown className="w-4 h-4 text-emerald-400" />
-                      <span className="font-semibold text-white">{isPro ? "Extend Pro" : "Go Pro"}</span>
-                      <Link href="/pricing" onClick={onClose} className="ml-auto text-xs text-slate-400 hover:text-white underline">
+                      <Crown className="w-4 h-4 text-text" />
+                      <span className="font-semibold text-text">{isPro ? "Extend Pro" : "Go Pro"}</span>
+                      <Link href="/pricing" onClick={onClose} className="ml-auto text-xs text-text-muted hover:text-text underline">
                         Compare plans
                       </Link>
                     </div>
@@ -175,34 +176,34 @@ function DataTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-white mb-2">Your data</h3>
-        <p className="text-sm text-slate-400">
+        <h3 className="text-lg font-semibold text-text mb-2">Your data</h3>
+        <p className="text-sm text-text-muted">
           We keep your resumes, tailored versions, cover letters and tracker in our database so you can come back to them. Text is sent to
-          OpenAI’s API to do the rewriting; OpenAI doesn’t train on API data. Details in the{" "}
-          <Link href="/privacy" className="underline hover:text-white">privacy policy</Link>.
+          the AI provider that does the rewriting (Anthropic’s Claude API, or OpenAI’s API), neither of which trains on API data. Details in the{" "}
+          <Link href="/privacy" className="underline hover:text-text">privacy policy</Link>.
         </p>
       </div>
 
       <div>
-        <Label className="text-slate-300 font-medium mb-1 block">Download my data</Label>
-        <p className="text-sm text-slate-400 mb-3">A JSON file with your account, resumes, tailored versions, cover letters and tracker.</p>
-        <Button variant="outline" onClick={() => void download()} disabled={downloading} className="border-slate-600 text-slate-200 hover:bg-slate-700">
-          {downloading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+        <Label className="text-text-secondary font-medium mb-1 block">Download my data</Label>
+        <p className="text-sm text-text-muted mb-3">A JSON file with your account, resumes, tailored versions, cover letters and tracker.</p>
+        <Button variant="secondary" onClick={() => void download()} loading={downloading}>
+          {!downloading && <Download className="w-4 h-4" />}
           Download my data
         </Button>
-        {downloadError && <p className="mt-2 text-sm text-red-300">{downloadError}</p>}
+        {downloadError && <p className="mt-2 text-sm text-accent-strong">{downloadError}</p>}
       </div>
 
-      <Separator className="bg-white/10" />
+      <Separator />
 
-      <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-        <Label className="text-red-300 font-medium mb-1 block">Delete my account</Label>
-        <p className="text-sm text-slate-300 mb-3">
+      <div className="p-4 bg-removed rounded-card">
+        <Label className="text-accent-strong font-semibold mb-1 block">Delete my account</Label>
+        <p className="text-sm text-text-secondary mb-3">
           Cancels any Pro subscription, then permanently deletes your account, resumes, uploaded files, tailored versions, cover letters and
           tracker. This can’t be undone.
         </p>
-        <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
-          <Trash2 className="w-4 h-4 mr-2" />
+        <Button size="sm" onClick={() => setConfirming(true)}>
+          <Trash2 className="w-4 h-4" />
           Delete my account
         </Button>
       </div>
@@ -241,25 +242,24 @@ function DeleteAccountDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !deleting && onClose()}>
-      <DialogContent className="bg-slate-900 border border-red-500/40 max-w-md">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white">Delete your account?</DialogTitle>
+          <DialogTitle className="text-text">Delete your account?</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 text-sm text-slate-300">
+        <div className="space-y-3 text-sm text-text-secondary">
           <p>This cancels any active Pro subscription right away (no further charges) and deletes everything: resumes, files, tailored versions, cover letters and your tracker.</p>
           <p>A Job Hunt Pass you’ve already used isn’t refunded. Stripe keeps its own receipts of past payments.</p>
           <label className="block">
-            <span className="mb-1 block text-slate-400">Type DELETE to confirm</span>
-            <Input value={typed} onChange={(e) => setTyped(e.target.value)} className="bg-slate-800/50 border-slate-600 text-white" autoComplete="off" />
+            <span className="mb-1 block text-text-muted">Type DELETE to confirm</span>
+            <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" />
           </label>
-          {error && <p className="text-red-300">{error}</p>}
+          {error && <p className="text-accent-strong">{error}</p>}
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="ghost" onClick={onClose} disabled={deleting} className="text-slate-300 hover:bg-slate-700">
+          <Button variant="text" onClick={onClose} disabled={deleting}>
             Keep my account
           </Button>
-          <Button variant="destructive" disabled={typed.trim() !== "DELETE" || deleting} onClick={() => void remove()}>
-            {deleting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          <Button disabled={typed.trim() !== "DELETE"} loading={deleting} onClick={() => void remove()}>
             Delete everything
           </Button>
         </div>

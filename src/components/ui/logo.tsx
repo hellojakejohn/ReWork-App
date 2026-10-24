@@ -28,7 +28,6 @@ export function Logo({
   const common = {
     width,
     height,
-    alt: "rework",
     decoding: "async" as const,
     fetchPriority: priority ? ("high" as const) : undefined,
     loading: priority ? undefined : ("lazy" as const),
@@ -36,9 +35,9 @@ export function Logo({
   return (
     <span className={cn("inline-flex shrink-0", className)} style={{ width, height }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, nothing for next/image to optimize */}
-      <img {...common} src={files.light} className="block h-full w-full dark:hidden" />
+      <img {...common} alt="rework" src={files.light} className="block h-full w-full dark:hidden" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img {...common} src={files.dark} className="hidden h-full w-full dark:block" />
+      <img {...common} alt="rework" src={files.dark} className="hidden h-full w-full dark:block" />
     </span>
   )
 }

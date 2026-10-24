@@ -3,12 +3,13 @@
 // Evidence interview, inside the Resume card: one weak bullet at a time (sliding like the
 // rest of the flow), short answers, Skip / Next. Then before/after per bullet with
 // Accept / Reject; accepted rewrites are written to the master.
+import { Button } from "@/components/ui/button"
 import { useEffect, useRef, useState } from "react"
 import { Check, Loader2, ShieldCheck, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { isNonAnswer, type EvidenceAnswer, type EvidenceItem, type EvidenceRewrite } from "@/lib/evidence-shared"
 import { applyEvidence, startEvidence, submitEvidence, type EvidenceFocus, type MasterResumeDTO } from "./api"
-import { Card, CardBody, CardFooter, CardHeader, ErrorNote, PrimaryButton, SecondaryButton, inputClass } from "./ui"
+import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 
 type Phase = "loading" | "asking" | "rewriting" | "review" | "saving" | "done" | "empty"
 
@@ -154,8 +155,8 @@ export function EvidenceInterview({
       <Card>
         {header}
         <CardBody>
-          <p className="flex items-center gap-2 text-sm text-slate-300">
-            <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+          <p className="flex items-center gap-2 text-sm text-text-secondary">
+            <Loader2 className="h-4 w-4 animate-spin text-text-muted" />
             {phase === "loading" ? "Finding your weakest bullets…" : "Rewriting with your answers and fact-checking…"}
           </p>
         </CardBody>
@@ -168,10 +169,10 @@ export function EvidenceInterview({
       <Card>
         {header}
         <CardBody className="space-y-3">
-          {error ? <ErrorNote>{error}</ErrorNote> : <p className="text-sm text-slate-300">{message}</p>}
+          {error ? <ErrorNote>{error}</ErrorNote> : <p className="text-sm text-text-secondary">{message}</p>}
         </CardBody>
         <CardFooter>
-          <PrimaryButton onClick={onClose}>Back to my resume</PrimaryButton>
+          <Button onClick={onClose}>Back to my resume</Button>
         </CardFooter>
       </Card>
     )
@@ -188,47 +189,45 @@ export function EvidenceInterview({
             const accepted = !!decisions[r.itemId]
             const unchanged = r.after === r.before
             return (
-              <div key={r.itemId} className="rounded-lg border border-white/5 bg-white/[0.02] p-3 text-sm">
-                <p className="mb-1.5 text-xs font-medium text-slate-500">{r.entryLabel}</p>
-                <p className={cn("text-slate-400", accepted && "line-through decoration-slate-600")}>{r.before}</p>
-                {!unchanged && <p className={cn("mt-1", accepted ? "text-slate-100" : "text-slate-500")}>{r.after}</p>}
-                {r.warning && <p className="mt-1.5 text-xs text-amber-300">{r.warning}</p>}
+              <div key={r.itemId} className="rounded-input border border-border bg-surface-raised p-3 text-sm">
+                <p className="mb-1.5 text-xs font-medium text-text-muted">{r.entryLabel}</p>
+                <p className={cn("text-text-muted", accepted && "line-through decoration-text-faint")}>{r.before}</p>
+                {!unchanged && <p className={cn("mt-1", accepted ? "text-text" : "text-text-muted")}>{r.after}</p>}
+                {r.warning && <p className="mt-1.5 text-xs text-warn">{r.warning}</p>}
                 {!unchanged && (
                   <div className="mt-2 flex gap-2">
-                    <button
+                    <Button
+                      size="sm"
+                      variant={accepted ? "inverse" : "secondary"}
+                      aria-pressed={accepted}
                       onClick={() => setDecisions((d) => ({ ...d, [r.itemId]: true }))}
-                      className={cn(
-                        "flex items-center gap-1 rounded-md px-2 py-1 text-xs",
-                        accepted ? "bg-emerald-500/15 text-emerald-300" : "border border-white/10 text-slate-300 hover:bg-white/5"
-                      )}
                     >
                       <Check className="h-3 w-3" /> {accepted ? "Accepted" : "Accept"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={!accepted ? "inverse" : "secondary"}
+                      aria-pressed={!accepted}
                       onClick={() => setDecisions((d) => ({ ...d, [r.itemId]: false }))}
-                      className={cn(
-                        "flex items-center gap-1 rounded-md px-2 py-1 text-xs",
-                        !accepted ? "bg-white/10 text-slate-200" : "border border-white/10 text-slate-300 hover:bg-white/5"
-                      )}
                     >
                       <X className="h-3 w-3" /> {accepted ? "Reject" : "Rejected"}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
             )
           })}
-          <p className="flex items-center gap-2 text-xs text-slate-500">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Every number above came from your answers. Your answers are saved either way.
+          <p className="flex items-center gap-2 text-xs text-text-muted">
+            <ShieldCheck className="h-3.5 w-3.5 text-success" /> Every number above came from your answers. Your answers are saved either way.
           </p>
         </CardBody>
         <CardFooter>
-          <SecondaryButton onClick={onClose} disabled={phase === "saving"}>
+          <Button variant="secondary" onClick={onClose} disabled={phase === "saving"}>
             Cancel
-          </SecondaryButton>
-          <PrimaryButton loading={phase === "saving"} onClick={() => void save()}>
+          </Button>
+          <Button loading={phase === "saving"} onClick={() => void save()}>
             {count > 0 ? `Save ${count} to my resume` : "Done"}
-          </PrimaryButton>
+          </Button>
         </CardFooter>
       </Card>
     )
@@ -251,16 +250,16 @@ export function EvidenceInterview({
               className="h-full w-full shrink-0 space-y-4 overflow-y-auto px-5 py-4"
             >
               {error && i === index && <ErrorNote>{error}</ErrorNote>}
-              <div className="rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                <p className="mb-1 text-xs font-medium text-slate-500">
+              <div className="rounded-input border border-border bg-surface-raised p-3">
+                <p className="mb-1 text-xs font-medium text-text-muted">
                   {item.entryLabel}
-                  {item.weakness && <span className="ml-2 rounded-full bg-amber-400/10 px-2 text-xs text-amber-300">{item.weakness}</span>}
+                  {item.weakness && <span className="ml-2 rounded-full bg-warn-tint px-2 text-xs text-warn">{item.weakness}</span>}
                 </p>
-                <p className="text-sm text-slate-100">{item.bullet}</p>
+                <p className="text-sm text-text">{item.bullet}</p>
               </div>
               {item.questions.map((q, qi) => (
                 <label key={q.id} className="block space-y-1.5">
-                  <span className="text-sm text-slate-300">{q.text}</span>
+                  <span className="text-sm text-text-secondary">{q.text}</span>
                   <div className="flex gap-2">
                     <input
                       ref={i === index && qi === 0 ? firstInput : undefined}
@@ -276,16 +275,15 @@ export function EvidenceInterview({
                         }
                       }}
                     />
-                    <button
+                    <Button
                       type="button"
+                      size="sm"
+                      variant={(values[q.id] ?? "").trim() && isNonAnswer(values[q.id]) ? "inverse" : "secondary"}
+                      className="h-auto self-stretch"
                       onClick={() => setValues((v) => ({ ...v, [q.id]: "don't know" }))}
-                      className={cn(
-                        "shrink-0 rounded-lg border px-2.5 text-xs",
-                        (values[q.id] ?? "").trim() && isNonAnswer(values[q.id]) ? "border-white/20 bg-white/10 text-slate-200" : "border-white/10 text-slate-400 hover:bg-white/5"
-                      )}
                     >
                       Don&apos;t know
-                    </button>
+                    </Button>
                   </div>
                 </label>
               ))}
@@ -295,12 +293,12 @@ export function EvidenceInterview({
       </div>
       <CardFooter>
         {index > 0 && (
-          <SecondaryButton className="mr-auto" onClick={() => setIndex(index - 1)}>
+          <Button variant="secondary" className="mr-auto" onClick={() => setIndex(index - 1)}>
             Back
-          </SecondaryButton>
+          </Button>
         )}
-        <SecondaryButton onClick={skip}>Skip</SecondaryButton>
-        <PrimaryButton onClick={() => next()}>{index < items.length - 1 ? "Next" : "Rewrite my bullets"}</PrimaryButton>
+        <Button variant="secondary" onClick={skip}>Skip</Button>
+        <Button onClick={() => next()}>{index < items.length - 1 ? "Next" : "Rewrite my bullets"}</Button>
       </CardFooter>
     </Card>
   )
