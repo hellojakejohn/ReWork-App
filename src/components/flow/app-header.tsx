@@ -70,7 +70,7 @@ export function AppHeader({
           aria-label="rework home"
           className="-ml-1 flex items-center rounded-input"
         >
-          <Logo height={40} priority />
+          <Logo height={44} priority />
         </Link>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">

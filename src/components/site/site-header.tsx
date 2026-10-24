@@ -8,7 +8,7 @@ export function SiteHeader({ links = true }: { links?: boolean }) {
     <header className="bg-bg">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 sm:py-5">
         <Link href="/" aria-label="rework home" className="-ml-1 rounded-input">
-          <Logo height={44} priority />
+          <Logo height={52} priority />
         </Link>
         {links && (
           <nav aria-label="Main" className="flex items-center gap-1 text-sm sm:gap-2">
