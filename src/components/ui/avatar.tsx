@@ -3,18 +3,19 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 
-export const avatarColors = [
-  'bg-indigo-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-cyan-500',
-  'bg-violet-500',
-  'bg-slate-500',
-  'bg-orange-500'
-] as const
+// Brand palette for the avatar. Stored per user in localStorage by key; anything else
+// (including the old Tailwind class names) falls back to forest.
+export const avatarColors = ['forest', 'orange', 'green', 'ochre', 'sage'] as const
 
 export type AvatarColor = typeof avatarColors[number]
+
+const AVATAR_CLASSES: Record<AvatarColor, string> = {
+  forest: 'bg-inverse text-inverse-fg',
+  orange: 'bg-accent text-accent-fg',
+  green: 'bg-success text-bg',
+  ochre: 'bg-warn text-bg',
+  sage: 'bg-sage text-text',
+}
 
 interface UserAvatarProps {
   userId?: string
@@ -25,7 +26,7 @@ interface UserAvatarProps {
 
 export function UserAvatar({ userId, className = "", size = 'md', name }: UserAvatarProps) {
   const { data: session } = useSession()
-  const [selectedColor, setSelectedColor] = useState<AvatarColor>('bg-indigo-500')
+  const [selectedColor, setSelectedColor] = useState<AvatarColor>('forest')
 
   // Get initials from name or session
   const displayName = name || session?.user?.name || 'User'
@@ -56,7 +57,7 @@ export function UserAvatar({ userId, className = "", size = 'md', name }: UserAv
   }, [userId])
 
   return (
-    <div className={`${sizeClasses[size]} rounded-full ${selectedColor} flex items-center justify-center font-semibold text-white ${className}`}>
+    <div className={`${sizeClasses[size]} rounded-full ${AVATAR_CLASSES[selectedColor]} flex items-center justify-center font-semibold ${className}`}>
       {initials || 'U'}
     </div>
   )
@@ -64,7 +65,7 @@ export function UserAvatar({ userId, className = "", size = 'md', name }: UserAv
 
 export function AvatarColorPicker({ userId }: { userId?: string }) {
   const { data: session } = useSession()
-  const [selectedColor, setSelectedColor] = useState<AvatarColor>('bg-indigo-500')
+  const [selectedColor, setSelectedColor] = useState<AvatarColor>('forest')
 
   const displayName = session?.user?.name || 'User'
   const initials = displayName
@@ -92,17 +93,18 @@ export function AvatarColorPicker({ userId }: { userId?: string }) {
 
   return (
     <div className="space-y-3">
-      <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-        Avatar Color
-      </label>
+      <p className="text-xs font-semibold text-text-muted">Avatar color</p>
       <div className="flex gap-2">
         {avatarColors.map(color => (
           <button
             key={color}
+            type="button"
             onClick={() => handleColorSelect(color)}
-            className={`w-10 h-10 rounded-full ${color} flex items-center justify-center text-white font-semibold text-sm transition-all ${
+            aria-label={`Avatar color ${color}`}
+            aria-pressed={selectedColor === color}
+            className={`w-10 h-10 rounded-full ${AVATAR_CLASSES[color]} flex items-center justify-center font-semibold text-sm transition-transform ${
               selectedColor === color
-                ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900'
+                ? 'ring-2 ring-text ring-offset-2 ring-offset-surface'
                 : 'hover:scale-110'
             }`}
           >
@@ -128,5 +130,5 @@ export function getAvatarSelection(userId: string): AvatarColor {
       return stored as AvatarColor
     }
   }
-  return 'bg-indigo-500'
+  return 'forest'
 }
