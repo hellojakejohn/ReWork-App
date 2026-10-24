@@ -1,7 +1,10 @@
 import type { Config } from 'tailwindcss'
 
+// Every color is a CSS variable from src/app/globals.css (light on :root, dark on .dark).
+const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`
+
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: ['class'],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,75 +13,45 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Dark minimal color system
-        background: '#0A0A0B',
-        foreground: '#E8E8ED',
-        card: {
-          DEFAULT: 'rgba(255, 255, 255, 0.03)',
-          foreground: '#E8E8ED'
+        bg: token('bg'),
+        surface: { DEFAULT: token('surface'), raised: token('surface-raised') },
+        border: token('border'),
+        input: token('input'),
+        text: {
+          DEFAULT: token('text'),
+          secondary: token('text-secondary'),
+          muted: token('text-muted'),
+          faint: token('text-faint'),
         },
-        popover: {
-          DEFAULT: 'rgba(255, 255, 255, 0.03)',
-          foreground: '#E8E8ED'
-        },
-        primary: {
-          DEFAULT: '#FFFFFF',
-          foreground: '#0A0A0B',
-        },
-        secondary: {
-          DEFAULT: 'rgba(255, 255, 255, 0.06)',
-          foreground: '#E8E8ED',
-        },
-        muted: {
-          DEFAULT: 'rgba(255, 255, 255, 0.25)',
-          foreground: 'rgba(255, 255, 255, 0.45)'
-        },
+        sage: token('sage'),
+        re: token('re'),
         accent: {
-          DEFAULT: '#34D399',
-          foreground: '#0A0A0B'
+          DEFAULT: token('accent'),
+          hover: token('accent-hover'),
+          fg: token('accent-fg'),
+          strong: token('accent-strong'),
         },
-        destructive: {
-          DEFAULT: '#EF4444',
-          foreground: '#FFFFFF'
-        },
-        border: 'rgba(255, 255, 255, 0.08)',
-        input: 'rgba(255, 255, 255, 0.06)',
-        ring: 'rgba(255, 255, 255, 0.2)',
-
-        // Additional colors
-        success: '#34D399',
-        error: '#EF4444',
-        premium: 'rgba(99, 102, 241, 0.8)',
-        surface: 'rgba(255, 255, 255, 0.03)',
-        'text-primary': '#E8E8ED',
-        'text-secondary': 'rgba(255, 255, 255, 0.45)',
-        'text-muted': 'rgba(255, 255, 255, 0.25)',
+        removed: token('removed'),
+        success: { DEFAULT: token('success'), tint: token('success-tint') },
+        warn: { DEFAULT: token('warn'), tint: token('warn-tint') },
+        inverse: { DEFAULT: token('inverse'), fg: token('inverse-fg') },
+        'resume-paper': token('resume-paper'),
+        ring: token('text'),
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
-      },
-      fontSize: {
-        'label': '11px',
-        'body-sm': '12px',
-        'body': '13px',
-        'section': '14px',
-        'header': '15px',
-        'title': '18px',
-      },
-      letterSpacing: {
-        'tight': '-0.3px',
-        'normal': '-0.01em',
-      },
-      backdropBlur: {
-        xs: '2px',
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-serif)', 'Georgia', 'serif'],
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
-      }
+        input: '12px',
+        card: '20px',
+        panel: '24px',
+      },
+      boxShadow: {
+        float: '0 12px 40px -12px rgb(var(--shadow) / 0.18), 0 2px 8px -2px rgb(var(--shadow) / 0.06)',
+      },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require('tailwindcss-animate')],
 }
 export default config

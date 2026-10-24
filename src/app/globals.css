@@ -2,447 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Linear-Inspired Dark Minimal Theme */
+/*
+ * Brand tokens (brand-kit/BRAND.md). The only place colors are defined: tailwind.config.ts
+ * maps every color utility onto these. Values are RGB channels so opacity modifiers work
+ * (bg-accent/10). Light is the default; .dark is set on <html> by the inline theme script
+ * in layout.tsx before first paint.
+ *
+ * text-faint is under 4.5:1 in both themes: placeholders and decoration only, never text
+ * someone needs to read.
+ */
 @layer base {
   :root {
-    /* Core colors - Matching landing page */
-    --background: #020817; /* slate-950 */
-    --foreground: #E2E8F0; /* slate-200 */
-    --card: rgba(30, 41, 59, 0.3); /* slate-800/30 */
-    --card-foreground: #E2E8F0;
-    --popover: rgba(30, 41, 59, 0.4);
-    --popover-foreground: #E2E8F0;
-    --primary: #FFFFFF;
-    --primary-foreground: #020817;
-    --secondary: rgba(255, 255, 255, 0.1);
-    --secondary-foreground: #E2E8F0;
-    --muted: #64748B; /* slate-500 */
-    --muted-foreground: #94A3B8; /* slate-400 */
-    --accent: #34D399; /* emerald-400 */
-    --accent-foreground: #020817;
-    --destructive: #EF4444;
-    --destructive-foreground: #FFFFFF;
-    --border: rgba(255, 255, 255, 0.1);
-    --input: rgba(30, 41, 59, 0.4);
-    --ring: rgba(255, 255, 255, 0.2);
+    --bg: 251 250 247;              /* paper #FBFAF7 */
+    --surface: 255 255 255;         /* cards */
+    --surface-raised: 232 241 233;  /* #E8F1E9 */
+    --border: 228 230 225;          /* forest at ~10% on paper */
+    --input: 196 204 197;           /* input outlines, 3:1 against surface */
+    --text: 23 48 31;               /* forest #17301F */
+    --text-secondary: 61 84 68;     /* #3D5444 */
+    --text-muted: 79 102 86;        /* #4F6656 */
+    --text-faint: 108 127 114;      /* #6C7F72 */
+    --sage: 220 232 222;            /* chips, badges, step numbers */
+    --re: 143 162 149;              /* the "re" in the logo */
+    --accent: 194 61 34;            /* blood orange #C23D22 */
+    --accent-hover: 168 51 27;
+    --accent-fg: 255 255 255;
+    --accent-strong: 156 47 24;     /* accent text on tints */
+    --removed: 251 234 229;         /* left-out claims */
+    --success: 46 125 79;           /* kept, verified */
+    --success-tint: 226 240 230;
+    --warn: 135 90 0;               /* needs review (not in BRAND.md: derived ochre) */
+    --warn-tint: 251 241 220;
+    --inverse: 23 48 31;            /* Download, Get started */
+    --inverse-fg: 255 255 255;
+    --resume-paper: 255 255 255;    /* the resume preview stays on paper in both themes */
+    --shadow: 23 48 31;
 
-    /* Additional theme colors */
-    --success: #34D399; /* emerald-400 */
-    --premium: #60A5FA; /* blue-400 */
-    --surface: rgba(30, 41, 59, 0.3); /* slate-800/30 */
-    --text-secondary: #CBD5E1; /* slate-300 */
-    --text-muted: #94A3B8; /* slate-400 */
-
-    /* Landing page specific colors */
-    --slate-950: #020817;
-    --slate-900: #0F172A;
-    --slate-800: #1E293B;
-    --slate-700: #334155;
-    --slate-600: #475569;
-    --slate-500: #64748B;
-    --slate-400: #94A3B8;
-    --slate-300: #CBD5E1;
-    --slate-200: #E2E8F0;
-    --slate-100: #F1F5F9;
-
-    /* Border radius */
-    --radius: 0.5rem; /* 8px for cards */
-    --radius-sm: 0.375rem; /* 6px for inputs/buttons */
-    --radius-xs: 0.3125rem; /* 5px for pills */
-
-    /* Spacing */
-    --space-xs: 0.25rem; /* 4px */
-    --space-sm: 0.5rem; /* 8px */
-    --space-md: 1rem; /* 16px */
-    --space-lg: 1.25rem; /* 20px */
-    --space-xl: 1.5rem; /* 24px */
-    --space-2xl: 2rem; /* 32px */
-
-    /* Heights */
-    --nav-height: 52px;
-    --status-bar-height: 32px;
+    --radius: 12px;
   }
-}
 
-@layer base {
+  .dark {
+    --bg: 15 26 19;                 /* night #0F1A13 */
+    --surface: 23 38 28;            /* #17261C */
+    --surface-raised: 34 53 42;     /* #22352A */
+    --border: 44 68 52;             /* #2C4434 */
+    --input: 72 99 80;
+    --text: 234 241 234;            /* mist #EAF1EA */
+    --text-secondary: 195 209 199;
+    --text-muted: 169 187 174;
+    --text-faint: 94 117 100;
+    --sage: 36 56 42;
+    --re: 127 149 133;
+    --accent: 240 122 92;           /* coral #F07A5C */
+    --accent-hover: 244 145 120;
+    --accent-fg: 15 26 19;
+    --accent-strong: 246 184 168;
+    --removed: 58 31 24;            /* #3A1F18 */
+    --success: 127 209 155;
+    --success-tint: 29 54 38;
+    --warn: 229 192 123;
+    --warn-tint: 51 41 15;
+    --inverse: 234 241 234;
+    --inverse-fg: 15 26 19;
+    --resume-paper: 243 240 233;
+    --shadow: 0 0 0;
+    color-scheme: dark;
+  }
+
   * {
     @apply border-border;
   }
 
   html {
-    @apply bg-background antialiased;
+    @apply bg-bg antialiased;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
-    letter-spacing: -0.01em;
-    font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04';
+    @apply bg-bg font-sans text-text;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    letter-spacing: -0.03em;
     font-weight: 600;
   }
 
-  /* Typography scale */
-  .text-xs { @apply text-[11px]; }
-  .text-sm { @apply text-[12px]; }
-  .text-base { @apply text-[13px]; }
-  .text-md { @apply text-[14px]; }
-  .text-lg { @apply text-[15px]; }
-  .text-xl { @apply text-[20px]; }
+  ::selection {
+    background: rgb(var(--sage));
+    color: rgb(var(--text));
+  }
 }
 
-/* Dark minimal scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full;
-  transition: background 0.15s ease;
+  background: rgb(var(--text) / 0.15);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-white/20;
+  background: rgb(var(--text) / 0.25);
 }
 
-/* Dark Minimal Design System */
-@layer utilities {
-  /* Surface layers */
-  .surface-base {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius);
-    transition: all 0.15s ease;
-  }
-
-  .surface-elevated {
-    background: rgba(255, 255, 255, 0.04);
-    @apply border border-border;
-  }
-
-  .surface-interactive {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius);
-    transition: all 0.15s ease;
-    cursor: pointer;
-  }
-
-  .surface-interactive:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-  }
-
-  /* Text utilities */
-  .text-primary {
-    color: var(--foreground);
-  }
-
-  .text-secondary {
-    color: var(--text-secondary);
-  }
-
-  .text-muted {
-    color: var(--text-muted);
-  }
-
-  /* Button styles */
-  .btn-primary {
-    @apply bg-white text-background font-semibold;
-    border-radius: var(--radius-sm);
-    transition: all 0.15s ease;
-  }
-
-  .btn-primary:hover {
-    background: rgba(255, 255, 255, 0.95);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
-  }
-
-  .btn-secondary {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--foreground);
-    border-radius: var(--radius-sm);
-    transition: all 0.15s ease;
-  }
-
-  .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-  }
-
-  .btn-ghost {
-    @apply bg-transparent text-text-secondary;
-    transition: all 0.15s ease;
-  }
-
-  .btn-ghost:hover {
-    @apply text-foreground;
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  /* Input styles */
-  .input-base {
-    background: var(--background);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--foreground);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    transition: all 0.15s ease;
-  }
-
-  .input-base:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .input-base:focus {
-    border-color: rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.02);
-    outline: none;
-  }
-
-  /* Label styles */
-  .label-base {
-    @apply text-text-muted uppercase text-[11px] tracking-wider font-medium;
-  }
-
-  /* Card styles */
-  .card-base {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius);
-    padding: var(--space-md) var(--space-lg);
-    transition: all 0.15s ease;
-  }
-
-  .card-interactive {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius);
-    padding: var(--space-md) var(--space-lg);
-    transition: all 0.15s ease;
-    cursor: pointer;
-  }
-
-  .card-interactive:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    transform: translateY(-1px);
-  }
-
-  /* Badge styles */
-  .badge-success {
-    @apply bg-success/10 text-success border border-success/20;
-  }
-
-  .badge-premium {
-    background: rgba(99, 102, 241, 0.1);
-    color: rgba(99, 102, 241, 0.9);
-    border: 1px solid rgba(99, 102, 241, 0.2);
-  }
-
-  /* Status indicators */
-  .status-complete {
-    @apply text-success;
-  }
-
-  .status-incomplete {
-    @apply text-text-muted;
-  }
-
-  /* Transitions */
-  .transition-base {
-    transition: all 0.15s ease;
-  }
-
-  /* Focus states */
-  .focus-ring {
-    @apply focus:outline-none focus:ring-1 focus:ring-white/20;
-  }
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Animation utilities */
-.animate-fade-in {
-  animation: fadeIn 0.3s ease;
-}
-
-.animate-slide-up {
-  animation: slideInUp 0.3s ease;
-}
-
-.animate-slide-right {
-  animation: slideInRight 0.3s ease;
-}
-
-/* Loading states */
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s ease-in-out infinite;
-}
-
-@keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Floating particle animations */
-@keyframes float-up-slow {
-  0% {
-    transform: translateY(0) translateX(0) scale(1);
-    opacity: 0.3;
-  }
-  50% {
-    transform: translateY(-30px) translateX(15px) scale(1.1);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translateY(-60px) translateX(-10px) scale(0.9);
-    opacity: 0.3;
-  }
-}
-
-@keyframes float-diagonal {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.2;
-  }
-  33% {
-    transform: translate(20px, -20px) scale(1.2);
-    opacity: 0.4;
-  }
-  66% {
-    transform: translate(-10px, -40px) scale(0.8);
-    opacity: 0.3;
-  }
-  100% {
-    transform: translate(5px, -10px) scale(1);
-    opacity: 0.2;
-  }
-}
-
-@keyframes float-side {
-  0% {
-    transform: translateX(0) translateY(0) rotate(0deg);
-    opacity: 0.25;
-  }
-  25% {
-    transform: translateX(30px) translateY(-10px) rotate(90deg);
-    opacity: 0.4;
-  }
-  50% {
-    transform: translateX(-20px) translateY(-20px) rotate(180deg);
-    opacity: 0.35;
-  }
-  75% {
-    transform: translateX(10px) translateY(10px) rotate(270deg);
-    opacity: 0.3;
-  }
-  100% {
-    transform: translateX(0) translateY(0) rotate(360deg);
-    opacity: 0.25;
-  }
-}
-
-@keyframes float-wobble {
-  0%, 100% {
-    transform: translateY(0) translateX(0) scale(1);
-    opacity: 0.3;
-  }
-  15% {
-    transform: translateY(-12px) translateX(8px) scale(1.1);
-    opacity: 0.45;
-  }
-  30% {
-    transform: translateY(-5px) translateX(-12px) scale(0.95);
-    opacity: 0.4;
-  }
-  45% {
-    transform: translateY(-18px) translateX(5px) scale(1.05);
-    opacity: 0.35;
-  }
-  60% {
-    transform: translateY(-8px) translateX(-8px) scale(0.98);
-    opacity: 0.38;
-  }
-  75% {
-    transform: translateY(-15px) translateX(10px) scale(1.02);
-    opacity: 0.32;
-  }
-  90% {
-    transform: translateY(-3px) translateX(-5px) scale(0.97);
-    opacity: 0.35;
-  }
-}
-
-/* Utility classes */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Focus visible only for keyboard navigation */
-.focus-visible:focus {
-  outline: none;
-}
-
-.focus-visible:focus-visible {
-  @apply ring-1 ring-white/20;
-}
-
-/* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -454,49 +123,8 @@ html {
   }
 }
 
-/* Progress animation for tailoring */
-@keyframes progress {
-  0% { width: 0%; }
-  50% { width: 70%; }
-  100% { width: 100%; }
-}
-
-.animate-progress {
-  animation: progress 3s ease-in-out infinite;
-}
-
-/* Background dots pattern */
-.bg-dots {
-  background-image:
-    radial-gradient(
-      circle at 1px 1px,
-      rgba(255, 255, 255, 0.08) 1px,
-      transparent 1px
-    );
-  background-size: 20px 20px;
-}
-
-.bg-dots-sm {
-  background-image:
-    radial-gradient(
-      circle at 1px 1px,
-      rgba(255, 255, 255, 0.04) 1px,
-      transparent 1px
-    );
-  background-size: 16px 16px;
-}
-
-.bg-dots-lg {
-  background-image:
-    radial-gradient(
-      circle at 2px 2px,
-      rgba(255, 255, 255, 0.06) 2px,
-      transparent 2px
-    );
-  background-size: 32px 32px;
-}
 /* Legal pages: readable lists and links without a typography plugin. */
 .legal ul { list-style: disc; padding-left: 1.25rem; }
 .legal li + li { margin-top: 0.4rem; }
-.legal a { color: rgb(110 231 183); text-decoration: underline; text-underline-offset: 3px; }
-.legal strong { color: white; font-weight: 600; }
+.legal a { color: rgb(var(--accent-strong)); text-decoration: underline; text-underline-offset: 3px; }
+.legal strong { color: rgb(var(--text)); font-weight: 600; }
