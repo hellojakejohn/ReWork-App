@@ -3,16 +3,18 @@
 // Every number comes from src/lib/plans.ts.
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Briefcase, Check, FileText, FileUp, ListChecks, MessageSquareText, ShieldCheck, Sparkles, X } from "lucide-react"
+import { ArrowRight, Check, ShieldCheck, X } from "lucide-react"
 import { SiteHeader } from "@/components/site/site-header"
 import { SiteFooter } from "@/components/site/site-footer"
 import { DeletedNotice } from "@/components/site/deleted-notice"
+import { Logo } from "@/components/ui/logo"
+import { Button } from "@/components/ui/button"
 import { LANDING_EXAMPLE as EX } from "@/components/site/landing-example"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
-import { CONTACT_EMAIL, FREE_FEATURES, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING, PRO_FEATURES } from "@/lib/plans"
+import { CONTACT_EMAIL, FAIR_USE, FREE_PLAN_SHORT, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING } from "@/lib/plans"
 import { showPoweredBy } from "@/lib/ai/routing"
 
-const TITLE = "ReWork: tailor your resume to any job in under a minute. Nothing made up."
+const TITLE = "rework: Tailored to the job. True to you."
 const DESCRIPTION = `Upload your resume, paste a job link, get a tailored resume and cover letter. Every rewrite is fact-checked against your real resume. ${FREE_TAILORS_PER_MONTH} free tailors a month, no card.`
 
 export const metadata: Metadata = {
@@ -25,27 +27,17 @@ export const metadata: Metadata = {
 
 const STEPS = [
   {
-    icon: FileUp,
     title: "Upload your resume",
-    body: "PDF, Word, or pasted text. We read it once and check every detail against your file, so you only fix what's wrong.",
+    body: "PDF, Word, or pasted text. What's in it is the only thing we work from.",
   },
   {
-    icon: Briefcase,
-    title: "Paste a job link",
-    body: "Greenhouse, Lever, Ashby, Workday and most company career pages fill in on their own. Anything else, paste the text.",
+    title: "Paste the job link",
+    body: "Most job boards fill in automatically. Or just paste the description.",
   },
   {
-    icon: FileText,
-    title: "Get your tailored resume + cover letter",
-    body: "Rewritten for that job, with a reason for every change. Keep or revert each bullet, then download a PDF.",
+    title: "Fill the gaps with real numbers",
+    body: "When a rewrite needs a number your resume doesn't have, we leave it out and ask you for the real one. No guesses.",
   },
-]
-
-const PRO_DETAILS = [
-  { icon: Sparkles, title: "Tailor for every job", body: `Every job you apply to, not ${FREE_TAILORS_PER_MONTH} a month. Fair use: plenty for an active job search.` },
-  { icon: MessageSquareText, title: "Cover letters", body: "One per job, in your tone, fact-checked the same way as your resume." },
-  { icon: ShieldCheck, title: "Evidence interview", body: "We ask for your real numbers, then rewrite your weakest bullets using only your answers." },
-  { icon: ListChecks, title: "Tracker + Word export", body: "Track every application, and download .docx files for portals that prefer Word." },
 ]
 
 const FAQ: { q: string; a: React.ReactNode }[] = [
@@ -102,178 +94,153 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
 ]
 
-const container = "mx-auto max-w-5xl px-4"
-const h2 = "text-2xl font-bold tracking-tight text-white sm:text-3xl"
+const container = "mx-auto max-w-6xl px-4 sm:px-6"
+const h2 = "font-serif text-3xl font-medium tracking-tight text-text sm:text-4xl"
+const card = "rounded-card bg-surface p-6 sm:p-7"
 
 export default function HomePage() {
   const poweredBy = showPoweredBy()
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-300">
+    <div className="min-h-screen bg-bg text-text">
       <DeletedNotice />
       <SiteHeader />
 
       <main>
         {/* Hero */}
-        <section className="bg-gradient-to-b from-slate-900 to-slate-950">
-          <div className={`${container} py-16 text-center sm:py-24`}>
-            <h1 className="mx-auto max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl">
-              Tailor your resume to any job in under a minute. <span className="text-emerald-400">Nothing made up.</span>
+        <section className={`${container} grid items-center gap-12 pb-16 pt-8 sm:pb-24 sm:pt-16 lg:grid-cols-2 lg:gap-14`}>
+          <div className="flex flex-col items-start gap-6">
+            <span className="rounded-full bg-sage px-3.5 py-2 text-sm font-semibold text-text">Nothing made up. Ever.</span>
+            <h1 className="font-serif text-5xl font-medium leading-[1.02] tracking-tight text-text sm:text-6xl lg:text-7xl">
+              Same you. Better fit.
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300">
-              Upload your resume once, paste a job link, and get a resume and cover letter written for that job. Every rewrite is checked against what
-              you actually wrote. No invented metrics, no fake skills.
+            <p className="max-w-xl text-lg leading-relaxed text-text-secondary">
+              Job hunting is hard enough. rework tailors your resume to each job, asks you for the real numbers, and never fills a gap with a
+              guess.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3">
-              <Link
-                href="/auth/signin"
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 text-lg font-semibold text-slate-950 hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
-              >
-                Get started free <ArrowRight className="h-5 w-5" aria-hidden />
-              </Link>
-              <p className="text-sm text-slate-400">{FREE_TAILORS_PER_MONTH} free tailors a month, no card</p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link href="/auth/signin">Tailor my resume, free</Link>
+              </Button>
+              <Button asChild size="lg" variant="secondary">
+                <Link href="#example">See an example</Link>
+              </Button>
             </div>
+            <p className="text-sm text-text-muted">{FREE_TAILORS_PER_MONTH} free tailors a month. No card needed.</p>
           </div>
+          <HeroReceipt />
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="scroll-mt-16 py-16">
-          <div className={container}>
-            <h2 className={`${h2} text-center`}>How it works</h2>
-            <ol className="mt-10 grid gap-4 md:grid-cols-3">
-              {STEPS.map((step, i) => (
-                <li key={step.title} className="rounded-xl border border-white/10 bg-slate-800/40 p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-300">
-                      {i + 1}
-                    </span>
-                    <step.icon className="h-5 w-5 text-slate-300" aria-hidden />
-                  </div>
-                  <h3 className="mt-4 font-semibold text-white">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-300">{step.body}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
+        <section id="how-it-works" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
+          <h2 className={h2}>Three steps. Honest results.</h2>
+          <ol className="mt-10 grid gap-5 md:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <li key={step.title} className={`${card} flex flex-col gap-2.5`}>
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage font-bold text-text">{i + 1}</span>
+                <h3 className="text-xl font-bold text-text">{step.title}</h3>
+                <p className="leading-relaxed text-text-secondary">{step.body}</p>
+              </li>
+            ))}
+          </ol>
         </section>
 
         {/* Before / after */}
-        <section className="border-y border-white/5 bg-slate-900/50 py-16">
-          <div className={container}>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h2 className={h2}>What a tailor looks like</h2>
-              <span className="rounded-full border border-white/15 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Example
-              </span>
-            </div>
-            <p className="mt-3 max-w-3xl text-slate-300">
-              {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already on the left.
-            </p>
-
-            <div className="mt-8 overflow-hidden rounded-xl border border-white/10 bg-slate-950/60">
-              <div className="grid grid-cols-1 border-b border-white/10 text-xs font-semibold uppercase tracking-wider text-slate-400 md:grid-cols-2">
-                <div className="px-5 py-3">Your resume</div>
-                <div className="hidden px-5 py-3 md:block">Tailored</div>
-              </div>
-              {[{ before: EX.summary.before, after: EX.summary.after, why: "Summary leads with what this job needs." }, ...EX.bullets].map((row) => (
-                <div key={row.before} className="grid grid-cols-1 border-b border-white/5 last:border-b-0 md:grid-cols-2">
-                  <p className="px-5 py-4 text-sm leading-relaxed text-slate-400">{row.before}</p>
-                  <div className="px-5 pb-4 md:py-4">
-                    <p className="text-sm leading-relaxed text-white">{row.after}</p>
-                    <p className="mt-1 text-xs text-emerald-300">Why: {row.why}</p>
-                  </div>
-                </div>
-              ))}
-              <div className="grid gap-4 border-t border-white/10 bg-slate-900/60 px-5 py-4 text-sm md:grid-cols-2">
-                <p className="flex items-start gap-2 text-slate-200">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" aria-hidden />
-                  <span>Fact check passed: {EX.factsKept.join(", ")} all come from the original.</span>
-                </p>
-                <p className="flex items-start gap-2 text-slate-300">
-                  <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" aria-hidden />
-                  <span>In the posting but not in the resume, so not added: {EX.notAdded.join(", ")}.</span>
-                </p>
-              </div>
-            </div>
+        <section id="example" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h2 className={h2}>What a tailor looks like</h2>
+            <span className="rounded-full bg-sage px-2.5 py-0.5 text-xs font-semibold text-text">Example</span>
           </div>
-        </section>
+          <p className="mt-4 max-w-3xl text-lg leading-relaxed text-text-secondary">
+            {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already on the left.
+          </p>
 
-        {/* What Pro adds */}
-        <section className="py-16">
-          <div className={container}>
-            <h2 className={h2}>What Pro adds</h2>
-            <p className="mt-3 max-w-2xl text-slate-300">Free covers a few applications a month. Pro is for an active search.</p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {PRO_DETAILS.map((item) => (
-                <div key={item.title} className="flex gap-4 rounded-xl border border-white/10 bg-slate-800/40 p-5">
-                  <item.icon className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" aria-hidden />
-                  <div>
-                    <h3 className="font-semibold text-white">{item.title}</h3>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-300">{item.body}</p>
-                  </div>
+          <div className="mt-10 overflow-hidden rounded-panel bg-surface">
+            <div className="grid grid-cols-1 border-b border-border text-xs font-semibold text-text-muted md:grid-cols-2">
+              <div className="px-6 py-3">Your resume</div>
+              <div className="hidden px-6 py-3 md:block">Tailored</div>
+            </div>
+            {[{ before: EX.summary.before, after: EX.summary.after, why: "Summary leads with what this job needs." }, ...EX.bullets].map((row) => (
+              <div key={row.before} className="grid grid-cols-1 border-b border-border last:border-b-0 md:grid-cols-2">
+                <p className="px-6 py-4 text-sm leading-relaxed text-text-muted">{row.before}</p>
+                <div className="px-6 pb-4 md:py-4">
+                  <p className="text-sm leading-relaxed text-text">{row.after}</p>
+                  <p className="mt-1 text-xs text-success">Why: {row.why}</p>
                 </div>
-              ))}
+              </div>
+            ))}
+            <div className="grid gap-4 border-t border-border bg-surface-raised px-6 py-4 text-sm md:grid-cols-2">
+              <p className="flex items-start gap-2 text-text">
+                <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" aria-hidden />
+                <span>Fact check passed: {EX.factsKept.join(", ")} all come from the original.</span>
+              </p>
+              <p className="flex items-start gap-2 text-text-secondary">
+                <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-text-muted" aria-hidden />
+                <span>In the posting but not in the resume, so not added: {EX.notAdded.join(", ")}.</span>
+              </p>
             </div>
           </div>
         </section>
 
         {/* Pricing */}
-        <section id="pricing" className="scroll-mt-16 border-y border-white/5 bg-slate-900/50 py-16">
-          <div className={container}>
-            <h2 className={`${h2} text-center`}>Pricing</h2>
-            <p className="mx-auto mt-3 max-w-xl text-center text-slate-300">
-              Start free. For a job search, the {PRICING.pass.name}: {PRICING.pass.headline?.toLowerCase()}
-            </p>
-            {poweredBy && <p className="mt-2 text-center text-xs text-slate-400">{POWERED_BY.copy}</p>}
-            <div className="mt-10 grid gap-4 lg:grid-cols-3">
-              <PlanCard name="Free" price="$0" period="forever" features={FREE_FEATURES} cta="Get started free" note="No card needed." />
-              <PlanCard
-                name={PRICING.pass.name}
-                price={PRICING.pass.amount}
-                period="one-time, 3 months"
-                tagline={PRICING.pass.headline}
-                features={["Everything in Pro for 3 months", PRICING.pass.blurb, ...PRO_FEATURES.slice(1)]}
-                cta="Start free, upgrade anytime"
-                note={PRICING.pass.cadence}
-                highlight
-              />
-              <PlanCard
-                name={PRICING.monthly.name}
-                price={PRICING.monthly.amount}
-                period={PRICING.monthly.period}
-                features={PRO_FEATURES}
-                cta="Start free, upgrade anytime"
-                note={PRICING.monthly.cadence}
-              />
+        <section id="pricing" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
+          <h2 className={h2}>Pricing that fits a job search</h2>
+          {poweredBy && <p className="mt-3 text-sm text-text-muted">{POWERED_BY.copy}</p>}
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            <div className={`${card} flex flex-col gap-2.5`}>
+              <h3 className="text-sm font-semibold text-text-muted">Free</h3>
+              <p className="font-serif text-4xl text-text">$0</p>
+              <p className="text-sm leading-relaxed text-text-secondary">{FREE_PLAN_SHORT}</p>
+            </div>
+            <div className="flex flex-col gap-2.5 rounded-card bg-inverse p-6 text-inverse-fg sm:p-7">
+              <h3 className="text-sm font-bold opacity-90">{PRICING.pass.name} · most popular</h3>
+              <p className="font-serif text-4xl">
+                {PRICING.pass.amount} <span className="text-lg opacity-80">once</span>
+              </p>
+              <p className="text-sm leading-relaxed opacity-90">{PRICING.pass.headline}</p>
+            </div>
+            <div className={`${card} flex flex-col gap-2.5`}>
+              <h3 className="text-sm font-semibold text-text-muted">Pro</h3>
+              <p className="font-serif text-4xl text-text">
+                {PRICING.monthly.amount} <span className="text-lg text-text-muted">/ month</span>
+              </p>
+              <p className="text-sm leading-relaxed text-text-secondary">{FAIR_USE}</p>
             </div>
           </div>
+          <p className="mt-6 text-sm text-text-muted">
+            <Link href="/pricing" className="font-semibold text-accent-strong underline underline-offset-4 hover:text-text">
+              See everything in each plan
+            </Link>
+          </p>
         </section>
 
         {/* FAQ */}
-        <section className="py-16">
-          <div className="mx-auto max-w-3xl px-4">
-            <h2 className={h2}>Questions</h2>
-            <div className="mt-6 divide-y divide-white/10 rounded-xl border border-white/10">
-              {FAQ.map((item) => (
-                <details key={item.q} className="group px-5 py-4 [&_a]:text-emerald-300 [&_a]:underline">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-white">
-                    {item.q}
-                    <span className="text-slate-400 transition-transform group-open:rotate-45" aria-hidden>
-                      +
-                    </span>
-                  </summary>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-300">{item.a}</p>
-                </details>
-              ))}
-            </div>
-            <div className="mt-12 text-center">
-              <Link
-                href="/auth/signin"
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-6 py-3 font-semibold text-slate-950 hover:bg-emerald-400"
-              >
-                Tailor your first resume <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-            </div>
+        <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20">
+          <h2 className={h2}>Questions</h2>
+          <div className="mt-8 divide-y divide-border rounded-card bg-surface">
+            {FAQ.map((item) => (
+              <details key={item.q} className="group px-6 py-5 [&_a]:text-accent-strong [&_a]:underline">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-text">
+                  {item.q}
+                  <span className="text-xl leading-none text-text-muted transition-transform group-open:rotate-45" aria-hidden>
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-text-secondary">{item.a}</p>
+              </details>
+            ))}
           </div>
+        </section>
+
+        {/* Closing */}
+        <section className={`${container} flex flex-col items-center gap-6 pb-20 pt-8 text-center`}>
+          <Logo variant="hero" height={110} className="hidden sm:inline-flex" />
+          <Logo variant="hero" height={80} className="sm:hidden" />
+          <p className="max-w-md text-lg text-text-secondary">Tailored to the job. True to you.</p>
+          <Button asChild size="lg">
+            <Link href="/auth/signin">
+              Tailor your first resume <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </Button>
         </section>
       </main>
 
@@ -282,50 +249,33 @@ export default function HomePage() {
   )
 }
 
-function PlanCard({
-  name,
-  price,
-  period,
-  features,
-  cta,
-  note,
-  tagline,
-  highlight = false,
-}: {
-  name: string
-  price: string
-  period: string
-  features: string[]
-  cta: string
-  note: string
-  tagline?: string
-  highlight?: boolean
-}) {
+/** The hero's illustration of the receipt: one kept bullet, one left-out claim. */
+function HeroReceipt() {
   return (
-    <div className={`flex flex-col rounded-xl border p-6 ${highlight ? "border-emerald-500/50 bg-emerald-500/5" : "border-white/10 bg-slate-800/40"}`}>
-      <h3 className="font-semibold text-white">{name}</h3>
-      <p className="mt-2 text-3xl font-bold text-white">
-        {price}
-        <span className="ml-1 text-sm font-normal text-slate-400">{period}</span>
+    <figure className="flex flex-col gap-4 rounded-panel bg-surface p-6 shadow-float sm:p-8">
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-serif text-2xl font-semibold text-text">Senior Engineer, Payments</p>
+        <span className="mt-1.5 shrink-0 text-xs font-bold text-success">Invented: 0</span>
+      </div>
+      <p className="flex gap-3 text-base leading-relaxed text-text">
+        <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-inverse text-inverse-fg">
+          <Check className="h-3.5 w-3.5" aria-hidden />
+        </span>
+        <span>Led the migration of 14 services to Kubernetes, cutting deploy time from hours to minutes.</span>
       </p>
-      {tagline && <p className="mt-2 text-sm font-medium text-emerald-300">{tagline}</p>}
-      <ul className="mt-5 flex-1 space-y-2">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-sm text-slate-200">
-            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400" aria-hidden />
-            {f}
-          </li>
-        ))}
-      </ul>
-      <p className="mt-5 text-xs text-slate-400">{note}</p>
-      <Link
-        href="/auth/signin"
-        className={`mt-3 block rounded-lg px-4 py-2.5 text-center text-sm font-semibold ${
-          highlight ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400" : "border border-white/20 text-white hover:bg-white/10"
-        }`}
-      >
-        {cta}
-      </Link>
-    </div>
+      <p className="flex gap-3 text-base leading-relaxed text-text-muted">
+        <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-removed text-sm font-bold text-accent-strong" aria-hidden>
+          !
+        </span>
+        <span>
+          <s>Increased revenue by 40%</s>
+          <span className="sr-only"> (left out)</span>
+        </span>
+      </p>
+      <p className="rounded-2xl bg-removed px-4 py-3.5 text-sm leading-relaxed text-text">
+        We left this out. It isn&apos;t in your resume. If revenue really went up, tell us how much and we&apos;ll add it.
+      </p>
+      <figcaption className="text-xs text-text-muted">Example</figcaption>
+    </figure>
   )
 }

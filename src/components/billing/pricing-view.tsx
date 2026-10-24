@@ -2,12 +2,12 @@
 
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { CheckCircle } from "lucide-react"
-import { Logo } from "@/components/ui/logo"
+import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FREE_FEATURES, POWERED_BY, PRICING } from "@/lib/plans"
 import { NO_ACCESS } from "@/lib/entitlement-rules"
 import { AccessSummary, OfferCards } from "@/components/billing/offer-cards"
+import { SiteHeader } from "@/components/site/site-header"
 import { SiteFooter } from "@/components/site/site-footer"
 
 export function PricingView({ poweredBy }: { poweredBy: boolean }) {
@@ -15,63 +15,61 @@ export function PricingView({ poweredBy }: { poweredBy: boolean }) {
   const access = session ? session.user.access ?? NO_ACCESS : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-black text-white">
-      <header className="border-b border-white/10 backdrop-blur-xl bg-slate-900/30">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href={session ? "/dashboard" : "/"} className="flex items-center space-x-2">
-            <Logo size="xs" variant="simple" showBadge={false} />
-            <span className="text-xl font-bold">ReWork</span>
-          </Link>
-          {session ? (
-            <Link href="/dashboard" className="text-sm text-slate-300 hover:text-white">Back to dashboard</Link>
-          ) : (
-            <Link href="/auth/signin?callbackUrl=/pricing" className="text-sm text-slate-300 hover:text-white">Sign in</Link>
-          )}
-        </div>
-      </header>
+    <div className="min-h-screen bg-bg text-text">
+      <SiteHeader />
 
-      <main className="container mx-auto px-4 py-16 max-w-5xl">
-        <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">Pricing</h1>
-        <p className="text-lg text-slate-400 text-center mb-12 max-w-2xl mx-auto">
-          Start free. For a job search, get the {PRICING.pass.name}: {PRICING.pass.headline} {PRICING.pass.amount}, cheaper than two
-          months of {PRICING.monthly.name} ({PRICING.monthly.display}).
+      <main className="mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6 sm:pt-14">
+        <h1 className="font-serif text-5xl font-medium tracking-tight text-text sm:text-6xl">Pricing that fits a job search</h1>
+        <p className="mt-5 max-w-2xl text-lg leading-relaxed text-text-secondary">
+          Start free. For a job search, get the {PRICING.pass.name}: {PRICING.pass.headline} {PRICING.pass.amount}, cheaper than two months of{" "}
+          {PRICING.monthly.name} ({PRICING.monthly.display}).
         </p>
-        {poweredBy && <p className="-mt-8 mb-12 text-center text-xs text-slate-400">{POWERED_BY.copy}</p>}
+        {poweredBy && <p className="mt-3 text-sm text-text-muted">{POWERED_BY.copy}</p>}
+        {session && (
+          <p className="mt-3 text-sm">
+            <Link href="/dashboard" className="font-semibold text-accent-strong underline underline-offset-4 hover:text-text">
+              Back to the app
+            </Link>
+          </p>
+        )}
 
         {access && status === "authenticated" && (
-          <div className="max-w-xl mx-auto mb-10">
+          <div className="mt-10 max-w-xl">
             <AccessSummary access={access} returnTo="/pricing" />
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6">
-          <div className="flex flex-col rounded-lg border border-white/10 bg-slate-800/40 p-5">
-            <span className="font-semibold text-white mb-2">Free</span>
-            <div className="text-2xl font-bold text-white">
-              $0<span className="text-sm font-normal text-slate-400 ml-1">/month</span>
-            </div>
-            <ul className="space-y-2 mt-4">
+        <div className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-[1fr_2fr]">
+          <div className="flex flex-col rounded-card bg-surface p-6 sm:p-7">
+            <h2 className="text-sm font-semibold text-text-muted">Free</h2>
+            <p className="mt-2 font-serif text-4xl text-text">
+              $0 <span className="text-lg text-text-muted">/ month</span>
+            </p>
+            <ul className="mt-5 space-y-2.5">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" aria-hidden />
                   <span>{f}</span>
                 </li>
               ))}
             </ul>
             {!session && (
-              <div className="mt-auto pt-4">
-                <Link href="/auth/signin" className="block">
-                  <Button className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20">Get started free</Button>
-                </Link>
+              <div className="mt-auto pt-6">
+                <Button asChild variant="secondary" className="w-full">
+                  <Link href="/auth/signin">Get started free</Link>
+                </Button>
               </div>
             )}
           </div>
 
           <OfferCards access={status === "loading" ? NO_ACCESS : access} returnTo="/pricing" />
         </div>
-        <p className="mt-10 text-center text-sm text-slate-400">
+        <p className="mt-10 text-sm text-text-muted">
           Cancel {PRICING.monthly.name} anytime from the billing portal. Refunds within 7 days on request, except a {PRICING.pass.name} you&apos;ve
-          already used. <Link href="/terms" className="underline hover:text-white">Terms</Link>
+          already used.{" "}
+          <Link href="/terms" className="underline underline-offset-4 hover:text-text">
+            Terms
+          </Link>
         </p>
       </main>
       <SiteFooter />
