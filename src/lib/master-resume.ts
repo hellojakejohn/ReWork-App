@@ -142,7 +142,7 @@ export function readSkillGroups(value: unknown): ParsedSkillGroup[] {
 }
 
 function splitDates(value: string): [string, string] {
-  const [a = '', b = ''] = value.split(/\s+[-–—]\s+|\s+to\s+/i)
+  const [a = '', b = ''] = value.split(/\s+[-\u2013\u2014]\s+|\s+to\s+/i)
   return [a.trim(), b.trim()]
 }
 
