@@ -113,7 +113,9 @@ export async function syncSubscription(
 
 /** A paid pass checkout: add 30 days, stacked after any pass still running. */
 export async function grantPassFromCheckout(stripe: Stripe, session: Stripe.Checkout.Session): Promise<void> {
-  if (session.payment_status !== 'paid') return // async methods finish via async_payment_succeeded
+  // Async methods finish via async_payment_succeeded. A 100% promo code completes as
+  // no_payment_required, which still grants the pass.
+  if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') return
 
   const customerId = stripeId(session.customer)
   const userId = await resolveUserId({
@@ -164,7 +166,21 @@ export async function refundPassFromCharge(stripe: Stripe, charge: Stripe.Charge
     console.log(`[stripe] charge ${charge.id} partially refunded; leaving entitlements as-is`)
     return
   }
-  const paymentIntentId = stripeId(charge.payment_intent)
+  await revokePassForPayment(stripe, stripeId(charge.payment_intent))
+}
+
+/** A dispute opened on a pass payment: stop the pass now, same as a refund. */
+export async function revokePassForDispute(stripe: Stripe, dispute: Stripe.Dispute): Promise<void> {
+  let paymentIntentId = stripeId(dispute.payment_intent)
+  if (!paymentIntentId) {
+    const chargeId = stripeId(dispute.charge)
+    if (chargeId) paymentIntentId = stripeId((await stripe.charges.retrieve(chargeId)).payment_intent)
+  }
+  console.warn(`[stripe] dispute ${dispute.id} (${dispute.reason}) on payment ${paymentIntentId}`)
+  await revokePassForPayment(stripe, paymentIntentId)
+}
+
+async function revokePassForPayment(stripe: Stripe, paymentIntentId: string | null): Promise<void> {
   if (!paymentIntentId) return
 
   const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 })
@@ -201,4 +217,9 @@ export function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   const fromParent = invoice.parent?.subscription_details?.subscription
   const legacy = (invoice as unknown as { subscription?: string | { id: string } | null }).subscription
   return stripeId(fromParent ?? legacy ?? null)
+}
+
+/** The customer was deleted in Stripe: forget the id so checkout makes a new one. */
+export async function forgetCustomer(customerId: string): Promise<void> {
+  await prisma.user.updateMany({ where: { stripeCustomerId: customerId }, data: { stripeCustomerId: null } })
 }
