@@ -147,6 +147,10 @@ async function structured<T>(options: EvidenceOptions, name: string, schema: obj
     return result.data
   } catch (error) {
     if (error instanceof AIOutputError) {
+      if (error.reason === 'refusal') {
+        // Retrying asks the same thing again: say so instead of inviting it.
+        throw new EvidenceError(error.message, 422, "The AI declined to work on this bullet. Try a different bullet, or edit this one yourself.", 'invalid_output')
+      }
       throw new EvidenceError(error.message, 502, 'Something went wrong. Please try again.', 'invalid_output')
     }
     const classified = classifyAIError(error, 'The evidence interview')
@@ -274,7 +278,8 @@ RULES:
 1. Use the candidate's numbers exactly as given (you may write "about"/"roughly" if they did). Never add a number, tool, employer, or outcome they didn't state.
 2. Start with a strong action verb. One line, two at most. Past tense unless the original is present tense.
 3. Keep every fact from the original bullet.
-4. Return every id exactly once.`
+4. Return every id exactly once.
+5. Punctuation: no em-dashes. Use commas, colons or periods.`
 }
 
 /**

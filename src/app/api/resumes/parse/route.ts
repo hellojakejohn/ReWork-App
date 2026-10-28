@@ -90,6 +90,9 @@ export async function POST(request: NextRequest) {
       if (!(value instanceof File)) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
       file = value
       if (file.size > INPUT_LIMITS.resumeFileBytes) return NextResponse.json({ error: INPUT_LIMIT_MESSAGES.resumeFile }, { status: 413 })
+      if (file.size === 0) {
+        return NextResponse.json({ error: 'That file is empty. Export it again, or paste your resume text instead.' }, { status: 400 })
+      }
       // Trust the bytes, not the file name or MIME type.
       const buffer = Buffer.from(await file.arrayBuffer())
       const kind = detectResumeKind(buffer)

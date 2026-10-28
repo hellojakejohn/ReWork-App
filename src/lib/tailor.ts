@@ -239,7 +239,8 @@ RULES (all mandatory):
 8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume.
 9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"). You may drop irrelevant ones. The resume's grouping is kept for you.
 10. Certifications are facts: mention them in the summary or bullets only if relevant, word for word, never invent one.
-11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.`
+11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.
+12. Punctuation: no em-dashes (recruiters read them as AI writing). Use commas, colons or periods.`
 
 export interface TailorJob {
   title: string

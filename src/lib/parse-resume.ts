@@ -14,7 +14,7 @@ import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
 import { taskRoute } from '@/lib/ai/routing'
 import { validateParsedResume } from '@/lib/parse-validate'
-import { cleanSourceText, extractDocxText, extractPdfText } from '@/lib/resume-source-text'
+import { cleanSourceText, extractDocxText, extractPdfText, LINKS_HEADER, UnreadableFileError } from '@/lib/resume-source-text'
 import type { ParseResult, ParsedResume } from '@/types/parsed-resume'
 
 /** The configured parse model (AI_PARSE, else the default routing). */
@@ -147,7 +147,8 @@ async function sourceTextFor(input: ParseInput): Promise<string> {
     return cleanSourceText(input.text)
   } catch (error) {
     console.error('[parse-resume] text extraction failed:', error)
-    throw new ResumeParseError(`Text extraction failed: ${String((error as Error)?.message)}`, 422, PARSE_FAILED_MESSAGE, 'unreadable_file')
+    const known = error instanceof UnreadableFileError ? error.userMessage : undefined
+    throw new ResumeParseError(`Text extraction failed: ${String((error as Error)?.message)}`, 422, known ?? PARSE_FAILED_MESSAGE, 'unreadable_file')
   }
 }
 
@@ -158,7 +159,9 @@ export interface ParseOptions extends AICallOptions {
 export async function parseResume(input: ParseInput, options: ParseOptions = {}): Promise<ParseResult> {
   options.onStage?.('extracting')
   const sourceText = await sourceTextFor(input)
-  if (sourceText.replace(/\s/g, '').length < MIN_SOURCE_CHARS) {
+  // Link annotations don't count: a scanned page with three links has no resume text.
+  const pageText = sourceText.split(LINKS_HEADER.trim())[0]
+  if (pageText.replace(/\s/g, '').length < MIN_SOURCE_CHARS) {
     throw new ResumeParseError(
       `Source text too short (${sourceText.length} chars)`,
       422,
@@ -189,6 +192,9 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
     })
   } catch (error) {
     if (error instanceof AIOutputError) {
+      if (error.reason === 'refusal') {
+        throw new ResumeParseError('Parse model refused', 422, "The AI declined to read this file. Paste your resume text instead, or try a different file.", 'invalid_output')
+      }
       throw new ResumeParseError(`Parse model returned no usable output (${error.reason})`, 502, PARSE_FAILED_MESSAGE, 'invalid_output')
     }
     const classified = classifyAIError(error, 'Resume reading')

@@ -6,6 +6,7 @@
 //
 //   Pro Monthly  one cap per subscription period (~$9.99 at $15), resets with the period
 //   Job Hunt Pass ONE cap for the whole 90-day window (~$19.50 at $29), not per 30 days
+//   Burn          ONE cap per 30-day burn window (~$10.50 at $15: no Stripe cut)
 //   Comp          like Pro Monthly, per calendar month
 //   FREE          flat backstop per calendar month (FREE_AI_CAP_USD in plans.ts, $0.50)
 //
@@ -14,7 +15,7 @@
 //   75% to 100%  paid calls run on AI_FREE_TIER (Sonnet 5.5), with a small banner
 //                (AI_PRO_ALWAYS_OPUS=true turns this step off)
 //   100%         AI pauses until the reset date; downloads, tracker, editing still work
-import { CONTACT_EMAIL, FREE_AI_CAP_USD, PASS_PRICE_USD, PRO_MONTHLY_PRICE_USD } from '@/lib/plans'
+import { BURN_PRO_USD, CONTACT_EMAIL, FREE_AI_CAP_USD, PASS_PRICE_USD, PRO_MONTHLY_PRICE_USD } from '@/lib/plans'
 import { isLive, type EntitlementLike, type EntitlementSource } from '@/lib/entitlement-rules'
 
 export const STRIPE_PERCENT = 0.029
@@ -33,7 +34,7 @@ export function netRevenueUsd(priceUsd: number): number {
   return Math.round((priceUsd - (priceUsd * STRIPE_PERCENT + STRIPE_FIXED_USD)) * 100) / 100
 }
 
-export type CapPeriodKind = 'monthly' | 'pass' | 'comp' | 'free'
+export type CapPeriodKind = 'monthly' | 'pass' | 'burn' | 'comp' | 'free'
 
 export interface CapPeriod {
   kind: CapPeriodKind
@@ -81,6 +82,14 @@ export function capPeriod(rows: Row[], now: Date): CapPeriod {
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0]
   if (pass?.endsAt) {
     return { kind: 'pass', start: pass.startsAt, resetAt: pass.endsAt, netRevenueUsd: netRevenueUsd(PASS_PRICE_USD) }
+  }
+
+  // Burn rows work like passes: each is its own window, worth what was burned.
+  const burn = live
+    .filter((r) => r.source === 'TOKEN_PAYMENT' && r.endsAt)
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0]
+  if (burn?.endsAt) {
+    return { kind: 'burn', start: burn.startsAt, resetAt: burn.endsAt, netRevenueUsd: BURN_PRO_USD }
   }
 
   if (sub || live.length > 0) {

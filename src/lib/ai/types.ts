@@ -54,6 +54,8 @@ export interface AdapterResult {
   stop: 'stop' | 'length' | 'refusal'
   model: string
   usage: TokenUsage
+  /** Billed cost when the attempts used different models (a server-side refusal fallback). */
+  costUsd?: number
 }
 
 export interface AdapterRequest {
@@ -66,6 +68,8 @@ export interface AdapterRequest {
   maxTokens: number
   temperature?: number
   effort?: 'low' | 'medium' | 'high'
+  /** Per-request timeout from the route's deadline; set, the SDK doesn't retry. */
+  timeoutMs?: number
 }
 
 export interface Adapter {

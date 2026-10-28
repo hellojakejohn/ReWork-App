@@ -1,8 +1,8 @@
 // Server-side entitlement access. The ONLY place that decides "is this user Pro".
 //
 // Every way of paying for Pro writes Entitlement rows; nothing else needs to change.
-// A future crypto path (TOKEN_HOLD: holding a token, TOKEN_PAYMENT: paying in one) would
-// add a verifier that upserts rows with those sources and calls refreshPlanMirror().
+// Burning $REWORK writes TOKEN_PAYMENT rows (src/lib/token-burn.ts). TOKEN_HOLD is
+// reserved and unused.
 // Feature code only ever calls getAccess() / reads session.user.access.
 
 import type { Prisma } from '@prisma/client'

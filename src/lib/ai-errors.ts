@@ -113,6 +113,7 @@ const unavailable = (feature: string) => `${feature} is temporarily unavailable,
  * Logs quota exhaustion and auth failures at error level with a greppable tag.
  */
 const BUSY = 'The AI service is busy right now. Please try again in a minute.'
+const INFLIGHT = 'You already have AI work running in another tab. Let it finish, then try again.'
 
 export function classifyAIError(error: unknown, feature = 'Tailoring'): ClassifiedAIError {
   const status = statusOf(error)
@@ -121,6 +122,10 @@ export function classifyAIError(error: unknown, feature = 'Tailoring'): Classifi
   const provider = providerOf(error)
   const tag = (what: string) => `[${provider.toUpperCase()}_${what}]`
 
+  // src/lib/ai-inflight.ts (matched by name so this file stays free of server imports).
+  if ((error as { name?: string } | null)?.name === 'AIInflightError') {
+    return { kind: 'rate_limit', status: 429, userMessage: INFLIGHT, retryable: true }
+  }
   if (error instanceof AIOutputError) {
     console.error(tag('INVALID_OUTPUT'), { feature, reason: error.reason, model: error.model, message })
     return { kind: 'invalid_output', status: 502, userMessage: `${feature} failed. Please try again.`, retryable: true }

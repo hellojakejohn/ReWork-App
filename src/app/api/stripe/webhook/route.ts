@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { getStripe, stripeId } from '@/lib/stripe'
+import { getStripe, stripeId, stripeKeyIsLive } from '@/lib/stripe'
 import {
+  forgetCustomer,
   grantPassFromCheckout,
   invoiceSubscriptionId,
   refundPassFromCharge,
+  revokePassForDispute,
   syncSubscription,
 } from '@/lib/stripe-sync'
 import { track } from '@/lib/track'
@@ -14,10 +16,8 @@ import { track } from '@/lib/track'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Events to enable on the Stripe webhook endpoint (see PR description):
-//   checkout.session.completed, checkout.session.async_payment_succeeded,
-//   customer.subscription.created, customer.subscription.updated, customer.subscription.deleted,
-//   invoice.payment_failed, invoice.paid, charge.refunded
+// Events to enable on the Stripe webhook endpoint: WEBHOOK_EVENTS in src/lib/stripe.ts
+// (/api/health checks the live endpoint against it).
 
 export async function POST(request: NextRequest) {
   const stripe = getStripe()
@@ -40,6 +40,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
+  // Signing secrets are per mode, so this only trips on a misconfigured endpoint.
+  if (event.livemode !== stripeKeyIsLive()) {
+    console.warn(`[stripe] ignoring ${event.livemode ? 'live' : 'test'} event ${event.id} with a ${stripeKeyIsLive() ? 'live' : 'test'} key`)
+    return NextResponse.json({ received: true, ignored: 'mode mismatch' })
+  }
+
   const seen = await prisma.stripeEvent.findUnique({ where: { id: event.id }, select: { id: true } })
   if (seen) {
     return NextResponse.json({ received: true, duplicate: true })
@@ -50,6 +56,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // 500 makes Stripe retry. Handlers are idempotent, so a partial run is safe to repeat.
     console.error(`Error processing webhook ${event.type} ${event.id}:`, error)
+    await track('server_error', { feature: 'stripe_webhook', kind: event.type, message: String((error as Error)?.message ?? '').slice(0, 200) })
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 
@@ -108,6 +115,16 @@ async function handleEvent(stripe: Stripe, event: Stripe.Event): Promise<void> {
 
     case 'charge.refunded': {
       await refundPassFromCharge(stripe, event.data.object)
+      return
+    }
+
+    case 'charge.dispute.created': {
+      await revokePassForDispute(stripe, event.data.object)
+      return
+    }
+
+    case 'customer.deleted': {
+      await forgetCustomer(event.data.object.id)
       return
     }
 

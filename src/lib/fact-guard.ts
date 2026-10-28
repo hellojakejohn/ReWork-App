@@ -3,8 +3,15 @@
 // The model is told not to fabricate, but we don't trust that. After it returns we:
 // - restore company/title/dates (and education/project facts) to the master values
 // - restore entries the model dropped, discard entries it invented
-// - revert any bullet/summary that introduces a number not present in the master
+// - revert any bullet that introduces a number not in its own role or project (or the
+//   user's evidence answers), so a 30% from one job can't be pasted onto another; the
+//   summary may use any number in the resume
+// - revert any bullet/summary with a quantity word ("doubled", "twenty", "a dozen") the
+//   source doesn't have, and any bullet naming something (an employer, tool, title or
+//   certification) that appears nowhere in the resume
 // - drop skills that don't appear anywhere in the master
+//
+// A false positive only reverts to the user's own bullet, so these lean strict.
 import type {
   FactGuardResult,
   FactGuardWarning,
@@ -24,11 +31,71 @@ function sameText(a: string, b: string): boolean {
   return normalizeSpace(a).toLowerCase() === normalizeSpace(b).toLowerCase()
 }
 
-/** Numbers (as written) in `text` that don't appear anywhere in the master. */
+/** Numbers (as written) in `text` that don't appear in the allowed set. */
 function newNumbers(text: string, masterNumbers: Set<string>): string[] {
   return extractNumbers(text)
     .filter((n) => !masterNumbers.has(n.token))
     .map((n) => n.raw)
+}
+
+// Claims of quantity without digits. "One" is left out: it's mostly not a metric.
+const QUANTITY_RE =
+  /\b(?:doubl(?:ed|ing)|tripl(?:ed|ing)|quadrupl(?:ed|ing)|halv(?:ed|ing)|twice|thrice|dozens?|(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion)(?:s|fold)?)\b/gi
+
+/** Quantity words in `text` that `source` doesn't use. */
+function newQuantityWords(text: string, source: string): string[] {
+  // "1.2 million" is a number (extractNumbers reads it); only bare words count here.
+  const prose = text.replace(/\d\s?(?:thousand|million|billion)s?\b/gi, ' ')
+  const found = new Set((prose.match(QUANTITY_RE) || []).map((w) => w.toLowerCase()))
+  return [...found].filter((w) => !containsTerm(source, w))
+}
+
+/** Numbers and quantity words a passage introduces, against its own scope. */
+function introducedClaims(text: string, scope: { numbers: Set<string>; text: string }): string[] {
+  return [...newNumbers(text, scope.numbers), ...newQuantityWords(text, scope.text)]
+}
+
+/** Is `term` (or its singular/plural) anywhere in the master? */
+function inMaster(masterText: string, term: string): boolean {
+  if (containsTerm(masterText, term)) return true
+  const singular = term.replace(/(?:'s|s)$/i, '')
+  return singular !== term && singular.length > 1 && (containsTerm(masterText, singular) || containsTerm(masterText, `${singular}s`))
+}
+
+// Units and business shorthand that name nothing about the person: never a new claim.
+const GENERIC_CAPS = new Set([
+  'sku', 'skus', 'kpi', 'kpis', 'roi', 'yoy', 'qoq', 'mom', 'b2b', 'b2c', 'sla', 'slas', 'okr', 'okrs', 'fte', 'ftes',
+  'usd', 'us', 'usa', 'uk', 'eu', 'q1', 'q2', 'q3', 'q4', 'h1', 'h2', 'am', 'pm', 'api', 'apis', 'ui', 'ux', 'it', 'hr',
+])
+
+/**
+ * Capitalized words and acronyms (not starting a sentence) that appear nowhere in the
+ * master: "Sysco", "Tableau", "ServSafe", "General Manager".
+ */
+export function newNames(text: string, masterText: string): string[] {
+  const out = new Set<string>()
+  for (const sentence of text.split(/(?<=[.!?;:])\s+|\s+[-\u2013\u2014]\s+/)) {
+    const tokens = sentence.split(/\s+/)
+    for (let i = 1; i < tokens.length; i++) {
+      // "Foundry-tested" and "Excel/Sheets" are checked part by part.
+      for (const part of tokens[i].split(/[-/]/)) {
+        const word = part.replace(/^[^A-Za-z0-9]+/, '').replace(/[^A-Za-z0-9+#]+$/, '')
+        if (word.length < 2 || !/^[A-Z]/.test(word) || GENERIC_CAPS.has(word.toLowerCase())) continue
+        if (!inMaster(masterText, word)) out.add(word)
+      }
+    }
+  }
+  return [...out]
+}
+
+interface Scope {
+  numbers: Set<string>
+  text: string
+}
+
+function scopeOf(parts: string[]): Scope {
+  const text = parts.filter(Boolean).join('\n')
+  return { numbers: new Set(extractNumberTokens(text)), text }
 }
 
 function words(text: string): Set<string> {
@@ -56,34 +123,51 @@ export function closestMasterBullet(text: string, candidates: string[]): string 
 function guardBullets(
   bullets: TailoredBullet[],
   masterBullets: string[],
-  masterNumbers: Set<string>,
+  scope: Scope,
+  masterText: string,
   section: 'roles' | 'projects',
   id: string,
   warnings: FactGuardWarning[]
 ): TailoredBullet[] {
   const cleaned: TailoredBullet[] = []
-  for (const bullet of bullets) {
+  // Never more bullets than the master entry has: extra ones are made up.
+  const kept = bullets.slice(0, Math.max(masterBullets.length, 1))
+  for (const bullet of kept) {
     const text = normalizeSpace(bullet.text || '')
     if (!text) continue
-    const introduced = newNumbers(text, masterNumbers)
-    if (introduced.length === 0) {
+    const introduced = introducedClaims(text, scope)
+    const names = introduced.length ? [] : newNames(text, masterText)
+    if (introduced.length === 0 && names.length === 0) {
       cleaned.push({ text, reason: bullet.reason || '' })
       continue
     }
     const original = closestMasterBullet(text, masterBullets)
     const alreadyUsed = original !== undefined && cleaned.some((b) => b.text === original)
-    warnings.push({
-      type: 'new_number',
-      section,
-      id,
-      message: `Bullet introduced numbers not in your resume (${introduced.join(', ')}); ${
-        original && !alreadyUsed ? 'reverted to your original bullet' : 'removed'
-      }.`,
-      attempted: text,
-      restored: original && !alreadyUsed ? original : undefined,
-    })
+    const outcome = original && !alreadyUsed ? 'reverted to your original bullet' : 'removed'
+    warnings.push(
+      introduced.length
+        ? {
+            type: 'new_number',
+            section,
+            id,
+            message: `Bullet introduced numbers not in this part of your resume (${introduced.join(', ')}); ${outcome}.`,
+            attempted: text,
+            restored: original && !alreadyUsed ? original : undefined,
+          }
+        : {
+            type: 'new_claim',
+            section,
+            id,
+            message: `Bullet named something not in your resume (${names.join(', ')}); ${outcome}.`,
+            attempted: text,
+            restored: original && !alreadyUsed ? original : undefined,
+          }
+    )
     if (original && !alreadyUsed) {
-      cleaned.push({ text: original, reason: 'Reverted: rewrite introduced a number not in your resume' })
+      cleaned.push({
+        text: original,
+        reason: introduced.length ? 'Reverted: rewrite introduced a number not in your resume' : 'Reverted: rewrite named something not in your resume',
+      })
     }
   }
   if (cleaned.length === 0 && masterBullets.length > 0) {
@@ -114,7 +198,7 @@ function restoreFact(
   return master
 }
 
-function guardRoles(master: TailorInput, output: TailorOutput, masterNumbers: Set<string>, warnings: FactGuardWarning[]) {
+function guardRoles(master: TailorInput, output: TailorOutput, masterText: string, warnings: FactGuardWarning[]) {
   const outputById = new Map<string, TailorOutputRole>()
   for (const role of output.roles || []) {
     if (!master.roles.some((m) => m.id === role.id)) {
@@ -157,7 +241,7 @@ function guardRoles(master: TailorInput, output: TailorOutput, masterNumbers: Se
       company: restoreFact('company', role.company, m.company, 'roles', m.id, label, warnings),
       startDate: restoreFact('start date', role.startDate, m.startDate, 'roles', m.id, label, warnings),
       endDate: restoreFact('end date', role.endDate, m.endDate, 'roles', m.id, label, warnings),
-      bullets: guardBullets(role.bullets || [], m.bullets, masterNumbers, 'roles', m.id, warnings),
+      bullets: guardBullets(role.bullets || [], m.bullets, scopeOf([...m.bullets, ...(master.evidence ?? [])]), masterText, 'roles', m.id, warnings),
     }
   })
 }
@@ -200,7 +284,7 @@ function guardEducation(master: TailorInput, output: TailorOutput, warnings: Fac
   })
 }
 
-function guardProjects(master: TailorInput, output: TailorOutput, masterNumbers: Set<string>, warnings: FactGuardWarning[]) {
+function guardProjects(master: TailorInput, output: TailorOutput, masterText: string, warnings: FactGuardWarning[]) {
   const outputById = new Map<string, TailorOutputProject>()
   for (const project of output.projects || []) {
     if (!master.projects.some((m) => m.id === project.id)) {
@@ -234,8 +318,9 @@ function guardProjects(master: TailorInput, output: TailorOutput, masterNumbers:
       }
     }
 
+    const scope = scopeOf([m.description, ...m.technologies, ...m.bullets, ...(master.evidence ?? [])])
     let description = normalizeSpace(project.description || '') || m.description
-    const introduced = newNumbers(description, masterNumbers)
+    const introduced = introducedClaims(description, scope)
     if (introduced.length > 0) {
       warnings.push({
         type: 'new_number',
@@ -252,15 +337,15 @@ function guardProjects(master: TailorInput, output: TailorOutput, masterNumbers:
       id: m.id,
       name: restoreFact('name', project.name, m.name, 'projects', m.id, m.name, warnings),
       description,
-      bullets: guardBullets(project.bullets || [], m.bullets, masterNumbers, 'projects', m.id, warnings),
+      bullets: guardBullets(project.bullets || [], m.bullets, scope, masterText, 'projects', m.id, warnings),
     }
   })
 }
 
-function guardSummary(master: TailorInput, output: TailorOutput, masterNumbers: Set<string>, warnings: FactGuardWarning[]) {
+function guardSummary(master: TailorInput, output: TailorOutput, masterText: string, warnings: FactGuardWarning[]) {
   const summary = normalizeSpace(output.summary || '')
   if (!summary) return master.summary
-  const introduced = newNumbers(summary, masterNumbers)
+  const introduced = introducedClaims(summary, scopeOf([masterText]))
   if (introduced.length === 0) return summary
   warnings.push({
     type: 'new_number',
@@ -312,14 +397,13 @@ function cleanKeywords(keywords: string[]): string[] {
 export function factGuard(master: TailorInput, output: TailorOutput): FactGuardResult {
   const warnings: FactGuardWarning[] = []
   const masterText = tailorInputText(master)
-  const masterNumbers = new Set(extractNumberTokens(masterText))
 
   const cleaned: TailorOutput = {
     targetKeywords: cleanKeywords(output.targetKeywords),
-    summary: guardSummary(master, output, masterNumbers, warnings),
-    roles: guardRoles(master, output, masterNumbers, warnings),
+    summary: guardSummary(master, output, masterText, warnings),
+    roles: guardRoles(master, output, masterText, warnings),
     education: guardEducation(master, output, warnings),
-    projects: guardProjects(master, output, masterNumbers, warnings),
+    projects: guardProjects(master, output, masterText, warnings),
     skills: guardSkills(master, output, masterText, warnings),
   }
 

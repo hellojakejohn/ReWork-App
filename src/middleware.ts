@@ -14,7 +14,28 @@ function hasSessionCookie(request: NextRequest) {
   return SESSION_COOKIES.some((name) => !!request.cookies.get(name)?.value)
 }
 
+// Server-to-server callers: no browser, no cookies, their own auth (signature, secret).
+const NO_ORIGIN_CHECK = ['/api/stripe/webhook', '/api/cron/', '/api/keepalive', '/api/csp-report']
+
+/**
+ * A state-changing API request from a browser on another site. SameSite=Lax cookies
+ * already stop most cross-site writes, but any page on a sibling *.hellojakejohn.com
+ * subdomain counts as same-site, so check the Origin too. No Origin (curl, server
+ * calls) carries no victim's cookies, so it isn't CSRF.
+ */
+function isCrossOriginWrite(request: NextRequest): boolean {
+  const { pathname } = request.nextUrl
+  if (!pathname.startsWith('/api/') || ['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return false
+  if (NO_ORIGIN_CHECK.some((p) => pathname.startsWith(p))) return false
+  const origin = request.headers.get('origin')
+  return !!origin && origin !== request.nextUrl.origin
+}
+
 export function middleware(request: NextRequest) {
+  if (isCrossOriginWrite(request)) {
+    return NextResponse.json({ error: 'Cross-origin request refused' }, { status: 403 })
+  }
+
   const hasSession = hasSessionCookie(request)
   const isLandingPage = request.nextUrl.pathname === '/'
   const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard')

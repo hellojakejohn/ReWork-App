@@ -5,9 +5,12 @@ import type { NeedsReviewItem, ParsedResume } from '@/types/parsed-resume'
 
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
-/** Lowercase, alphanumerics only. Survives line breaks, spacing and punctuation differences. */
+/**
+ * Lowercase, alphanumerics only. Survives line breaks, spacing and punctuation differences,
+ * and decomposed accents (macOS and some DOCX files store "e" + combining accent).
+ */
 export function compact(value: string): string {
-  return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+  return value.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
 }
 
 /** URL without protocol, "www.", trailing slash or whitespace, lowercased. */
@@ -27,7 +30,8 @@ export class SourceIndex {
   private readonly urlText: string
   private readonly phoneRuns: string[]
 
-  constructor(source: string) {
+  constructor(raw: string) {
+    const source = raw.normalize('NFKC')
     this.lower = source.toLowerCase()
     this.compacted = compact(source)
     this.urlText = source

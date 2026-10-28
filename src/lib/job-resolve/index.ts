@@ -78,6 +78,15 @@ export function isJsOnlySite(url: URL): boolean {
   return JS_ONLY_SITES.some((re) => re.test(url.hostname.toLowerCase()))
 }
 
+const JOB_SIGNALS =
+  /\b(responsibilities|requirements|qualifications|duties|what you(?:'|\u2019)ll do|who you are|you will|we(?:'|\u2019)re looking for|nice to have|about the (?:role|job|position)|benefits|salary|compensation|full[- ]time|part[- ]time|years of experience)\b/gi
+
+/** At least two different job-ad phrases ("responsibilities", "qualifications", "benefits"...). */
+export function looksLikeJobAd(text: string): boolean {
+  const found = new Set((text.match(JOB_SIGNALS) || []).map((m) => m.toLowerCase()))
+  return found.size >= 2
+}
+
 export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<ResolveResult> {
   const url = new URL(rawUrl)
 
@@ -125,11 +134,13 @@ export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<Res
       if (!extracted) return needsPaste('not_a_job')
       return { ok: true, job: { ...extracted, url: url.href, source: 'page' } }
     } catch (error) {
-      console.error('[job-resolve] model extraction failed, using page text as-is:', (error as Error)?.message)
+      console.error('[job-resolve] model extraction failed, using page text if it reads like a job:', (error as Error)?.message)
     }
   }
 
-  // No model available: hand back what the page says and let the user edit it.
+  // No model (not configured, AI paused, or it failed): hand back what the page says, but
+  // only if it reads like a job ad. A news article or a 404 page is not "the job".
+  if (!looksLikeJobAd(meta.mainText)) return needsPaste('not_a_job')
   return {
     ok: true,
     job: {

@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { masterToParsed, parsedToMaster } from '@/lib/master-resume'
 import { toMasterDTO } from '@/lib/master-dto'
+import { recruiterText } from '@/lib/recruiter-text'
+import { INPUT_LIMITS } from '@/lib/plans'
 
 async function findOwned(resumeId: string, userId: string) {
   return prisma.resume.findFirst({ where: { id: resumeId, userId, isActive: true } })
@@ -68,6 +70,13 @@ export async function PATCH(
   // Round-trip through the stored shape so whatever the client sent is normalized.
   const resume = masterToParsed(parsedToMaster(body.resume as never))
   const master = parsedToMaster(resume)
+  // The master goes into every tailor, letter and interview prompt: same cap as a pasted resume.
+  if (recruiterText(master).length > INPUT_LIMITS.resumeTextChars) {
+    return NextResponse.json(
+      { error: `Your resume is over ${INPUT_LIMITS.resumeTextChars.toLocaleString('en-US')} characters, longer than we can tailor. Shorten it and save again.` },
+      { status: 413 }
+    )
+  }
   const original = (existing.originalContent ?? {}) as Record<string, unknown>
   const parse = (original.parse ?? {}) as Record<string, unknown>
 

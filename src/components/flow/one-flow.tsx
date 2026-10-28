@@ -143,7 +143,7 @@ export function OneFlow() {
   }, [])
 
   useEffect(() => {
-    document.title = "ReWork"
+    document.title = "rework"
     void load()
   }, [load])
 

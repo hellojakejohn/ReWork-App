@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cronAuthorized } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -6,8 +7,7 @@ export const dynamic = 'force-dynamic'
 // Daily Vercel cron pings this so the free Supabase DB never pauses.
 export async function GET(req: Request) {
   // Fail closed: without CRON_SECRET nobody can call this.
-  const secret = process.env.CRON_SECRET?.trim()
-  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
   try {

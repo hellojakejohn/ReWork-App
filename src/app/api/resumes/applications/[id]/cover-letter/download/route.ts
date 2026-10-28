@@ -17,7 +17,8 @@ import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
 
-const fileSafe = (s: string) => s.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
+// "José Núñez" -> Jose_Nunez: drop accents before stripping, not the letters.
+const fileSafe = (s: string) => s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)

@@ -254,10 +254,12 @@ export async function POST(
       retailor: !!existingApplication,
       ...usageProps(usage())
     }, userId);
+    // Bookkeeping only: the application is saved and counted, so a failure here must not
+    // turn a finished tailor into an error.
     await prisma.resume.update({
       where: { id: resumeId },
       data: { lastOptimized: new Date() }
-    });
+    }).catch((error) => console.error('[tailor] lastOptimized update failed:', error));
 
     send({
       type: 'done',

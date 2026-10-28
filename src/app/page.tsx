@@ -151,7 +151,7 @@ export default function HomePage() {
             <span className="rounded-full bg-sage px-2.5 py-0.5 text-xs font-semibold text-text">Example</span>
           </div>
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-text-secondary">
-            {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already on the left.
+            {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already in the original resume.
           </p>
 
           <div className="mt-10 overflow-hidden rounded-panel bg-surface">
@@ -192,7 +192,7 @@ export default function HomePage() {
               <p className="text-sm leading-relaxed text-text-secondary">{FREE_PLAN_SHORT}</p>
             </div>
             <div className="flex flex-col gap-2.5 rounded-card bg-inverse p-6 text-inverse-fg sm:p-7">
-              <h3 className="text-sm font-bold opacity-90">{PRICING.pass.name} · most popular</h3>
+              <h3 className="text-sm font-bold opacity-90">{PRICING.pass.name} · best value</h3>
               <p className="font-serif text-4xl">
                 {PRICING.pass.amount} <span className="text-lg opacity-80">once</span>
               </p>

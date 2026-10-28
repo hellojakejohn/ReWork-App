@@ -17,6 +17,7 @@ const CSP_REPORT_ONLY = [
   "base-uri 'self'",
   "form-action 'self' https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
   "frame-ancestors 'none'",
+  'report-uri /api/csp-report',
 ].join('; ');
 
 const SECURITY_HEADERS = [
@@ -34,6 +35,10 @@ const config: NextConfig = {
   eslint: {
     // Lint errors fail the build. Warnings don't.
     ignoreDuringBuilds: false,
+  },
+  // The PDF fonts are read from disk at render time (src/lib/resume-pdf.tsx).
+  outputFileTracingIncludes: {
+    '/api/resumes/**/download': ['./src/lib/fonts/**'],
   },
   serverExternalPackages: [
     'sharp',

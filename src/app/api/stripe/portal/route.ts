@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { appBaseUrl, billingUnavailable, getStripe, safeReturnPath } from '@/lib/stripe'
+import { appBaseUrl, billingUnavailable, getStripe, isMissingResource, safeReturnPath } from '@/lib/stripe'
 
 // POST { returnTo?: '/some/path' } -> { url } for the Stripe Customer Portal.
 export async function POST(request: NextRequest) {
@@ -30,10 +30,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No billing account yet. Buy Pro first.' }, { status: 400 })
     }
 
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
-      return_url: `${appBaseUrl(request)}${safeReturnPath(request, body.returnTo, '/pricing')}`,
-    })
+    let portalSession
+    try {
+      portalSession = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${appBaseUrl(request)}${safeReturnPath(request, body.returnTo, '/pricing')}`,
+      })
+    } catch (error) {
+      // A test-mode or deleted customer id: forget it so the next checkout makes a new one.
+      if (!isMissingResource(error)) throw error
+      await prisma.user.update({ where: { id: session.user.id }, data: { stripeCustomerId: null } })
+      return NextResponse.json({ error: 'No billing account yet. Buy Pro first.' }, { status: 400 })
+    }
 
     return NextResponse.json({ url: portalSession.url })
   } catch (error) {

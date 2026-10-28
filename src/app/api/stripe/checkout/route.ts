@@ -11,6 +11,7 @@ import {
   appBaseUrl,
   billingUnavailable,
   getStripe,
+  isMissingResource,
   safeReturnPath,
   stripePriceId,
 } from '@/lib/stripe'
@@ -51,9 +52,17 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     })
     let hasSubscription = !!subRow
-    if (!hasSubscription && user.stripeCustomerId) {
-      const subs = await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: 'all', limit: 10 })
-      hasSubscription = subs.data.some((s) => BLOCKING_SUB_STATUSES.has(s.status))
+    let customerId = user.stripeCustomerId
+    if (!hasSubscription && customerId) {
+      try {
+        const subs = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 10 })
+        hasSubscription = subs.data.some((s) => BLOCKING_SUB_STATUSES.has(s.status))
+      } catch (error) {
+        // A test-mode or deleted customer id: forget it and make a fresh customer below.
+        if (!isMissingResource(error)) throw error
+        await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: null } })
+        customerId = null
+      }
     }
 
     if (hasSubscription) {
@@ -74,11 +83,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let customerId = user.stripeCustomerId
     if (!customerId) {
       const customer = await stripe.customers.create(
         { email: user.email, metadata: { userId: user.id } },
-        { idempotencyKey: `customer-create-${user.id}` }
+        // Same key for concurrent first checkouts (one customer); a new key after a stale id.
+        { idempotencyKey: `customer-create-${user.id}${user.stripeCustomerId ? `-after-${user.stripeCustomerId}` : ''}` }
       )
       customerId = customer.id
       await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: customerId } })
@@ -101,6 +110,8 @@ export async function POST(request: NextRequest) {
       metadata,
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
+      // Stripe's minimum. Narrows the window for two open Pro checkouts both being paid.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       success_url: `${base}/dashboard?checkout=success&offer=${offer.id}`,
       cancel_url: `${base}${cancelPath}`,
       ...(offer.mode === 'subscription'

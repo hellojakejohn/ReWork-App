@@ -9,7 +9,7 @@
 // (src/lib/ai-errors.ts) can name it; unusable answers throw AIOutputError.
 import Ajv, { type ValidateFunction } from 'ajv'
 import { AIOutputError } from '@/lib/ai-errors'
-import { currentRouting, recordUsage, usageRecord } from '@/lib/ai-usage'
+import { currentDeadline, currentRouting, recordUsage, takeCallSlot, usageRecord } from '@/lib/ai-usage'
 import { costUsd, modelInfo, type ProviderId, type TokenUsage } from '@/lib/ai/models'
 import { resolveRoute, taskRoute } from '@/lib/ai/routing'
 import { anthropicAdapter } from '@/lib/ai/adapters/anthropic'
@@ -80,6 +80,9 @@ const add = (a: TokenUsage, b: TokenUsage): TokenUsage => ({
   cacheWriteTokens: (a.cacheWriteTokens ?? 0) + (b.cacheWriteTokens ?? 0),
 })
 
+// Below this, a call can't produce a usable answer before the route's deadline.
+const MIN_CALL_MS = 20_000
+
 export async function generateStructured<T>(req: StructuredRequest): Promise<StructuredResult<T>> {
   const route = req.route ?? resolveRoute(req.task, currentRouting())
   const adapter = ADAPTERS[route.provider]
@@ -93,6 +96,12 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
   let messages = req.messages
 
   for (let attempt = 1; attempt <= 2; attempt++) {
+    const deadline = currentDeadline()
+    const timeLeft = deadline ? deadline - Date.now() : undefined
+    if (timeLeft !== undefined && timeLeft < MIN_CALL_MS) {
+      // Not enough time left for a useful call (usually a repair after a slow first try).
+      throw Object.assign(new Error('AI call skipped: the request is out of time'), { status: 504, provider: route.provider })
+    }
     const adapterReq: AdapterRequest = {
       model: route.model,
       system: req.system,
@@ -103,9 +112,11 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
       maxTokens: req.maxTokens,
       temperature: req.temperature,
       effort: req.effort,
+      ...(timeLeft !== undefined ? { timeoutMs: timeLeft } : {}),
     }
     const callStart = Date.now()
     let result: AdapterResult
+    const releaseSlot = await takeCallSlot()
     try {
       result = await adapter.call(adapterReq, client)
     } catch (error) {
@@ -117,12 +128,15 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
         }
       }
       throw error
+    } finally {
+      await releaseSlot()
     }
     total = add(total, result.usage)
 
     const outcome: ParseOutcome<T> =
       result.stop === 'stop' && result.text.trim() ? parseAndValidate<T>(result.text, req.schema) : { ok: false, problem: result.stop }
-    recordUsage(usageRecord(route.provider, result.model, result.usage, { task: req.task, ms: Date.now() - callStart, ok: outcome.ok }))
+    const record = usageRecord(route.provider, result.model, result.usage, { task: req.task, ms: Date.now() - callStart, ok: outcome.ok })
+    recordUsage(result.costUsd !== undefined ? { ...record, costUsd: result.costUsd } : record)
 
     if (result.stop === 'refusal') throw new AIOutputError('Model refused', 'refusal', route.provider, result.model)
     if (result.stop === 'length') throw new AIOutputError('Model output truncated', 'truncated', route.provider, result.model)

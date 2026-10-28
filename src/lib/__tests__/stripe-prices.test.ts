@@ -28,7 +28,7 @@ vi.mock('@/lib/prisma', () => {
   }
 })
 
-import { checkStripePrices, isConfiguredPrice } from '@/lib/stripe'
+import { STRIPE_API_VERSION, WEBHOOK_EVENTS, checkStripePrices, checkStripeWebhook, isConfiguredPrice } from '@/lib/stripe'
 import { grantPassFromCheckout, syncSubscription } from '@/lib/stripe-sync'
 import { PRICING } from '@/lib/plans'
 
@@ -48,7 +48,7 @@ afterEach(() => {
   }
 })
 
-const price = (p: Partial<Stripe.Price>) => ({ currency: 'usd', active: true, type: 'one_time', recurring: null, unit_amount: 0, ...p })
+const price = (p: Partial<Stripe.Price>) => ({ currency: 'usd', active: true, livemode: false, type: 'one_time', recurring: null, unit_amount: 0, ...p })
 const stripeWithPrices = (prices: Record<string, ReturnType<typeof price>>) =>
   ({ prices: { retrieve: vi.fn(async (id: string) => prices[id]) } }) as unknown as Stripe
 
@@ -134,5 +134,44 @@ describe('webhook grants only configured prices', () => {
     mocks.entitlementFindUnique.mockResolvedValueOnce({ status: 'ACTIVE', pastDueAt: null } as never)
     await syncSubscription(sub('price_monthly_v2'), 'sub_1')
     expect(mocks.entitlementUpsert).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('mode and webhook checks', () => {
+  it('flags a test-mode price behind a live key', async () => {
+    const savedKey = process.env.STRIPE_SECRET_KEY
+    process.env.STRIPE_SECRET_KEY = 'sk_live_x'
+    try {
+      const result = await checkStripePrices(stripeWithPrices({ price_pass: price({ unit_amount: 2900 }) }), [PRICING.pass])
+      expect(result.pass).toMatchObject({ ok: false, detail: expect.stringContaining('test mode but the key is live') })
+    } finally {
+      if (savedKey === undefined) delete process.env.STRIPE_SECRET_KEY
+      else process.env.STRIPE_SECRET_KEY = savedKey
+    }
+  })
+
+  const withEndpoints = (data: Partial<Stripe.WebhookEndpoint>[]) =>
+    ({ webhookEndpoints: { list: vi.fn(async () => ({ data })) } }) as unknown as Stripe
+  const good = {
+    url: 'https://rework.test/api/stripe/webhook',
+    status: 'enabled',
+    enabled_events: [...WEBHOOK_EVENTS],
+    api_version: STRIPE_API_VERSION,
+    livemode: false,
+  } as Partial<Stripe.WebhookEndpoint>
+
+  it('passes for an enabled endpoint with every event on the pinned version', async () => {
+    expect(await checkStripeWebhook(withEndpoints([good]), 'https://rework.test/')).toMatchObject({ ok: true })
+  })
+
+  it('names a missing endpoint, missing events and an API version mismatch', async () => {
+    expect((await checkStripeWebhook(withEndpoints([]), 'https://rework.test')).detail).toContain('no webhook endpoint')
+    const drifted = await checkStripeWebhook(
+      withEndpoints([{ ...good, enabled_events: ['checkout.session.completed'], api_version: '2026-08-26.dahlia' }] as never),
+      'https://rework.test'
+    )
+    expect(drifted.ok).toBe(false)
+    expect(drifted.detail).toContain('missing events: checkout.session.async_payment_succeeded')
+    expect(drifted.detail).toContain('endpoint API version 2026-08-26.dahlia')
   })
 })

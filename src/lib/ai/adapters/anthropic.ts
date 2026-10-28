@@ -13,7 +13,7 @@
 //   array form of `fallbacks` (beta server-side-fallback-2026-06-01). Same provider only:
 //   resume text never goes to OpenAI or OpenRouter because Claude declined.
 import Anthropic from '@anthropic-ai/sdk'
-import { modelInfo } from '@/lib/ai/models'
+import { costUsd, modelInfo } from '@/lib/ai/models'
 import type { Adapter, AdapterRequest, AdapterResult } from '@/lib/ai/types'
 
 // Non-streaming requests stay at or under 16k so the SDK's HTTP timeout logic is happy.
@@ -67,7 +67,11 @@ let defaultClient: Anthropic | null = null
 export function anthropicClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured')
-  defaultClient ??= new Anthropic({ apiKey, maxRetries: 2 })
+  // Every AI route has maxDuration 300. The SDK default (600s, x3 attempts) outlived the
+  // function, which then died before releasing the user's quota or logging the spend.
+  // Routes pass their own deadline per request (AdapterRequest.timeoutMs); this default
+  // covers scripts and still fits in 300s with one retry.
+  defaultClient ??= new Anthropic({ apiKey, timeout: 140_000, maxRetries: 1 })
   return defaultClient
 }
 
@@ -75,13 +79,34 @@ export const anthropicAdapter: Adapter = {
   provider: 'anthropic',
   async call(req, client): Promise<AdapterResult> {
     const c = (client ?? anthropicClient()) as any
-    const res = await c.beta.messages.create(buildAnthropicRequest(req))
+    const options = req.timeoutMs ? { timeout: req.timeoutMs, maxRetries: 0 } : undefined
+    const res = await c.beta.messages.create(buildAnthropicRequest(req), options)
     const text = (res.content ?? [])
       .filter((b: any) => b?.type === 'text')
       .map((b: any) => b.text)
       .join('')
-    const stop = res.stop_reason === 'max_tokens' ? 'length' : res.stop_reason === 'refusal' ? 'refusal' : 'stop'
+    // Anything that isn't a finished turn is an incomplete answer (max_tokens,
+    // model_context_window_exceeded, pause_turn): don't parse it or pay to repair it.
+    const stop = res.stop_reason === 'refusal' ? 'refusal' : res.stop_reason === 'end_turn' || res.stop_reason === 'stop_sequence' ? 'stop' : 'length'
+    // With a server-side fallback, top-level usage covers only the final attempt;
+    // usage.iterations has every attempt, each billed at its own model's price.
+    const iterations: any[] = Array.isArray(res.usage?.iterations) ? res.usage.iterations : []
+    const billed =
+      iterations.length > 1
+        ? iterations.reduce(
+            (sum, it) =>
+              sum +
+              costUsd(it.model || res.model || req.model, {
+                inputTokens: it.input_tokens ?? 0,
+                outputTokens: it.output_tokens ?? 0,
+                cachedInputTokens: it.cache_read_input_tokens ?? 0,
+                cacheWriteTokens: it.cache_creation_input_tokens ?? 0,
+              }),
+            0
+          )
+        : undefined
     return {
+      ...(billed !== undefined ? { costUsd: billed } : {}),
       text,
       stop,
       model: res.model || req.model,

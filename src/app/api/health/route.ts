@@ -3,7 +3,9 @@
 // Each provider check says which failure it is (checks.ai.<provider>.kind: quota | auth |
 // rate_limit | overloaded | ...), so an exhausted account or a bad key shows up here
 // before users report "busy". `models` shows the routing in effect. `checks.stripePrices`
-// fetches both configured Stripe prices and fails if either doesn't match plans.ts.
+// fetches both configured Stripe prices and fails if either doesn't match plans.ts (or the
+// key's mode); `checks.stripeWebhook` finds this deployment's endpoint and checks its events
+// and API version.
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -13,7 +15,7 @@ import type { AIErrorKind } from '@/lib/ai-errors'
 import { checkProviders } from '@/lib/ai/health'
 import { allRoutes, formatRoute, proAlwaysTopModel } from '@/lib/ai/routing'
 import { aiCapRatio } from '@/lib/ai-cap-rules'
-import { checkStripePrices, getStripe } from '@/lib/stripe'
+import { checkStripePrices, checkStripeWebhook, getStripe } from '@/lib/stripe'
 import { OFFER_IDS, PRICING } from '@/lib/plans'
 
 export const runtime = 'nodejs'
@@ -38,7 +40,7 @@ async function timed(fn: () => Promise<string | void>): Promise<Check> {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.email || !isAdminEmail(session.user.email)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -58,23 +60,25 @@ export async function GET() {
   }
 
   const stripe = getStripe()
-  const [database, ai, stripePrices] = await Promise.all([
+  const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin
+  const [database, ai, stripePrices, stripeWebhook] = await Promise.all([
     timed(async () => {
       await prisma.$queryRaw`SELECT 1`
     }),
     checkProviders(),
     stripe ? checkStripePrices(stripe, OFFER_IDS.map((id) => PRICING[id])) : Promise.resolve(null),
+    stripe ? checkStripeWebhook(stripe, baseUrl) : Promise.resolve(null),
   ])
   const aiOk = Object.values(ai).every((c) => c.ok)
   const pricesOk = !!stripePrices && Object.values(stripePrices).every((c) => c.ok)
   const routes = allRoutes()
 
-  const ok = database.ok && aiOk && keys.storage && keys.stripe && pricesOk
+  const ok = database.ok && aiOk && keys.storage && keys.stripe && keys.stripeWebhook && keys.cron && pricesOk && !!stripeWebhook?.ok
   return NextResponse.json(
     {
       ok,
       keys,
-      checks: { database, ai, stripePrices },
+      checks: { database, ai, stripePrices, stripeWebhook },
       models: Object.fromEntries(Object.entries(routes).map(([task, r]) => [task, r ? formatRoute(r) : null])),
       aiCap: { ratio: aiCapRatio(), proAlwaysTopModel: proAlwaysTopModel() },
       time: new Date().toISOString(),

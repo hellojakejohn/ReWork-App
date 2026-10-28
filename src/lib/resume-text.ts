@@ -20,12 +20,12 @@ export function containsTerm(haystack: string, term: string): boolean {
   return pattern.test(normalizeSpace(haystack).toLowerCase())
 }
 
-const MULTIPLIERS: Record<string, number> = { k: 1e3, m: 1e6, mm: 1e6, b: 1e9, bn: 1e9 }
+const MULTIPLIERS: Record<string, number> = { k: 1e3, m: 1e6, mm: 1e6, b: 1e9, bn: 1e9, thousand: 1e3, million: 1e6, billion: 1e9 }
 
 // $ is optional, digits may have thousands separators/decimals, then an optional
-// %, magnitude (k/m/b) or "x" suffix. Digits glued to a preceding letter (EC2, S3,
-// Web3, OAuth2) are product names, not metrics, so they're skipped.
-const NUMBER_RE = /(?<![A-Za-z0-9.])(\$\s?)?(\d+(?:,\d{3})*(?:\.\d+)?)(\s?%|(?:k|mm|m|bn|b|x)(?![A-Za-z]))?/gi
+// %, magnitude (k/m/b, or the word) or "x" suffix. Digits glued to a preceding letter
+// (EC2, S3, Web3, OAuth2) are product names, not metrics, so they're skipped.
+const NUMBER_RE = /(?<![A-Za-z0-9.])(\$\s?)?(\d+(?:,\d{3})*(?:\.\d+)?)(\s?%|\s?(?:thousand|million|billion)(?![A-Za-z])|(?:k|mm|m|bn|b|x)(?![A-Za-z]))?/gi
 
 /**
  * Pull numbers out of text. `token` is normalized so "$1.2M" and "$1,200,000" compare
@@ -34,8 +34,11 @@ const NUMBER_RE = /(?<![A-Za-z0-9.])(\$\s?)?(\d+(?:,\d{3})*(?:\.\d+)?)(\s?%|(?:k
  * ignored.
  */
 export function extractNumbers(text: string): { raw: string; token: string }[] {
+  // Fullwidth digits and the times sign read as plain digits and "x" (６× is 6x).
   // Collapse dates to their year first, otherwise "2021-05" would whitelist "5".
   const withoutMonths = text
+    .normalize('NFKC')
+    .replace(/\u00d7/g, 'x')
     .replace(/\b((?:19|20)\d{2})[-/.](?:0?[1-9]|1[0-2])\b/g, '$1')
     .replace(/\b(?:0?[1-9]|1[0-2])[-/]((?:19|20)\d{2})\b/g, '$1')
   const numbers: { raw: string; token: string }[] = []

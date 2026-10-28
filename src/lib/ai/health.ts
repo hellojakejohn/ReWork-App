@@ -3,7 +3,7 @@
 import { classifyAIError, errorCodes, type AIErrorKind } from '@/lib/ai-errors'
 import { modelInfo, type ProviderId } from '@/lib/ai/models'
 import { allRoutes, PROVIDER_KEY_ENV, PROVIDERS, providerConfigured, type ModelRoute } from '@/lib/ai/routing'
-import { anthropicClient } from '@/lib/ai/adapters/anthropic'
+import { anthropicClient, buildAnthropicRequest } from '@/lib/ai/adapters/anthropic'
 import { openAIClient } from '@/lib/ai/adapters/openai'
 import { openRouterClient } from '@/lib/ai/adapters/openrouter'
 
@@ -21,7 +21,20 @@ export interface ProviderCheck {
 async function ping(route: ModelRoute): Promise<string> {
   const messages = [{ role: 'user', content: 'Reply with OK.' }]
   if (route.provider === 'anthropic') {
-    const res = await (anthropicClient() as any).messages.create({ model: route.model, max_tokens: 64, output_config: { effort: 'low' }, messages })
+    // The exact production request shape (structured output, and for Opus the refusal
+    // fallback beta): if Anthropic stops accepting Sonnet 5.5 as Opus's fallback, every
+    // Opus call fails with a 400, and this check has to see that too.
+    const body = buildAnthropicRequest({
+      model: route.model,
+      system: 'Health check.',
+      messages: [{ role: 'user', content: 'Reply with {"ok": true}.' }],
+      files: [],
+      schema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'], additionalProperties: false },
+      schemaName: 'health',
+      maxTokens: 32,
+      effort: 'low',
+    })
+    const res = await (anthropicClient() as any).beta.messages.create(body)
     return res.model
   }
   const client: any = route.provider === 'openai' ? openAIClient() : openRouterClient()
@@ -36,7 +49,9 @@ export async function checkProviders(): Promise<Record<ProviderId, ProviderCheck
   const entries = await Promise.all(
     PROVIDERS.map(async (provider): Promise<[ProviderId, ProviderCheck]> => {
       const configured = providerConfigured(provider)
-      const route = routes.find((r) => r.provider === provider)
+      // Prefer the top model (Opus): its requests carry the fallback, the riskier shape.
+      const mine = routes.filter((r) => r.provider === provider)
+      const route = mine.find((r) => /opus/.test(r.model)) ?? mine[0]
       const used = !!route
       if (!configured) {
         return [provider, { configured, used, ok: !used, kind: used ? 'not_configured' : undefined, detail: `${PROVIDER_KEY_ENV[provider]} is not set` }]

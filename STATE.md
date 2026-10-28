@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of the `launch-blockers` branch (on top of `ai-providers`, October 2026). History lives in git.
+Current truth as of the `launch-audit` branch (on `rebrand` -> `launch-blockers` -> `ai-providers`, October 2026). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -18,7 +18,12 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
   (Pro ~$9.99/month, pass ~$19.50 for its whole 90 days, FREE $0.50/month, revisit after the real eval). 75%: paid calls
   run on AI_FREE_TIER with a header banner. 100%: AI pauses until the reset date; downloads,
   tracker and editing keep working. Users see a percent, never dollars. Admin can override
-  per user. `src/lib/ai-cap-rules.ts`.
+  per user. `src/lib/ai-cap-rules.ts`. FREE fails closed if spend can't be read.
+- Above every cap: `AI_DISABLED=1` pauses all AI (incident switch); `AI_FREE_DAILY_USD`
+  (default 25, 0 = off) pauses FREE accounts once today's free-tier spend reaches it (paid
+  users never: their cap keeps AI under what they paid). `ai_call` events carry `tier`. At most 2
+  model calls per user in flight (`src/lib/ai-inflight.ts`, `ai_inflight` rows in events).
+  Each provider call gets the time left before the route's 300s deadline as its timeout.
 - Input caps: resume file 4 MB (Vercel rejects bodies over 4.5 MB), pasted resume 30k chars,
   job description 20k chars.
 - All numbers live in `src/lib/plans.ts`.
@@ -34,7 +39,8 @@ task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
 
 ## Brand
 Lowercase "rework" in brand moments ("ReWork" stays in legal pages, Stripe and OAuth).
-Spec: brand-kit/BRAND.md (gitignored; shipped assets in `public/brand/`). Light first, dark
+Spec: brand-kit/BRAND.md (gitignored; shipped assets in `public/brand/`). PDF exports embed
+Tinos/Arimo (`src/lib/fonts/`, OFL), metric twins of Times/Helvetica with Latin Extended. Light first, dark
 follows the system with a Light/Dark/System toggle in the account menu. Headings Newsreader,
 UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
 `node scripts/generate-og-image.js`.
@@ -45,6 +51,8 @@ UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
   `/auth/signin`, `/admin`. The route group's layout holds the session/feedback providers
   and the toaster.
 - `/sitemap.xml`, `/robots.txt`, `public/og-image.png` (1200x630).
+- `/token` (public) and `/dashboard/token` (burn $REWORK for 30 days of Pro): both 404
+  until `REWORK_MINT` is set. Not in the sitemap or footer; linked from X only.
 
 ## Account
 - First run: new users land on the Resume card with a one-line welcome.
@@ -74,7 +82,7 @@ and no table grants for Supabase's anon/authenticated roles) applied. Everything
 folder is now applied. New tables: enable RLS and repeat the REVOKE (Supabase grants those
 roles on new tables by default).
 
-Daily ceilings and the AI cap still fail open if `events` can't be read (DB blip).
+Daily ceilings still fail open if `events` can't be read (DB blip); the AI cap fails closed for FREE.
 
 ## Environment
 See README.md for the full table. Required in production: DATABASE_URL, NEXTAUTH_URL,
@@ -83,7 +91,8 @@ OPENAI_API_KEY / OPENROUTER_API_KEY only if a task routes there), NEXT_PUBLIC_SU
 SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; no fallback name),
 CRON_SECRET (crons refuse every request without it). AI_FREE_TIER defaults to
-anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set.
+anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set. Token burn (optional, after
+launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
 
 ## Billing guards
 - The webhook grants a pass or a new subscription only for the configured price ids;
@@ -99,6 +108,12 @@ anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set.
   console for violations, then enforce it.
 - Auth redirects are same-origin only and keep deep links (`src/lib/auth-redirect.ts`).
 - Uploads are identified by magic bytes, not name/MIME (`src/lib/upload-kind.ts`).
+- Middleware refuses cross-origin non-GET `/api/*` requests (webhook and crons exempt).
+- CSP report-only reports to `/api/csp-report` (`[csp]` in runtime logs).
+- Server errors (`src/instrumentation.ts`), webhook failures and orphaned files are
+  `server_error` events, listed in `/admin`. `/api/health/live` is a public DB ping for uptime
+  monitors; `/api/health` (admin) also checks the Stripe webhook endpoint and pings Opus with
+  the production request shape.
 
 ## Checks
 - `npx tsc --noEmit` clean, `npm test` (Vitest, offline), `npx next lint` 0 errors (lint now

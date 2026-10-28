@@ -8,7 +8,7 @@ export type EntitlementSource =
   | 'STRIPE_PASS'
   | 'COMP'
   | 'TOKEN_HOLD' // reserved
-  | 'TOKEN_PAYMENT' // reserved
+  | 'TOKEN_PAYMENT' // Pro bought by burning $REWORK (src/lib/token-burn.ts)
 
 export type EntitlementStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'EXPIRED' | 'REFUNDED'
 
@@ -173,6 +173,8 @@ export function describeAccess(access: Access): string {
       return `Job Hunt Pass, ${days} left`
     case 'COMP':
       return date ? `Pro (complimentary) until ${date}` : 'Pro (complimentary)'
+    case 'TOKEN_PAYMENT':
+      return `Pro from burned $REWORK, ${days} left`
     default:
       return date ? `Pro until ${date}` : 'Pro'
   }

@@ -19,11 +19,14 @@ const STOP_TERMS = new Set(
 )
 
 // Spelled-out numbers worth checking. "one"/"two" are left out: too idiomatic ("one of").
-const WORD_NUMBERS: Record<string, number> = {
+const WORD_NUMBERS = {
   three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14,
   fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, hundred: 100,
   hundreds: 100, thousand: 1000, thousands: 1000, million: 1e6, millions: 1e6, billion: 1e9, dozens: 12,
-}
+  two: 2, dozen: 12,
+  // Scaling claims, as the multiplier they state ("doubled" is a 2x claim).
+  doubled: '2x', doubling: '2x', twice: '2x', tripled: '3x', tripling: '3x', thrice: '3x', quadrupled: '4x', halved: '0.5x',
+} as Record<string, number | string>
 
 export interface UnsupportedFacts {
   numbers: string[] // as written
@@ -86,7 +89,9 @@ function termAllowed(term: string, allowedText: string): boolean {
 /** Spelled-out numbers ("five engineers") with their numeric token. */
 function wordNumbers(text: string): { raw: string; token: string }[] {
   const out: { raw: string; token: string }[] = []
-  for (const match of text.toLowerCase().matchAll(/\b[a-z]+\b/g)) {
+  // "1.2 million" is a number extractNumbers already reads; don't count its word twice.
+  const prose = text.toLowerCase().replace(/\d\s?(?:thousand|million|billion)s?\b/g, ' ')
+  for (const match of prose.matchAll(/\b[a-z]+\b/g)) {
     const value = WORD_NUMBERS[match[0]]
     if (value !== undefined) out.push({ raw: match[0], token: String(value) })
   }
