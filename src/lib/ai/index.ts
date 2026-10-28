@@ -135,7 +135,8 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
 
     const outcome: ParseOutcome<T> =
       result.stop === 'stop' && result.text.trim() ? parseAndValidate<T>(result.text, req.schema) : { ok: false, problem: result.stop }
-    recordUsage(usageRecord(route.provider, result.model, result.usage, { task: req.task, ms: Date.now() - callStart, ok: outcome.ok }))
+    const record = usageRecord(route.provider, result.model, result.usage, { task: req.task, ms: Date.now() - callStart, ok: outcome.ok })
+    recordUsage(result.costUsd !== undefined ? { ...record, costUsd: result.costUsd } : record)
 
     if (result.stop === 'refusal') throw new AIOutputError('Model refused', 'refusal', route.provider, result.model)
     if (result.stop === 'length') throw new AIOutputError('Model output truncated', 'truncated', route.provider, result.model)

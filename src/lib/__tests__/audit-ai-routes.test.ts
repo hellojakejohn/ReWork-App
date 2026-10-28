@@ -133,7 +133,7 @@ describe('tailor route partial failures', () => {
   // `resume.update({ lastOptimized })` should not turn into "Tailoring failed ... didn't
   // count toward your limit". Today the user sees a failure, the tailor DID count, and the
   // application sits in Recent. Make lastOptimized best-effort (.catch) or send done first.
-  it.fails('a failed lastOptimized update after the save still returns the saved application', async () => {
+  it('a failed lastOptimized update after the save still returns the saved application', async () => {
     h.resumeUpdateFails = true
     const res = await post()
     expect(h.created).toBe(1)

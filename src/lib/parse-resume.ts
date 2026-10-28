@@ -189,6 +189,9 @@ export async function parseResume(input: ParseInput, options: ParseOptions = {})
     })
   } catch (error) {
     if (error instanceof AIOutputError) {
+      if (error.reason === 'refusal') {
+        throw new ResumeParseError('Parse model refused', 422, "The AI declined to read this file. Paste your resume text instead, or try a different file.", 'invalid_output')
+      }
       throw new ResumeParseError(`Parse model returned no usable output (${error.reason})`, 502, PARSE_FAILED_MESSAGE, 'invalid_output')
     }
     const classified = classifyAIError(error, 'Resume reading')

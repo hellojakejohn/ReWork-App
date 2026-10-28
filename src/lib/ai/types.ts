@@ -54,6 +54,8 @@ export interface AdapterResult {
   stop: 'stop' | 'length' | 'refusal'
   model: string
   usage: TokenUsage
+  /** Billed cost when the attempts used different models (a server-side refusal fallback). */
+  costUsd?: number
 }
 
 export interface AdapterRequest {

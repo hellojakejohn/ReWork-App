@@ -126,9 +126,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: { coverLetter: letter as unknown as Prisma.InputJsonValue, coverLetterUpdatedAt: new Date() },
     })
     .catch(async (error) => {
+      console.error('❌ Cover letter save failed:', error)
       await reservation.release()
-      throw error
+      return null
     })
+  if (!updated) {
+    return NextResponse.json({ success: false, error: "We wrote the letter but couldn't save it. Please try again. This one didn't count." }, { status: 500 })
+  }
   await track('cover_letter_generated', { ms: msSince(start), tone, ...usageProps(usage()) }, userId)
 
   return NextResponse.json({

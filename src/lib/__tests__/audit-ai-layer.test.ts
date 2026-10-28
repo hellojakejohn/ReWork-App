@@ -111,7 +111,7 @@ describe('refusal: Opus -> (server-side Sonnet) -> declined', () => {
 
   // Correct: a refusal should say "declined" (and not invite a paid retry). Evidence maps
   // every AIOutputError, refusal included, to "Something went wrong. Please try again."
-  it.fails('evidence interview shows a declined message on refusal', async () => {
+  it('evidence interview shows a declined message on refusal', async () => {
     const { client } = mockClient([{ stop: 'refusal' }])
     const cand = { id: 'c1', section: 'roles' as const, entryId: 'r', entryLabel: 'Cook at Diner', index: 0, bullet: 'Cooked', score: 1, reasons: [] }
     const err = await generateQuestions([cand], { route: OPUS, clients: { anthropic: client } }).catch((e) => e)
@@ -120,7 +120,7 @@ describe('refusal: Opus -> (server-side Sonnet) -> declined', () => {
   })
 
   // Correct: same as above for resume reading. Today a refusal reads as a file problem.
-  it.fails('resume parse shows a declined message on refusal', async () => {
+  it('resume parse shows a declined message on refusal', async () => {
     const { client } = mockClient([{ stop: 'refusal' }])
     const err = await parseResume({ kind: 'text', text: 'Pat Cook\nLine Cook at Corner Diner, 2020 to present\nCooked breakfast and lunch for guests every day, kept the line stocked, trained new cooks on prep.' } as any, {
       route: OPUS,
@@ -135,7 +135,7 @@ describe('refusal: Opus -> (server-side Sonnet) -> declined', () => {
   // returned message; `usage.iterations` holds every attempt (a mid-stream Opus decline is
   // billed at Opus rates). The adapter reads only top-level usage and prices it all at
   // `res.model` (Sonnet), so a rescued refusal under-counts spend toward the AI cap.
-  it.fails('a server-side fallback bills the declined Opus attempt too (usage.iterations)', async () => {
+  it('a server-side fallback bills the declined Opus attempt too (usage.iterations)', async () => {
     const usage = {
       input_tokens: 1000,
       output_tokens: 1000,
@@ -191,7 +191,7 @@ describe('truncation and malformed output', () => {
   // Correct: `model_context_window_exceeded` (and `pause_turn`) are not a finished answer.
   // The adapter maps every unknown stop_reason to 'stop', so a cut-off answer gets a paid
   // repair call that resends an even longer prompt.
-  it.fails('model_context_window_exceeded is treated as truncation, not repaired', async () => {
+  it('model_context_window_exceeded is treated as truncation, not repaired', async () => {
     const { result, create } = await run([{ text: '{"ok":', stop: 'model_context_window_exceeded' }, { text: '{"ok":true}' }])
     expect(create).toHaveBeenCalledTimes(1)
     expect(result.reason).toBe('truncated')

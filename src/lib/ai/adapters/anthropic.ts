@@ -13,7 +13,7 @@
 //   array form of `fallbacks` (beta server-side-fallback-2026-06-01). Same provider only:
 //   resume text never goes to OpenAI or OpenRouter because Claude declined.
 import Anthropic from '@anthropic-ai/sdk'
-import { modelInfo } from '@/lib/ai/models'
+import { costUsd, modelInfo } from '@/lib/ai/models'
 import type { Adapter, AdapterRequest, AdapterResult } from '@/lib/ai/types'
 
 // Non-streaming requests stay at or under 16k so the SDK's HTTP timeout logic is happy.
@@ -85,8 +85,28 @@ export const anthropicAdapter: Adapter = {
       .filter((b: any) => b?.type === 'text')
       .map((b: any) => b.text)
       .join('')
-    const stop = res.stop_reason === 'max_tokens' ? 'length' : res.stop_reason === 'refusal' ? 'refusal' : 'stop'
+    // Anything that isn't a finished turn is an incomplete answer (max_tokens,
+    // model_context_window_exceeded, pause_turn): don't parse it or pay to repair it.
+    const stop = res.stop_reason === 'refusal' ? 'refusal' : res.stop_reason === 'end_turn' || res.stop_reason === 'stop_sequence' ? 'stop' : 'length'
+    // With a server-side fallback, top-level usage covers only the final attempt;
+    // usage.iterations has every attempt, each billed at its own model's price.
+    const iterations: any[] = Array.isArray(res.usage?.iterations) ? res.usage.iterations : []
+    const billed =
+      iterations.length > 1
+        ? iterations.reduce(
+            (sum, it) =>
+              sum +
+              costUsd(it.model || res.model || req.model, {
+                inputTokens: it.input_tokens ?? 0,
+                outputTokens: it.output_tokens ?? 0,
+                cachedInputTokens: it.cache_read_input_tokens ?? 0,
+                cacheWriteTokens: it.cache_creation_input_tokens ?? 0,
+              }),
+            0
+          )
+        : undefined
     return {
+      ...(billed !== undefined ? { costUsd: billed } : {}),
       text,
       stop,
       model: res.model || req.model,
