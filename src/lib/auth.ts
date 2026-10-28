@@ -19,6 +19,9 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
   },
   callbacks: {
+    // Admin is an email allowlist, so only accept Google accounts whose email Google verified.
+    signIn: async ({ account, profile }) =>
+      account?.provider !== 'google' || (profile as { email_verified?: boolean } | undefined)?.email_verified !== false,
     // Same-origin only, deep links kept (src/lib/auth-redirect.ts).
     redirect: async ({ url, baseUrl }) => safeRedirect(url, baseUrl),
     session: async ({ session, user }) => {

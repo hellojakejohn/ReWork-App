@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { masterToParsed } from '@/lib/master-resume'
-import { candidateForBullet, EvidenceError, mergeEvidence, rewriteWithEvidence, type EvidenceAnswer, type EvidenceItem } from '@/lib/evidence'
+import { candidateForBullet, EvidenceError, MAX_ITEMS, mergeEvidence, rewriteWithEvidence, type EvidenceAnswer, type EvidenceItem } from '@/lib/evidence'
 import { evidenceContext } from '../shared'
 import { collectUsage, usageProps } from '@/lib/ai-usage'
 import { track } from '@/lib/track'
@@ -14,6 +14,8 @@ export const runtime = 'nodejs'
 export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 
 const MAX_ANSWER = 300
+const MAX_QUESTION = 300
+const MAX_WEAKNESS = 100
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -29,14 +31,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Trust nothing about the bullets from the client: each item must still be in the master.
   const resume = masterToParsed(ctx.resume)
   const items: EvidenceItem[] = []
+  // Client text goes into the prompt, so every piece is capped: at most MAX_ITEMS
+  // distinct bullets, short questions and weakness notes.
+  const seenBullets = new Set<string>()
   for (const raw of body.items as EvidenceItem[]) {
+    if (items.length >= MAX_ITEMS) break
     const found = raw && typeof raw.entryId === 'string' && typeof raw.bullet === 'string' ? candidateForBullet(resume, raw.entryId, raw.bullet) : null
     if (!found || !Array.isArray(raw.questions)) continue
+    const bulletKey = `${found.entryId}:${found.bullet}`
+    if (seenBullets.has(bulletKey)) continue
+    seenBullets.add(bulletKey)
     items.push({
       ...found,
-      id: raw.id,
-      weakness: String(raw.weakness ?? ''),
-      questions: raw.questions.filter((q) => q && typeof q.text === 'string').slice(0, 3),
+      id: String(raw.id).slice(0, 100),
+      weakness: String(raw.weakness ?? '').slice(0, MAX_WEAKNESS),
+      questions: raw.questions
+        .filter((q) => q && typeof q.text === 'string')
+        .slice(0, 3)
+        .map((q) => ({ ...q, id: String(q.id).slice(0, 100), text: q.text.slice(0, MAX_QUESTION) })),
     })
   }
   const itemById = new Map(items.map((i) => [i.id, i]))

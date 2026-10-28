@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { cronAuthorized } from '@/lib/cron-auth'
 import { expireEntitlements } from '@/lib/entitlements'
 
 export const dynamic = 'force-dynamic'
@@ -7,8 +8,7 @@ export const dynamic = 'force-dynamic'
 // getAccess() already ignores expired rows, so this is bookkeeping, not enforcement.
 export async function GET(req: Request) {
   // Fail closed: without CRON_SECRET nobody can call this.
-  const secret = process.env.CRON_SECRET?.trim()
-  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!cronAuthorized(req)) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
   try {
