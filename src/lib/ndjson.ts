@@ -46,5 +46,15 @@ export async function readNdjson(response: Response, onEvent: (event: StreamEven
     }
     if (done) break
   }
-  if (buffer.trim()) onEvent(JSON.parse(buffer) as StreamEvent)
+  // A stream cut mid-line (function killed, proxy timeout) leaves half an event: drop it,
+  // so the caller shows its own "that didn't finish" message, not "can't reach us".
+  if (buffer.trim()) {
+    let last: StreamEvent | null = null
+    try {
+      last = JSON.parse(buffer) as StreamEvent
+    } catch {
+      console.warn('[ndjson] stream ended mid-event')
+    }
+    if (last) onEvent(last)
+  }
 }

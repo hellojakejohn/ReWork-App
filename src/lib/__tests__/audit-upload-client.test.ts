@@ -35,10 +35,12 @@ describe('parseResumeInput', () => {
     expect(result).toMatchObject({ ok: false, error: "We couldn't read that file, try again or paste your resume text." })
   })
 
-  it('a stream cut mid-line -> generic "Can\'t reach ReWork" (misleading but human; JSON.parse error is swallowed)', async () => {
+  it('a stream cut mid-line -> the feature\'s own fallback, not "can\'t reach us"', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ndjson('{"type":"stage","stage":"extracting"}\n{"type":"sta')))
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const result = await parseResumeInput('x'.repeat(100), () => {})
-    expect(result).toMatchObject({ ok: false, status: 0, error: "Can't reach ReWork. Check your connection and try again." })
+    spy.mockRestore()
+    expect(result).toMatchObject({ ok: false, status: 500, error: "We couldn't read that file, try again or paste your resume text." })
   })
 
   it('a server error event is shown as sent', async () => {
