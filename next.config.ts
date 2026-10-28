@@ -35,6 +35,10 @@ const config: NextConfig = {
     // Lint errors fail the build. Warnings don't.
     ignoreDuringBuilds: false,
   },
+  // The PDF fonts are read from disk at render time (src/lib/resume-pdf.tsx).
+  outputFileTracingIncludes: {
+    '/api/resumes/**/download': ['./src/lib/fonts/**'],
+  },
   serverExternalPackages: [
     'sharp',
     'pdfjs-dist',       // resume parsing (src/lib/resume-source-text.ts) loads its worker from disk

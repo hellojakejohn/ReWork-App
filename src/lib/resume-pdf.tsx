@@ -1,17 +1,34 @@
 // PDF for a master or tailored resume, Classic or Modern, and the matching cover letter.
-// Built-in PDF fonts only (Times/Helvetica), single column, real selectable text: what
-// ATS parsers read best.
+// Embedded Tinos/Arimo (metric twins of Times/Helvetica with Latin Extended, Vietnamese,
+// Greek and Cyrillic), single column, real selectable text: what ATS parsers read best.
+// The built-in PDF fonts garbled names like Trần or Dvořák.
+import path from 'path'
 import React from 'react'
-import { Document, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Font, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import { TEMPLATE_STYLE, toLayout, type TemplateId } from '@/lib/resume-templates'
 import { letterBlocks } from '@/lib/resume-docx'
 import type { ParsedResume } from '@/types/parsed-resume'
 
+// Files live in src/lib/fonts (traced into the download functions by next.config.ts).
+const FONT_DIR = path.join(process.cwd(), 'src/lib/fonts')
+for (const [family, file] of [
+  ['Tinos', 'Tinos_400Regular.ttf'],
+  ['Tinos-Bold', 'Tinos_700Bold.ttf'],
+  ['Tinos-Italic', 'Tinos_400Regular_Italic.ttf'],
+  ['Arimo', 'Arimo_400Regular.ttf'],
+  ['Arimo-Bold', 'Arimo_700Bold.ttf'],
+  ['Arimo-Italic', 'Arimo_400Regular_Italic.ttf'],
+]) {
+  Font.register({ family, src: path.join(FONT_DIR, file) })
+}
+// Never split words with hyphens: "migra-/tion" breaks ATS keyword matching.
+Font.registerHyphenationCallback((word) => [word])
+
 function styles(template: TemplateId) {
   const t = TEMPLATE_STYLE[template]
-  const font = t.serif ? 'Times-Roman' : 'Helvetica'
-  const bold = t.serif ? 'Times-Bold' : 'Helvetica-Bold'
-  const italic = t.serif ? 'Times-Italic' : 'Helvetica-Oblique'
+  const font = t.serif ? 'Tinos' : 'Arimo'
+  const bold = t.serif ? 'Tinos-Bold' : 'Arimo-Bold'
+  const italic = t.serif ? 'Tinos-Italic' : 'Arimo-Italic'
   return StyleSheet.create({
     page: { paddingVertical: 40, paddingHorizontal: 46, fontFamily: font, fontSize: 10, lineHeight: 1.35, color: '#111827' },
     header: { marginBottom: 10, alignItems: t.centered ? 'center' : 'flex-start' },
