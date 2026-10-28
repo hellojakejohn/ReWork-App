@@ -7,7 +7,9 @@ const db = vi.hoisted(() => ({
   rows: [] as { id: string; userId: string; name: string; createdAt: Date }[],
   n: 0,
   globalSpent: 0,
+  burnSpent: 0,
   isPro: false,
+  entitlements: [] as any[],
   lastGlobalSql: '',
 }))
 
@@ -27,38 +29,57 @@ vi.mock('@/lib/prisma', () => ({
         return { count: 1 }
       }),
     },
-    entitlement: { findMany: vi.fn(async () => []) },
+    entitlement: { findMany: vi.fn(async () => db.entitlements) },
     aiCapOverride: { findUnique: vi.fn(async () => null) },
     // Per-user spend and global spend both come through here; the SQL text tells them apart.
-    $queryRaw: vi.fn(async (strings: TemplateStringsArray) => {
+    $queryRaw: vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
       const sql = strings.join('')
       if (sql.includes('"userId" =')) return [{ spent: 0 }]
       db.lastGlobalSql = sql
-      return [{ spent: db.globalSpent }]
+      return [{ spent: values.at(-1) === 'burn' ? db.burnSpent : db.globalSpent }]
     }),
   },
 }))
 vi.mock('@/lib/entitlements', () => ({ getAccess: vi.fn(async () => ({ isPro: db.isPro })) }))
 
 import { AI_MAX_INFLIGHT, AIInflightError, acquireInflightSlot } from '@/lib/ai-inflight'
-import { AI_DISABLED_MESSAGE, AI_FREE_CEILING_MESSAGE, DEFAULT_FREE_DAILY_USD, getAIBudget, resetGlobalSpendCache } from '@/lib/ai-cap'
+import {
+  AI_BURN_CEILING_MESSAGE,
+  AI_DISABLED_MESSAGE,
+  AI_FREE_CEILING_MESSAGE,
+  DEFAULT_BURN_DAILY_USD,
+  DEFAULT_FREE_DAILY_USD,
+  getAIBudget,
+  resetGlobalSpendCache,
+} from '@/lib/ai-cap'
 import { classifyAIError } from '@/lib/ai-errors'
 import { collectUsage, takeCallSlot } from '@/lib/ai-usage'
 
-const saved = { disabled: process.env.AI_DISABLED, ceiling: process.env.AI_FREE_DAILY_USD }
+const ENV_KEYS = ['AI_DISABLED', 'AI_FREE_DAILY_USD', 'AI_BURN_DAILY_USD'] as const
+const saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]))
 beforeEach(() => {
   db.rows = []
   db.globalSpent = 0
+  db.burnSpent = 0
   db.isPro = false
+  db.entitlements = []
   resetGlobalSpendCache()
-  delete process.env.AI_DISABLED
-  delete process.env.AI_FREE_DAILY_USD
+  for (const k of ENV_KEYS) delete process.env[k]
 })
 afterEach(() => {
-  if (saved.disabled === undefined) delete process.env.AI_DISABLED
-  else process.env.AI_DISABLED = saved.disabled
-  if (saved.ceiling === undefined) delete process.env.AI_FREE_DAILY_USD
-  else process.env.AI_FREE_DAILY_USD = saved.ceiling
+  for (const k of ENV_KEYS) {
+    if (saved[k] === undefined) delete process.env[k]
+    else process.env[k] = saved[k]
+  }
+})
+
+const burnRow = () => ({
+  source: 'TOKEN_PAYMENT',
+  status: 'ACTIVE',
+  startsAt: new Date(Date.now() - 86_400_000),
+  endsAt: new Date(Date.now() + 29 * 86_400_000),
+  cancelAtPeriodEnd: false,
+  pastDueAt: null,
 })
 
 describe('in-flight slots', () => {
@@ -144,5 +165,45 @@ describe('global switches', () => {
     resetGlobalSpendCache()
     db.globalSpent = 25
     expect((await getAIBudget('u')).state.band).toBe('paused')
+  })
+})
+
+describe('burn-Pro daily ceiling', () => {
+  it(`pauses burn-Pro accounts once their shared spend reaches $${DEFAULT_BURN_DAILY_USD}, and logs calls as burn`, async () => {
+    db.isPro = true
+    db.entitlements = [burnRow()]
+    db.burnSpent = DEFAULT_BURN_DAILY_USD - 0.01
+    const ok = await getAIBudget('u')
+    expect(ok.state.period.kind).toBe('burn')
+    expect(ok.state.capUsd).toBe(10.5) // 0.70 x $15, no Stripe cut
+    expect(ok.state.band).not.toBe('paused')
+    resetGlobalSpendCache()
+    db.burnSpent = DEFAULT_BURN_DAILY_USD
+    const paused = await getAIBudget('u')
+    expect(paused.state.band).toBe('paused')
+    expect(paused.pausedMessage).toBe(AI_BURN_CEILING_MESSAGE)
+  })
+
+  it('card-paid Pro is never paused by burn spend, even with a burn row too', async () => {
+    db.isPro = true
+    db.burnSpent = 1000
+    expect((await getAIBudget('u')).state.band).not.toBe('paused') // comp/card, no burn row
+  })
+
+  it('free-tier spend does not count against burn-Pro and vice versa', async () => {
+    db.isPro = true
+    db.entitlements = [burnRow()]
+    db.globalSpent = 1000
+    expect((await getAIBudget('u')).state.band).not.toBe('paused')
+  })
+
+  it('AI_BURN_DAILY_USD sets the ceiling and 0 turns it off', async () => {
+    db.isPro = true
+    db.entitlements = [burnRow()]
+    db.burnSpent = 5
+    process.env.AI_BURN_DAILY_USD = '4'
+    expect((await getAIBudget('u')).pausedMessage).toBe(AI_BURN_CEILING_MESSAGE)
+    process.env.AI_BURN_DAILY_USD = '0'
+    expect((await getAIBudget('u')).state.band).not.toBe('paused')
   })
 })

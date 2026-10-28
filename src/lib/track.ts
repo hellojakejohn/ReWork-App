@@ -26,6 +26,8 @@ export type EventName =
   | 'limit_hit' // { kind }
   | 'download' // { format, doc }
   | 'account_deleted'
+  | 'token_burn_quote' // { nonce, amountRaw, decimals, priceUsd, expiresAt } deleted when claimed (src/lib/token-burn.ts)
+  | 'token_burn' // { usd, days, priceUsd } a burn granted Pro
 
 export type EventProps = Record<string, string | number | boolean | null | undefined>
 

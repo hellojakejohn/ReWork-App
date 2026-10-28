@@ -20,7 +20,7 @@ interface User {
     capUsd: number
     percent: number
     band: 'normal' | 'downgrade' | 'paused'
-    period: 'monthly' | 'pass' | 'comp' | 'free'
+    period: 'monthly' | 'pass' | 'burn' | 'comp' | 'free'
     resetAt: string
     overrideUsd: number | null
   } | null

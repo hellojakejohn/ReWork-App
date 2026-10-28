@@ -72,6 +72,11 @@ export const PASS_DAYS = 90
 export const PRO_MONTHLY_PRICE_USD = 15
 export const PASS_PRICE_USD = 29
 
+// Burn for Pro (src/lib/token-burn.ts): burning this many USD of $REWORK buys BURN_PRO_DAYS
+// of Pro, stacking like passes. The AI cap counts it as BURN_PRO_USD paid with no Stripe cut.
+export const BURN_PRO_USD = 15
+export const BURN_PRO_DAYS = 30
+
 // AI cap for FREE accounts, in USD per calendar month (src/lib/ai-cap-rules.ts): a flat
 // backstop, since FREE brings in no revenue. Revisit once npm run eval:models has run on
 // real keys: it has to cover a parse, 3 tailors and 1 cover letter on AI_FREE_TIER.
