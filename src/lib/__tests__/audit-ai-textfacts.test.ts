@@ -36,18 +36,18 @@ describe('prose guard: things it catches (baseline)', () => {
 
 describe('prose guard: misses', () => {
   // Should flag: "doubled"/"tripled"/"halved"/"twice" are metrics.
-  it.fails('"doubled" is flagged', () => {
+  it('"doubled" is flagged', () => {
     expect(flagged('I doubled catering revenue.')).toBe(true)
   })
-  it.fails('"twice" is flagged', () => {
+  it('"twice" is flagged', () => {
     expect(flagged('I was promoted twice.')).toBe(true)
   })
   // "one" and "two" are skipped on purpose (idioms), and "a dozen" (singular) is missing
   // from WORD_NUMBERS. Should flag the clear count forms.
-  it.fails('"two promotions" is flagged', () => {
+  it('"two promotions" is flagged', () => {
     expect(flagged('I earned two promotions in a year.')).toBe(true)
   })
-  it.fails('"a dozen" is flagged', () => {
+  it('"a dozen" is flagged', () => {
     expect(flagged('I opened a dozen new accounts.')).toBe(true)
   })
   // Should flag: the capitalized-word rule skips the FIRST word of a sentence, so a tool or
@@ -67,7 +67,7 @@ describe('prose guard: misses', () => {
     expect(flagged('I oversaw $8 million in purchasing.')).toBe(true)
   })
   // Should flag: digits outside ASCII are invisible.
-  it.fails('fullwidth digits are flagged', () => {
+  it('fullwidth digits are flagged', () => {
     expect(flagged('I cut waste by ９０%.')).toBe(true)
   })
 })

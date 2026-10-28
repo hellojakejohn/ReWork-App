@@ -94,20 +94,20 @@ describe('fact guard: things it catches (baseline)', () => {
 
 describe('fact guard: numbers written as words', () => {
   // Should revert: "doubled" is a 2x claim the resume never makes.
-  it.fails('"Doubled catering revenue" (no digits) is reverted', () => {
+  it('"Doubled catering revenue" (no digits) is reverted', () => {
     expect(survives('Doubled catering revenue in one year')).toBe(false)
   })
   // Should revert: 20% is not in the resume; the tailor guard has no word-number check
   // (text-facts.ts has one for cover letters, fact-guard.ts does not use it).
-  it.fails('"twenty percent" is reverted', () => {
+  it('"twenty percent" is reverted', () => {
     expect(survives('Grew repeat bookings by twenty percent')).toBe(false)
   })
   // Should revert: a 3x speed claim.
-  it.fails('"three times faster" is reverted', () => {
+  it('"three times faster" is reverted', () => {
     expect(survives('Turned tables three times faster than the area average')).toBe(false)
   })
   // Should revert: "tripled" / "halved" are metrics too.
-  it.fails('"Halved food waste" is reverted', () => {
+  it('"Halved food waste" is reverted', () => {
     expect(survives('Halved food waste through weekly tracking')).toBe(false)
   })
 })
@@ -115,38 +115,38 @@ describe('fact guard: numbers written as words', () => {
 describe('fact guard: magnitude words and suffixes', () => {
   // Should revert: "$8 million" is a new claim; today the word "million" is ignored and the
   // token is just "8", which the team size whitelists.
-  it.fails('"$8 million" borrowing the "8" from the team size is reverted', () => {
+  it('"$8 million" borrowing the "8" from the team size is reverted', () => {
     expect(survives('Oversaw $8 million in purchasing')).toBe(false)
   })
-  it.fails('"50 thousand guests" borrowing the "50" from events is reverted', () => {
+  it('"50 thousand guests" borrowing the "50" from events is reverted', () => {
     expect(survives('Served 50 thousand guests a year')).toBe(false)
   })
   // Should be ALLOWED (same fact as $1.2M). Today it's reverted: a false positive, safe
   // direction, costs a good rewrite.
-  it.fails('"$1.2 million" is accepted as the same fact as "$1.2M"', () => {
+  it('"$1.2 million" is accepted as the same fact as "$1.2M"', () => {
     expect(survives('Processed $1.2 million in annual sales', 2)).toBe(true)
   })
   // Should revert: unicode multiplication sign is a 6x claim.
-  it.fails('"6×" (unicode times sign) is treated like "6x"', () => {
+  it('"6×" (unicode times sign) is treated like "6x"', () => {
     expect(survives('Cut ticket times 6×')).toBe(false)
   })
 })
 
-describe('fact guard: cross-bullet borrowing (numbers are checked against the WHOLE resume)', () => {
+describe('fact guard: cross-entry borrowing (numbers are checked per role or project since launch-audit)', () => {
   // Should revert: 30% belongs to catering revenue, not labor cost.
   it.fails('"Cut labor costs by 30%" (30% belongs to another bullet) is reverted', () => {
     expect(survives('Cut labor costs by 30% with smarter scheduling', 0)).toBe(false)
   })
   // Should revert: "6" is years of experience, not a team size.
-  it.fails('"team of 6" (6 is years of experience) is reverted', () => {
+  it('"team of 6" (6 is years of experience) is reverted', () => {
     expect(survives('Led a team of 6 line cooks')).toBe(false)
   })
   // Should revert: 2018 is the graduation year.
-  it.fails('"2018 covers a week" (2018 is the graduation year) is reverted', () => {
+  it('"2018 covers a week" (2018 is the graduation year) is reverted', () => {
     expect(survives('Served 2018 covers a week')).toBe(false)
   })
   // Range built from two numbers that exist elsewhere: slips too.
-  it.fails('"teams of 6-8" is reverted', () => {
+  it('"teams of 6-8" is reverted', () => {
     expect(survives('Led teams of 6-8 across two locations', 0)).toBe(false)
   })
   // The tailor prompt says evidence numbers may be used "in the bullet they're about, and
@@ -164,7 +164,7 @@ describe('fact guard: qualifiers, unicode digits', () => {
   })
   // Should revert: NUMBER_RE uses \d without the u flag, so fullwidth / Arabic-Indic digits
   // are invisible to the guard.
-  it.fails('fullwidth digits "９０%" are checked', () => {
+  it('fullwidth digits "９０%" are checked', () => {
     expect(survives('Cut food waste by ９０%')).toBe(false)
   })
   it.fails('Arabic-Indic digits are checked', () => {
@@ -172,20 +172,20 @@ describe('fact guard: qualifiers, unicode digits', () => {
   })
 })
 
-describe('fact guard: invented names inside bullet text (only the skills list is checked)', () => {
-  it.fails('invented employer/partner in a bullet is reverted', () => {
+describe('fact guard: invented names inside bullet text (checked since launch-audit)', () => {
+  it('invented employer/partner in a bullet is reverted', () => {
     expect(survives('Negotiated supplier contracts with Sysco and US Foods')).toBe(false)
   })
-  it.fails('invented title in a bullet is reverted', () => {
+  it('invented title in a bullet is reverted', () => {
     expect(survives('Promoted to General Manager after the first year')).toBe(false)
   })
-  it.fails('invented tool in a bullet is reverted', () => {
+  it('invented tool in a bullet is reverted', () => {
     expect(survives('Built weekly sales dashboards in Tableau')).toBe(false)
   })
-  it.fails('invented certification in a bullet is reverted', () => {
+  it('invented certification in a bullet is reverted', () => {
     expect(survives('ServSafe Manager certified; trained staff on HACCP')).toBe(false)
   })
-  it.fails('an extra, fully invented bullet (no numbers) is not added', () => {
+  it('an extra, fully invented bullet (no numbers) is not added', () => {
     const out = baseOutput()
     out.roles[0].bullets.push({ text: 'Opened a second location in Minneapolis', reason: 'x' })
     const { cleaned } = factGuard(master, out)

@@ -89,7 +89,8 @@ export type FactGuardWarningType =
   | 'fact_restored' // company/title/dates/name changed by the model, master value restored
   | 'entry_restored' // model dropped a role/education/project, restored from master
   | 'entry_discarded' // model invented a role/education/project, discarded
-  | 'new_number' // bullet/summary introduced a number not in the master, reverted
+  | 'new_number' // bullet/summary introduced a number (or "doubled", "twenty") not in the master, reverted
+  | 'new_claim' // bullet introduced a name (employer, tool, title, certification) not in the master, reverted
   | 'skill_dropped' // skill not found anywhere in the master, dropped
 
 export interface FactGuardWarning {

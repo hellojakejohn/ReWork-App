@@ -46,6 +46,8 @@ function question(w: FactGuardWarning): string {
   switch (w.type) {
     case 'new_number':
       return REAL_NUMBER_QUESTION
+    case 'new_claim':
+      return "That isn't in your resume, so we left it out. If it's true, add it to your resume and tailor again."
     case 'skill_dropped':
       return "These aren't in your resume. If you have them, add them to your resume and tailor again."
     case 'entry_discarded':
