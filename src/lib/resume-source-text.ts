@@ -110,11 +110,20 @@ export function itemsToLines(items: PositionedItem[]): string[] {
 // ---------- file extraction (server only) ----------
 
 export class UnreadableFileError extends Error {
-  constructor(message: string) {
+  /** Set when we know exactly what the user should do (password, page count). */
+  userMessage?: string
+  constructor(message: string, userMessage?: string) {
     super(message)
     this.name = 'UnreadableFileError'
+    this.userMessage = userMessage
   }
 }
+
+/** More pages than any resume: refused before reading them all. */
+export const MAX_PDF_PAGES = 10
+
+/** Separates the page text from the link annotations appended after it. */
+export const LINKS_HEADER = '\n\nLinks in file:\n'
 
 // Just the pdfjs surface we use. src/types/pdfjs.d.ts shadows the package's own types
 // with an older, narrower declaration, so we describe what we need here.
@@ -138,14 +147,30 @@ interface PdfjsModule {
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   if (buffer.subarray(0, 5).toString() !== '%PDF-') throw new UnreadableFileError('Not a PDF file')
   const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as PdfjsModule
-  const doc = await pdfjs.getDocument({
-    data: new Uint8Array(buffer),
-    isEvalSupported: false,
-    useSystemFonts: false,
-    disableFontFace: true,
-    verbosity: 0,
-  }).promise
+  const doc = await pdfjs
+    .getDocument({
+      data: new Uint8Array(buffer),
+      isEvalSupported: false,
+      useSystemFonts: false,
+      disableFontFace: true,
+      verbosity: 0,
+    })
+    .promise.catch((error: unknown) => {
+      if ((error as { name?: string } | null)?.name === 'PasswordException') {
+        throw new UnreadableFileError(
+          'PDF is password-protected',
+          'That PDF is password-protected. Save a copy without a password, or paste your resume text instead.'
+        )
+      }
+      throw error
+    })
   try {
+    if (doc.numPages > MAX_PDF_PAGES) {
+      throw new UnreadableFileError(
+        `PDF has ${doc.numPages} pages`,
+        `That PDF has ${doc.numPages} pages, more than a resume. Upload just your resume (up to ${MAX_PDF_PAGES} pages), or paste the text.`
+      )
+    }
     const pages: string[] = []
     // Design resumes often show "LinkedIn" as text with the real URL only in a link
     // annotation. Collect those so the parser (and the validator) can see them.
@@ -171,7 +196,7 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
     }
     const text = pages.join('\n\n').trim()
     const links = [...linkUrls].filter(Boolean)
-    return links.length ? `${text}\n\nLinks in file:\n${links.join('\n')}` : text
+    return links.length ? `${text}${LINKS_HEADER}${links.join('\n')}` : text
   } finally {
     await doc.destroy()
   }

@@ -80,13 +80,13 @@ export function matchAtsUrl(input: string | URL): AtsMatch | null {
     return null
   }
 
-  // Workday: {tenant}.wd{N}.myworkdayjobs.com/[{locale}/]{site}/job/{...}
+  // Workday: {tenant}.wd{N}.myworkdayjobs.com/[{locale}/]{site}/job/{...} (or /details/{...})
   const workday = host.match(/^([a-z0-9-]+)\.(wd\d+)\.myworkdayjobs\.com$/)
   if (workday) {
     const tenant = workday[1]
     const rest = /^[a-z]{2}-[A-Z]{2}$/.test(parts[0] || '') ? parts.slice(1) : parts
     const [site, marker, ...jobPath] = rest
-    if (site && marker === 'job' && jobPath.length > 0) {
+    if (site && (marker === 'job' || marker === 'details') && jobPath.length > 0) {
       const last = jobPath[jobPath.length - 1]
       return {
         ats: 'workday',

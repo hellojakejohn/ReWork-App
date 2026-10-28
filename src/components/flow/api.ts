@@ -42,10 +42,13 @@ async function failure(res: Response, fallback: string): Promise<Failure> {
   return {
     ok: false,
     status: res.status,
-    error: data.error || data.message || PLATFORM_ERRORS[res.status] || fallback,
+    // Our routes say only "Unauthorized" on 401: that's an expired session to the user.
+    error: res.status === 401 ? SESSION_EXPIRED : data.error || data.message || PLATFORM_ERRORS[res.status] || fallback,
     upgradeRequired: !!data.upgradeRequired,
   }
 }
+
+const SESSION_EXPIRED = "You've been signed out. Sign in again to keep going; nothing you saved is lost."
 
 const NETWORK: Failure = { ok: false, status: 0, error: "Can't reach ReWork. Check your connection and try again." }
 
