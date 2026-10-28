@@ -272,10 +272,12 @@ Phrasing rules (website, X, replies, Spaces):
 
 ## 7. Five questions Jake must answer before Nov 6
 
-1. **Dev allocation**: zero (recommended), or a small first buy locked on Jupiter Lock, and
-   until when?
-2. **Which X account** claims the fees and posts the token: the rework brand account, a
-   separate token handle, or @hellojakejohn?
+Decided 2026-10-27: **zero dev buy**, and **a new rework X account** posts the token and
+claims the Bags fees (create it now so it isn't brand new on launch day; link it from
+@hellojakejohn).
+
+1. ~~Dev allocation~~: zero.
+2. ~~Which X account~~: a new rework account.
 3. **Ticker**: `$REWORK` (recommended) or `$WORK`?
 4. **Lawyer**: will the consult happen before Nov 6? If not, do you launch the plain memecoin
    with no perks and the phrasing rules above, or move the token to after the consult?
