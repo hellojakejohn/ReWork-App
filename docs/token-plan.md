@@ -16,8 +16,9 @@ this plan drops: fees are Jake's revenue and stay his).
 - **Design: `$REWORK`, launchpad-standard supply, zero dev allocation.** Jake earns creator
   fees only, holds nothing to sell, and says so with a public wallet.
 - **On the site for Nov 6:** a `/token` transparency page, a public "Invented: 0" stats page,
-  and USDC checkout through Stripe's own stablecoin payments. Holder perks wait for January
-  and a lawyer.
+  and USDC checkout through Stripe's own stablecoin payments.
+- **The one token feature: burn `$REWORK` for 30 days of Pro** (section 3b). No holder perks,
+  discounts or buybacks.
 - **Order on Nov 6:** product live and a real Stripe sale verified first; token at midday CT;
   token talk stays on its own page and posts, never in the product flow or on TikTok.
 
@@ -135,6 +136,52 @@ No lawyer means no holder perks (section 7), so all three are token-free:
 2. **Referral in Pro days** (idea 11), so January's traffic compounds.
 3. **"Break the fact guard" bounty** (idea 8): Pro time for anyone who shows a tailor that
    invented something. Proves the promise in public.
+
+## 3b. Burn for Pro (decided 2026-10-27)
+
+A user burns `$REWORK` worth $15 and gets 30 days of Pro, exactly as if they had bought it.
+Jake never holds the tokens, so there is no payment, no custody and nothing in Stripe.
+It lives on `/token` only, never on the pricing page or in checkout.
+
+**Flow**
+
+1. `/token` shows "Burn for 30 days of Pro". The user signs in and connects Phantom.
+2. The server quotes the amount: $15 at the *lower* of the Jupiter price and a 30-minute
+   average, refusing to quote if liquidity is under a floor or the two prices disagree by more
+   than 10%. This stops someone pumping a thin pool for a few seconds to burn less. The quote
+   is valid 5 minutes.
+3. Phantom signs one transaction: `burnChecked` on the `$REWORK` mint plus a memo with the
+   quote id. The memo ties the burn to this account, so nobody can claim someone else's burn.
+4. The server reads the transaction at `finalized` and checks: it succeeded, it burned the
+   right mint, the amount is at least the quote, the memo matches, and the signature hasn't
+   been used. Then it grants Pro.
+5. Burns are final. No refunds; the button says so.
+
+**Entitlement and the AI cap**
+
+- A new `TOKEN_BURN` entitlement source, 30 days, stacking like passes, with the transaction
+  signature as `externalId`. The existing `@@unique([source, externalId])` blocks replays.
+  This is one enum value, so it **needs a DB migration (Jake's OK first)**.
+- The cap counts it as a Pro month: 0.70 x $14.27 net, about $10 of AI.
+
+**The catch: burn Pro costs real cash.** Stripe Pro pays for its own AI. A burn pays Jake $0:
+the only money he sees is the 1% creator fee on the tokens the user bought (about $0.15 on
+$15). So every burn-Pro user is AI Jake pays for out of pocket, up to about $10 a month if
+they max out. Typical use is far lower (a busy month of tailoring is $1 to $3, estimate), but
+it's the free-tier problem again. So burn Pro gets its own daily ceiling, like free accounts:
+`AI_BURN_DAILY_USD`, default $15. When it's hit, burn users see "back at midnight UTC" and
+Stripe users are never affected. Creator fees and Pass sales cover it; `/admin` shows the
+split.
+
+**Build**
+
+About 3 to 4 days including a devnet test with a test mint: `@solana/web3.js`,
+`@solana/spl-token` and Phantom's wallet-standard connect; two routes (quote, verify); an
+RPC key (Helius free tier, unverified limits) added to CSP `connect-src`. Everything sits
+behind a `REWORK_MINT` env var, so it ships dark and turns on after the token is live.
+
+**Phrasing:** "Burn `$REWORK` for Pro." Not "burns shrink supply", not "deflationary", nothing
+that connects burns to price.
 
 ## 4. Risks (blunt)
 
@@ -280,11 +327,12 @@ Decided 2026-10-27:
 2. **X account: a new rework account** posts the token and claims the Bags fees, quoted from
    @hellojakejohn (DustSweep's account was a day or two old at launch and that worked).
 3. **Ticker: `$REWORK`.**
-4. **No lawyer.** So: the plain memecoin only, **no holder perks, no discounts, no paying in
-   `$REWORK`, no token bounties, ever** (ideas 5, 6, 7 and 14 are off the table). The phrasing
-   rules in section 4 are the whole protection, so follow them in every post and reply.
-   January's three are the token-free ones: the proof wall and creator program, referrals in
-   Pro days, and the "break the fact guard" bounty (idea 8).
+4. **No lawyer.** The line that matters is using the token vs promising its price, not
+   "any utility at all" (an earlier draft of this answer was too strict). Decided:
+   **burn `$REWORK` for Pro days** (section 3b) is the one token feature. Still off the table:
+   holder discounts and perks (5, 6), paying Jake in `$REWORK` (7), token bounties (14), and
+   any buyback or burn paid for with Jake's revenue or fees. The phrasing rules in section 4
+   apply to every post and reply.
 5. **AI limits: $25/day for free accounts** (`AI_FREE_DAILY_USD`, the default). Paid users
    aren't limited by it. Still set a monthly limit in the Anthropic Console.
 
