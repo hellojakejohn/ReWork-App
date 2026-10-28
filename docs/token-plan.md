@@ -137,48 +137,59 @@ No lawyer means no holder perks (section 7), so all three are token-free:
 3. **"Break the fact guard" bounty** (idea 8): Pro time for anyone who shows a tailor that
    invented something. Proves the promise in public.
 
-## 3b. Burn for Pro (decided 2026-10-27)
+## 3b. Burn for Pro (decided and built 2026-10-27)
 
 A user burns `$REWORK` worth $15 and gets 30 days of Pro, exactly as if they had bought it.
 Jake never holds the tokens, so there is no payment, no custody and nothing in Stripe.
-It lives on `/token` only, never on the pricing page or in checkout.
+Code: `src/lib/token-burn.ts`, `/api/token/burn/{quote,claim}`, `/token` (public) and
+`/dashboard/token` (the burn screen, linked from `/token` only, never from the product flow).
 
 **Flow**
 
-1. `/token` shows "Burn for 30 days of Pro". The user signs in and connects Phantom.
-2. The server quotes the amount: $15 at the *lower* of the Jupiter price and a 30-minute
-   average, refusing to quote if liquidity is under a floor or the two prices disagree by more
-   than 10%. This stops someone pumping a thin pool for a few seconds to burn less. The quote
-   is valid 5 minutes.
-3. Phantom signs one transaction: `burnChecked` on the `$REWORK` mint plus a memo with the
-   quote id. The memo ties the burn to this account, so nobody can claim someone else's burn.
-4. The server reads the transaction at `finalized` and checks: it succeeded, it burned the
-   right mint, the amount is at least the quote, the memo matches, and the signature hasn't
-   been used. Then it grants Pro.
-5. Burns are final. No refunds; the button says so.
+1. The user signs in, opens `/dashboard/token` and connects Phantom (any wallet-standard
+   Solana wallet works).
+2. The server prices $15 at the *lower* of Jupiter and DexScreener, read off the deepest pool.
+   It refuses to quote if the pool has under $10k liquidity, the feeds disagree by over 10%,
+   or the price moved over 15% in 5 minutes (what a short pump to burn less looks like).
+   Amounts round up to a whole token. The quote is valid 5 minutes, 20 per hour max.
+3. The server builds the transaction: `burnChecked` on the `$REWORK` mint plus a memo
+   `rework burn <nonce>`. Phantom signs and sends it as-is.
+4. The server reads it at `finalized` and checks: it succeeded, it burned at least the quoted
+   amount of our mint, and the memo's nonce is a quote on *this* account. Using the quote up
+   and granting Pro happen in one database transaction, so a quote buys Pro once and a
+   signature is claimed once.
+5. The signature waits in the browser until the claim lands, and a paste box takes it later,
+   so a closed tab loses nothing. Burns are final; the screen says so.
 
 **Entitlement and the AI cap**
 
-- A new `TOKEN_BURN` entitlement source, 30 days, stacking like passes, with the transaction
-  signature as `externalId`. The existing `@@unique([source, externalId])` blocks replays.
-  This is one enum value, so it **needs a DB migration (Jake's OK first)**.
-- The cap counts it as a Pro month: 0.70 x $14.27 net, about $10 of AI.
+- `TOKEN_PAYMENT` entitlement (already in the database enum, so **no migration**), 30 days,
+  signature as `externalId`. Burned days start when the user's current Pro ends (pass, comp,
+  earlier burns, a canceling subscription), so they never run alongside paid time. A renewing
+  card subscription can't get a quote.
+- Cap: one window per burn, 0.70 x $15 = $10.50 of AI (no Stripe cut).
+- **Burn Pro's own daily ceiling, `AI_BURN_DAILY_USD`, default $12**, shared by every burn-Pro
+  account. A burn pays Jake $0 (his only money from it is the 1% creator fee on the tokens
+  bought, about $0.15), so this caps what burns can cost: at most $12 a day, $360 a month.
+  When it's hit, burn users see "back at midnight UTC"; card-paid Pro is never affected.
+  If spend can't be read, burn Pro pauses (fails closed). Calls log `tier: 'burn'`.
+- To break even on burn AI from fees alone, `$REWORK` needs about $1,200 a day of volume per
+  $12 of burn AI (1% fee). Below that, Pass and Pro sales cover the rest. Lower the ceiling if
+  volume is thin.
 
-**The catch: burn Pro costs real cash.** Stripe Pro pays for its own AI. A burn pays Jake $0:
-the only money he sees is the 1% creator fee on the tokens the user bought (about $0.15 on
-$15). So every burn-Pro user is AI Jake pays for out of pocket, up to about $10 a month if
-they max out. Typical use is far lower (a busy month of tailoring is $1 to $3, estimate), but
-it's the free-tier problem again. So burn Pro gets its own daily ceiling, like free accounts:
-`AI_BURN_DAILY_USD`, default $15. When it's hit, burn users see "back at midnight UTC" and
-Stripe users are never affected. Creator fees and Pass sales cover it; `/admin` shows the
-split.
+**Turning it on (after the token is live)**
 
-**Build**
+1. Vercel env (Production): `REWORK_MINT` = the mint address from Bags, `SOLANA_RPC_URL` =
+   a Helius (or similar) mainnet URL (the public RPC rate-limits). `AI_BURN_DAILY_USD` only if
+   not 12. Redeploy. Until `REWORK_MINT` is set, `/token` and the burn screen 404.
+2. Do one real burn yourself with a fresh wallet, then check `/admin` and the entitlement.
 
-About 3 to 4 days including a devnet test with a test mint: `@solana/web3.js`,
-`@solana/spl-token` and Phantom's wallet-standard connect; two routes (quote, verify); an
-RPC key (Helius free tier, unverified limits) added to CSP `connect-src`. Everything sits
-behind a `REWORK_MINT` env var, so it ships dark and turns on after the token is live.
+**Tested:** unit tests (price checks, amounts, reading transactions, stacking, the $12
+ceiling) and an end-to-end run on a local Solana validator with classic and Token-2022 mints:
+real quote, signed and sent, burned on-chain, Pro granted once, replays and claims from
+another account refused (`src/lib/__tests__/token-burn-localnet.test.ts`). **Not tested:**
+the screen with a real Phantom extension, and mainnet price feeds for `$REWORK` (it doesn't
+exist yet).
 
 **Phrasing:** "Burn `$REWORK` for Pro." Not "burns shrink supply", not "deflationary", nothing
 that connects burns to price.
@@ -329,7 +340,8 @@ Decided 2026-10-27:
 3. **Ticker: `$REWORK`.**
 4. **No lawyer.** The line that matters is using the token vs promising its price, not
    "any utility at all" (an earlier draft of this answer was too strict). Decided:
-   **burn `$REWORK` for Pro days** (section 3b) is the one token feature. Still off the table:
+   **burn `$REWORK` for Pro days** (section 3b, built) is the one token feature, with its own
+   $12/day AI ceiling. Still off the table:
    holder discounts and perks (5, 6), paying Jake in `$REWORK` (7), token bounties (14), and
    any buyback or burn paid for with Jake's revenue or fees. The phrasing rules in section 4
    apply to every post and reply.

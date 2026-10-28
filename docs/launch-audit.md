@@ -185,6 +185,11 @@ Before Nov 6 (in this order):
 10. **Vercel**: Web Analytics on; failed-deployment email alert on.
 11. **Merge order** (your call, when ready): #7 into main, then #8, then #9, then this PR.
 
+### Burn for Pro (only after the token is live)
+
+Set `REWORK_MINT` and `SOLANA_RPC_URL` in Vercel Production, redeploy, then do one real burn
+from a fresh wallet. `AI_BURN_DAILY_USD` defaults to $12. Details: `docs/token-plan.md` 3b.
+
 ## What $25 a day of free-tier AI buys
 
 Estimates from the prices in `src/lib/ai/models.ts` (Opus 5.5 $4/$20, Sonnet 5.5 $2/$10 per

@@ -32,6 +32,7 @@
 - `src/lib/track.ts` + `src/lib/ai-usage.ts` - analytics events and per-call OpenAI token usage; `src/lib/admin-analytics.ts` feeds `/admin`
 - `src/lib/daily-ceiling.ts` - per-user daily ceilings (Pro included), counted from events
 - `src/lib/ai-cap.ts` + `src/lib/ai-inflight.ts` - AI cap, kill switch, global daily ceiling, per-user in-flight limit
+- `src/lib/token-burn.ts` + `src/components/token/` - burn $REWORK for 30 days of Pro (off unless `REWORK_MINT` is set; own `AI_BURN_DAILY_USD` ceiling)
 - `src/instrumentation.ts` - server errors to `events` (shown in `/admin`)
 - `docs/launch-audit.md`, `docs/token-plan.md` - launch go/no-go and the token plan
 - `src/lib/account.ts` - Download my data / Delete my account (Stripe cancel first)

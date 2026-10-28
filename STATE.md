@@ -51,6 +51,8 @@ UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
   `/auth/signin`, `/admin`. The route group's layout holds the session/feedback providers
   and the toaster.
 - `/sitemap.xml`, `/robots.txt`, `public/og-image.png` (1200x630).
+- `/token` (public) and `/dashboard/token` (burn $REWORK for 30 days of Pro): both 404
+  until `REWORK_MINT` is set. Not in the sitemap or footer; linked from X only.
 
 ## Account
 - First run: new users land on the Resume card with a one-line welcome.
@@ -89,7 +91,8 @@ OPENAI_API_KEY / OPENROUTER_API_KEY only if a task routes there), NEXT_PUBLIC_SU
 SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; no fallback name),
 CRON_SECRET (crons refuse every request without it). AI_FREE_TIER defaults to
-anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set.
+anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set. Token burn (optional, after
+launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
 
 ## Billing guards
 - The webhook grants a pass or a new subscription only for the configured price ids;
