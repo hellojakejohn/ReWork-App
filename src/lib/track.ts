@@ -16,7 +16,7 @@ export type EventName =
   | 'evidence_started' // { ok } one evidence interview run (questions generated); the daily ceiling counts these
   | 'evidence_completed' // { applied }
   | 'ai_usage' // model calls with no event of their own (evidence questions/rewrites)
-  | 'ai_call' // { provider, model, task, tokensIn, tokensOut, cachedIn, costUsd, ms, ok } one per provider call; spend source of truth
+  | 'ai_call' // { tier, provider, model, task, tokensIn, tokensOut, cachedIn, costUsd, ms, ok } one per provider call; spend source of truth
   | 'ai_inflight' // a model call running now (src/lib/ai-inflight.ts); deleted when it ends
   | 'ai_cap_band' // { band: downgrade | paused, period, percent } a user crossed 75% or 100% of their AI cap
   | 'ai_error' // { feature, kind, status }

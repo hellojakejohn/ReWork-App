@@ -40,7 +40,7 @@ None.
 | # | Area | Finding | Where | Status |
 | --- | --- | --- | --- | --- |
 | H1 | Fact guard | The receipt says "Invented: 0", but bullets could borrow a number from another job, the summary or the graduation year ("team of 6" when 6 is years of experience). "Doubled", "twenty percent" and "$8 million" (borrowing the 8) passed, and so did a new employer, tool, title or certification named inside a bullet. | `src/lib/fact-guard.ts`, `src/lib/resume-text.ts` | Fixed `ecfe263` |
-| H2 | AI cost | No global spend ceiling or kill switch: launch-day signups or account farming were bounded only by the Anthropic balance. | `src/lib/ai-cap.ts` | Fixed `242ed78`: `AI_DISABLED`, `AI_GLOBAL_DAILY_USD` (default $150/day) |
+| H2 | AI cost | No global spend ceiling or kill switch: launch-day signups or account farming were bounded only by the Anthropic balance. | `src/lib/ai-cap.ts` | Fixed `242ed78`: `AI_DISABLED`, and `AI_FREE_DAILY_USD` (default $25/day, free accounts only; paid users are covered by their own 0.70 x revenue cap) |
 | H3 | AI cost | The cap failed open: if `events` couldn't be read, a FREE user at 1000% ran as if new. | `src/lib/ai-cap.ts` | Fixed `242ed78` (FREE fails closed, paid fails open) |
 | H4 | AI cost | Parallel requests all passed the cap check, because spend is written after each call. A FREE user at 98% firing 20 parses could spend about $8 on a $0.50 cap; Pro could overshoot about $38. | `src/lib/ai-cap.ts`, routes | Fixed `242ed78`: at most 2 model calls per user in flight (`src/lib/ai-inflight.ts`). Worst overshoot is now about 2 calls (about $0.75). |
 | H5 | AI layer | The SDK timeout (600s x 3 attempts) outlived `maxDuration` 300. A slow Opus call was killed before the route released the FREE quota or logged the spend. | `src/lib/ai/adapters/anthropic.ts:70` | Fixed `242ed78`: every call gets the time left before the route's deadline, no SDK retry |
@@ -137,8 +137,8 @@ Before Nov 6 (in this order):
 
 1. **Anthropic Console**: set a hard monthly spend limit on the workspace (the last
    backstop if everything else fails).
-2. **Vercel env (Production)**: `AI_GLOBAL_DAILY_USD` (default 150 if unset; set what you
-   can lose in a day), confirm `CRON_SECRET`, `NEXTAUTH_URL=https://rework.hellojakejohn.com`,
+2. **Vercel env (Production)**: `AI_FREE_DAILY_USD` (default 25 if unset: the most free
+   accounts can cost you in a day; paying users never hit it), confirm `CRON_SECRET`, `NEXTAUTH_URL=https://rework.hellojakejohn.com`,
    no `AI_*` var routes to openrouter. Know where `AI_DISABLED=1` goes (the incident switch:
    set it and redeploy).
 3. **Vercel env (Preview)**: separate test DB and Stripe test keys, or Deployment
@@ -185,10 +185,32 @@ Before Nov 6 (in this order):
 10. **Vercel**: Web Analytics on; failed-deployment email alert on.
 11. **Merge order** (your call, when ready): #7 into main, then #8, then #9, then this PR.
 
+## What $25 a day of free-tier AI buys
+
+Estimates from the prices in `src/lib/ai/models.ts` (Opus 5.5 $4/$20, Sonnet 5.5 $2/$10 per
+million input/output tokens) and guessed token counts; the real numbers show up in `/admin`
+(AI spend by model) after the first day.
+
+| Free-account action | Model | About |
+| --- | --- | --- |
+| Resume upload (parse) | Opus | $0.09 |
+| Job link the model has to read (Greenhouse, Lever, Ashby, Workday, JSON-LD links cost $0) | Opus | $0.05 |
+| Tailor | Sonnet | $0.07 |
+| Cover letter | Sonnet | $0.04 |
+| A typical new signup (upload, one job link, one tailor) | | $0.21 |
+| A free user who uses everything in a month (upload, 2 links, 3 tailors, 1 letter) | | $0.44 (under their $0.50 cap) |
+
+So `AI_FREE_DAILY_USD=25` is roughly **120 typical signups a day**, or about 55 who use
+everything, or about 350 tailors, and at most **$750 a month** from free accounts. Paying
+users are outside that number, and each one's AI is capped at 0.70 x what they paid, so they
+can't cost more than they bring in. Roughly one $29 pass a day covers a maxed-out free tier.
+When the ceiling hits, free accounts see "the free plan has used today's AI allowance... Go Pro
+to keep going now" until midnight UTC.
+
 ## Go / no-go checklist for Nov 6
 
 - [ ] All four PRs merged to `main` and deployed; prod `/api/health` returns `ok: true`
-- [ ] Anthropic workspace spend limit set; `AI_GLOBAL_DAILY_USD` set
+- [ ] Anthropic workspace spend limit set; `AI_FREE_DAILY_USD` decided (default $25)
 - [ ] Stripe live: prices, webhook (clover, 10 events), portal, one-subscription setting
 - [ ] Test billing data cleared from the prod DB
 - [ ] One real $29 pass bought with a real card, Pro granted, then refunded and revoked

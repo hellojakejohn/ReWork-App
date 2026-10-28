@@ -19,8 +19,9 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
   run on AI_FREE_TIER with a header banner. 100%: AI pauses until the reset date; downloads,
   tracker and editing keep working. Users see a percent, never dollars. Admin can override
   per user. `src/lib/ai-cap-rules.ts`. FREE fails closed if spend can't be read.
-- Above every cap: `AI_DISABLED=1` pauses all AI (incident switch); `AI_GLOBAL_DAILY_USD`
-  (default 150, 0 = off) pauses everyone once today's total spend reaches it. At most 2
+- Above every cap: `AI_DISABLED=1` pauses all AI (incident switch); `AI_FREE_DAILY_USD`
+  (default 25, 0 = off) pauses FREE accounts once today's free-tier spend reaches it (paid
+  users never: their cap keeps AI under what they paid). `ai_call` events carry `tier`. At most 2
   model calls per user in flight (`src/lib/ai-inflight.ts`, `ai_inflight` rows in events).
   Each provider call gets the time left before the route's 300s deadline as its timeout.
 - Input caps: resume file 4 MB (Vercel rejects bodies over 4.5 MB), pasted resume 30k chars,

@@ -128,11 +128,13 @@ Total: about 1.5 days of build, all doable on `launch-audit`'s successor branch 
 
 ### Best 3 for January
 
-1. **Holder perk: extra free tailors** (idea 5), only after the lawyer signs off: live from
-   the day it's announced, modest, capped, revocable at will, said up front.
-2. **Before/after proof wall plus a paid creator program** (idea 9), the engine of the
-   TikTok push, FTC-compliant, token-free.
-3. **Referral in Pro days** (idea 11), so January's traffic compounds.
+No lawyer means no holder perks (section 7), so all three are token-free:
+
+1. **Before/after proof wall plus a paid creator program** (idea 9), the engine of the
+   TikTok push, FTC-compliant.
+2. **Referral in Pro days** (idea 11), so January's traffic compounds.
+3. **"Break the fact guard" bounty** (idea 8): Pro time for anyone who shows a tailor that
+   invented something. Proves the promise in public.
 
 ## 4. Risks (blunt)
 
@@ -195,8 +197,9 @@ Phrasing rules (website, X, replies, Spaces):
   page (and ideally a separate X handle) so product followers never see price talk; no promises,
   so there's nothing to break; and a product that keeps shipping whatever the chart does.
 - Cost exposure: a token pump means a signup spike. The new AI guards (global daily ceiling,
-  in-flight limit, FREE fail-closed) bound the AI bill; set `AI_GLOBAL_DAILY_USD` and the
-  Anthropic Console limit before the token goes live.
+  in-flight limit, FREE fail-closed) bound the AI bill: free accounts can cost at most
+  `AI_FREE_DAILY_USD` (default $25) a day, and paying users are always covered by what they
+  paid. Set the Anthropic Console limit before the token goes live.
 
 ### Needs a real lawyer (scoped consult, likely 4 to 10 hours; vendor rates suggest roughly $1.5k to $5k, unverified, get 2 or 3 quotes)
 
@@ -214,14 +217,14 @@ Phrasing rules (website, X, replies, Spaces):
 
 - [ ] Launch-audit go/no-go items done (`docs/launch-audit.md`), including a real $29 sale and
       refund on prod.
-- [ ] Lawyer consult booked or done; Stripe support asked in writing.
+- [ ] Stripe support asked in writing about the token (keep the answer).
 - [ ] Fresh Phantom wallet for the launch, funded with a little SOL; fee claimer decided
       (brand X account); 2FA on that X account.
 - [ ] `/token` page built with a placeholder for the CA, unlinked; `/proof` stats page live;
       USDC on in Stripe and tested.
 - [ ] Threads drafted (product thread, token thread), demo video (upload to tailored PDF in
       under a minute), receipt screenshot, OG image checked on X's card validator.
-- [ ] `AI_GLOBAL_DAILY_USD` and the Anthropic limit set; uptime monitor on `/api/health/live`.
+- [ ] Anthropic limit set (`AI_FREE_DAILY_USD` defaults to $25); uptime monitor on `/api/health/live`.
 - [ ] Don't pre-announce the token's minute or CA (bots line up on announced times).
 
 ### Friday Nov 6 (times Central)
@@ -266,22 +269,33 @@ Phrasing rules (website, X, replies, Spaces):
 - **Creator program** (idea 9): pay small creators for honest videos, whatever they say,
   `#ad` disclosed, no token mentions (TikTok policy).
 - **Referrals in Pro days** (idea 11) live before the push so the spike compounds.
-- **Holder perk** (idea 5) only if the lawyer cleared it, announced on the token channels only.
 - Retarget the Nov 6 signups who used 3 free tailors with the Pass ($29 for 90 days covers a
   January search).
 
 ## 7. Five questions Jake must answer before Nov 6
 
-Decided 2026-10-27: **zero dev buy**, and **a new rework X account** posts the token and
-claims the Bags fees (create it now so it isn't brand new on launch day; link it from
-@hellojakejohn).
+Decided 2026-10-27:
 
-1. ~~Dev allocation~~: zero.
-2. ~~Which X account~~: a new rework account.
+1. **Dev allocation: zero.** Jake holds no `$REWORK`.
+2. **X account: a new rework account** posts the token and claims the Bags fees, quoted from
+   @hellojakejohn (DustSweep's account was a day or two old at launch and that worked).
+3. **Ticker: `$REWORK`.**
+4. **No lawyer.** So: the plain memecoin only, **no holder perks, no discounts, no paying in
+   `$REWORK`, no token bounties, ever** (ideas 5, 6, 7 and 14 are off the table). The phrasing
+   rules in section 4 are the whole protection, so follow them in every post and reply.
+   January's three are the token-free ones: the proof wall and creator program, referrals in
+   Pro days, and the "break the fact guard" bounty (idea 8).
+5. **AI limits: $25/day for free accounts** (`AI_FREE_DAILY_USD`, the default). Paid users
+   aren't limited by it. Still set a monthly limit in the Anthropic Console.
+
+Original questions, for the record:
+
+1. **Dev allocation**
+2. **Which X account**
 3. **Ticker**: `$REWORK` (recommended) or `$WORK`?
 4. **Lawyer**: will the consult happen before Nov 6? If not, do you launch the plain memecoin
    with no perks and the phrasing rules above, or move the token to after the consult?
-5. **Money limits for launch week**: the daily AI loss you'll accept (`AI_GLOBAL_DAILY_USD`)
+5. **Money limits for launch week**: the daily AI loss you'll accept (`AI_FREE_DAILY_USD`)
    and the Anthropic monthly limit?
 
 ## Sources

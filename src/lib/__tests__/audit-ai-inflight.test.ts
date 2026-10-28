@@ -7,6 +7,8 @@ const db = vi.hoisted(() => ({
   rows: [] as { id: string; userId: string; name: string; createdAt: Date }[],
   n: 0,
   globalSpent: 0,
+  isPro: false,
+  lastGlobalSql: '',
 }))
 
 vi.mock('@/lib/prisma', () => ({
@@ -28,31 +30,35 @@ vi.mock('@/lib/prisma', () => ({
     entitlement: { findMany: vi.fn(async () => []) },
     aiCapOverride: { findUnique: vi.fn(async () => null) },
     // Per-user spend and global spend both come through here; the SQL text tells them apart.
-    $queryRaw: vi.fn(async (strings: TemplateStringsArray) =>
-      strings.join('').includes('"userId" =') ? [{ spent: 0 }] : [{ spent: db.globalSpent }]
-    ),
+    $queryRaw: vi.fn(async (strings: TemplateStringsArray) => {
+      const sql = strings.join('')
+      if (sql.includes('"userId" =')) return [{ spent: 0 }]
+      db.lastGlobalSql = sql
+      return [{ spent: db.globalSpent }]
+    }),
   },
 }))
-vi.mock('@/lib/entitlements', () => ({ getAccess: vi.fn(async () => ({ isPro: false })) }))
+vi.mock('@/lib/entitlements', () => ({ getAccess: vi.fn(async () => ({ isPro: db.isPro })) }))
 
 import { AI_MAX_INFLIGHT, AIInflightError, acquireInflightSlot } from '@/lib/ai-inflight'
-import { AI_DISABLED_MESSAGE, AI_GLOBAL_CEILING_MESSAGE, DEFAULT_GLOBAL_DAILY_USD, getAIBudget, resetGlobalSpendCache } from '@/lib/ai-cap'
+import { AI_DISABLED_MESSAGE, AI_FREE_CEILING_MESSAGE, DEFAULT_FREE_DAILY_USD, getAIBudget, resetGlobalSpendCache } from '@/lib/ai-cap'
 import { classifyAIError } from '@/lib/ai-errors'
 import { collectUsage, takeCallSlot } from '@/lib/ai-usage'
 
-const saved = { disabled: process.env.AI_DISABLED, ceiling: process.env.AI_GLOBAL_DAILY_USD }
+const saved = { disabled: process.env.AI_DISABLED, ceiling: process.env.AI_FREE_DAILY_USD }
 beforeEach(() => {
   db.rows = []
   db.globalSpent = 0
+  db.isPro = false
   resetGlobalSpendCache()
   delete process.env.AI_DISABLED
-  delete process.env.AI_GLOBAL_DAILY_USD
+  delete process.env.AI_FREE_DAILY_USD
 })
 afterEach(() => {
   if (saved.disabled === undefined) delete process.env.AI_DISABLED
   else process.env.AI_DISABLED = saved.disabled
-  if (saved.ceiling === undefined) delete process.env.AI_GLOBAL_DAILY_USD
-  else process.env.AI_GLOBAL_DAILY_USD = saved.ceiling
+  if (saved.ceiling === undefined) delete process.env.AI_FREE_DAILY_USD
+  else process.env.AI_FREE_DAILY_USD = saved.ceiling
 })
 
 describe('in-flight slots', () => {
@@ -107,21 +113,34 @@ describe('global switches', () => {
     expect(ai.pausedMessage).toBe(AI_DISABLED_MESSAGE)
   })
 
-  it(`the global daily ceiling (default $${DEFAULT_GLOBAL_DAILY_USD}) pauses everyone once reached`, async () => {
-    db.globalSpent = DEFAULT_GLOBAL_DAILY_USD - 1
+  it(`the free daily ceiling (default $${DEFAULT_FREE_DAILY_USD}) pauses free accounts once free-tier spend reaches it`, async () => {
+    db.globalSpent = DEFAULT_FREE_DAILY_USD - 1
     expect((await getAIBudget('u')).state.band).not.toBe('paused')
     resetGlobalSpendCache()
-    db.globalSpent = DEFAULT_GLOBAL_DAILY_USD
+    db.globalSpent = DEFAULT_FREE_DAILY_USD
     const ai = await getAIBudget('u')
     expect(ai.state.band).toBe('paused')
-    expect(ai.pausedMessage).toBe(AI_GLOBAL_CEILING_MESSAGE)
+    expect(ai.pausedMessage).toBe(AI_FREE_CEILING_MESSAGE)
+    expect(db.lastGlobalSql).toContain("'tier'")
   })
 
-  it('AI_GLOBAL_DAILY_USD sets the ceiling and 0 turns it off', async () => {
-    db.globalSpent = 1000
-    process.env.AI_GLOBAL_DAILY_USD = '0'
+  it('paying users are never paused by free-tier spend (their own cap covers them)', async () => {
+    db.isPro = true
+    db.globalSpent = 10_000
     expect((await getAIBudget('u')).state.band).not.toBe('paused')
-    process.env.AI_GLOBAL_DAILY_USD = '20'
+  })
+
+  it('AI_DISABLED still pauses paying users', async () => {
+    db.isPro = true
+    process.env.AI_DISABLED = 'true'
+    expect((await getAIBudget('u')).pausedMessage).toBe(AI_DISABLED_MESSAGE)
+  })
+
+  it('AI_FREE_DAILY_USD sets the ceiling and 0 turns it off', async () => {
+    db.globalSpent = 1000
+    process.env.AI_FREE_DAILY_USD = '0'
+    expect((await getAIBudget('u')).state.band).not.toBe('paused')
+    process.env.AI_FREE_DAILY_USD = '20'
     resetGlobalSpendCache()
     db.globalSpent = 25
     expect((await getAIBudget('u')).state.band).toBe('paused')
