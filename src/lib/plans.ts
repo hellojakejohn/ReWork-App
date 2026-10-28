@@ -1,7 +1,7 @@
 // Single source of truth for plan limits and pricing copy.
 // Safe to import from client components (no server-only imports).
 
-// Tailoring is the expensive call (OpenAI), so it's the metered thing.
+// Tailoring is the expensive call, so it's the metered thing.
 export const FREE_TAILORS_PER_MONTH = 3
 // Cover letters are one model call each, cheaper than a tailor. FREE gets one to try.
 export const FREE_COVER_LETTERS_PER_MONTH = 1
@@ -11,13 +11,15 @@ export const FREE_TRACKER_APPLICATIONS = 10
 // at once so nobody uses uploads as a free parsing API.
 export const FREE_MAX_MASTER_RESUMES = 5
 
-// Per-user daily ceilings for everyone, Pro included. Pro is "unlimited" for a person
-// applying to jobs; these only stop scripts from running up the OpenAI bill. Counted per
-// UTC day from the events table (src/lib/daily-ceiling.ts).
+// Per-user daily ceilings for everyone, Pro included. An abuse guard, not a plan limit:
+// a real job search doesn't come close. The money guard is the AI cap
+// (src/lib/ai-cap-rules.ts). Counted per UTC day from the events table
+// (src/lib/daily-ceiling.ts).
 export const DAILY_CEILINGS = {
-  tailor: 40,
-  coverLetter: 40,
-  parse: 60,
+  tailor: 20,
+  coverLetter: 20,
+  parse: 10,
+  evidence: 10,
 } as const
 export type DailyCeilingKind = keyof typeof DAILY_CEILINGS
 
@@ -25,6 +27,7 @@ const DAILY_NOUN: Record<DailyCeilingKind, string> = {
   tailor: 'tailored resumes',
   coverLetter: 'cover letters',
   parse: 'resume uploads',
+  evidence: 'evidence interviews',
 }
 
 export function dailyCeilingMessage(kind: DailyCeilingKind): string {
@@ -48,49 +51,81 @@ export const INPUT_LIMIT_MESSAGES = {
 
 export const CONTACT_EMAIL = 'hellojakejohn@gmail.com'
 
-// Days of Pro a Job Hunt Pass buys. Buying another while one is active stacks.
-export const PASS_DAYS = 30
+// Days of Pro a Job Hunt Pass buys. Buying another while one is active stacks. The
+// Stripe webhook (passWindow) and the pass-to-subscription trial both use this.
+export const PASS_DAYS = 90
+
+// Plain prices in USD. The AI cap is computed from these (src/lib/ai-cap-rules.ts), so a
+// price change here moves the cap with it. Stripe price objects are created outside the
+// code; the env vars below must point at prices that match these numbers.
+export const PRO_MONTHLY_PRICE_USD = 15
+export const PASS_PRICE_USD = 29
+
+// AI cap for FREE accounts, in USD per calendar month (src/lib/ai-cap-rules.ts): a flat
+// backstop, since FREE brings in no revenue. Revisit once npm run eval:models has run on
+// real keys: it has to cover a parse, 3 tailors and 1 cover letter on AI_FREE_TIER.
+export const FREE_AI_CAP_USD = 0.5
+
+// Never say "unlimited". Pro is generous, not infinite.
+export const FAIR_USE = 'Fair use: plenty for an active job search'
 
 export type OfferId = 'monthly' | 'pass'
 
 export interface Offer {
   id: OfferId
   name: string
-  amount: string // "$9"
+  priceUsd: number
+  amount: string // "$15"
   period: string // "/month" or "one-time"
-  display: string // "$9/month"
+  display: string // "$15/month"
   cadence: string // short phrase for fine print
-  priceEnv: 'STRIPE_PRICE_PRO_MONTHLY' | 'STRIPE_PRICE_PASS_30D'
+  // Env var holding the Stripe price id; fallbackEnv is an older name still read.
+  priceEnv: 'STRIPE_PRICE_PRO_MONTHLY' | 'STRIPE_PRICE_PASS'
+  fallbackEnv?: 'STRIPE_PRICE_PASS_30D'
   mode: 'subscription' | 'payment'
+  headline?: string
   blurb: string
 }
 
 export const PRICING: Record<OfferId, Offer> = {
-  monthly: {
-    id: 'monthly',
-    name: 'Pro Monthly',
-    amount: '$9',
-    period: '/month',
-    display: '$9/month',
-    cadence: 'Auto-renews monthly. Cancel anytime.',
-    priceEnv: 'STRIPE_PRICE_PRO_MONTHLY',
-    mode: 'subscription',
-    blurb: 'Best if you apply steadily over a few months.',
-  },
   pass: {
     id: 'pass',
     name: 'Job Hunt Pass',
-    amount: '$15',
+    priceUsd: PASS_PRICE_USD,
+    amount: `$${PASS_PRICE_USD}`,
     period: 'one-time',
-    display: `$15 for ${PASS_DAYS} days`,
-    cadence: `${PASS_DAYS} days of Pro. No auto-renew.`,
-    priceEnv: 'STRIPE_PRICE_PASS_30D',
+    display: `$${PASS_PRICE_USD} for 3 months`,
+    cadence: `${PASS_DAYS} days of Pro. Never renews.`,
+    priceEnv: 'STRIPE_PRICE_PASS',
+    fallbackEnv: 'STRIPE_PRICE_PASS_30D',
     mode: 'payment',
-    blurb: 'One sprint of applications. Pay once, nothing to cancel.',
+    headline: '3 months of Pro. Pay once. Never renews.',
+    blurb: `Cheaper than 2 months of Pro ($${PRO_MONTHLY_PRICE_USD * 2}). Nothing to cancel.`,
+  },
+  monthly: {
+    id: 'monthly',
+    name: 'Pro Monthly',
+    priceUsd: PRO_MONTHLY_PRICE_USD,
+    amount: `$${PRO_MONTHLY_PRICE_USD}`,
+    period: '/month',
+    display: `$${PRO_MONTHLY_PRICE_USD}/month`,
+    cadence: 'Auto-renews monthly. Cancel anytime.',
+    priceEnv: 'STRIPE_PRICE_PRO_MONTHLY',
+    mode: 'subscription',
+    blurb: 'Best if you apply steadily for longer than a few months.',
   },
 }
 
-export const OFFER_IDS: OfferId[] = ['monthly', 'pass']
+// Headline offer first.
+export const OFFER_IDS: OfferId[] = ['pass', 'monthly']
+
+// Pricing copy "Powered by Claude Opus 5.5". Shown only when Pro routing really is that
+// model (the server checks AI_TAILOR, src/lib/ai/routing.ts proRunsOnOpus()).
+export const POWERED_BY = {
+  enabled: true,
+  model: 'claude-opus-5-5',
+  copy: 'Powered by Claude Opus 5.5',
+} as const
 
 export function isOfferId(v: unknown): v is OfferId {
   return v === 'monthly' || v === 'pass'
@@ -143,11 +178,12 @@ export function masterResumeLimitFor(isPro: boolean): number {
 
 // Only list what Pro actually does today. Landing, /pricing and the upgrade sheet read these.
 export const PRO_FEATURES = [
-  'Unlimited tailored resumes',
-  'Unlimited cover letters, fact-checked like your resume',
+  'A tailored resume for every job you apply to',
+  'Cover letters, fact-checked like your resume',
   'Evidence interview: stronger bullets from your real numbers',
-  'Unlimited application tracker',
+  'Track every application',
   'PDF + Word downloads (Word for application portals)',
+  FAIR_USE,
 ]
 
 export const FREE_FEATURES = [
@@ -159,4 +195,7 @@ export const FREE_FEATURES = [
 
 // Copy used across landing page, settings, status bar, FAQ.
 export const FREE_PLAN_SUMMARY = `${FREE_TAILORS_PER_MONTH} tailored resumes and ${FREE_COVER_LETTERS_PER_MONTH} cover letter per month, a tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs, PDF downloads`
-export const PRO_PLAN_SUMMARY = `Unlimited tailoring, cover letters and tracking, plus the evidence interview and Word downloads, for ${PRICING.monthly.display}, or ${PRICING.pass.amount} for a ${PASS_DAYS}-day Job Hunt Pass`
+export const PRO_PLAN_SUMMARY = `Tailoring, cover letters and tracking for your whole search (fair use), plus the evidence interview and Word downloads: ${PRICING.pass.amount} once for a 3-month Job Hunt Pass, or ${PRICING.monthly.display}`
+
+// The two ways to pay, for limit messages ("Go Pro: ...").
+export const GO_PRO_OFFERS = `${PRICING.pass.display}, never renews, or ${PRICING.monthly.display}`

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { isAdminEmail } from '@/lib/admin'
+import { adminCapRows } from '@/lib/ai-cap'
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,6 +32,9 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // AI spend and cap per user (dollars are fine here: admins only).
+    const ai = await adminCapRows(users.map((u) => u.id))
+
     const stats = {
       total: users.length,
       free: users.filter(u => u.plan === 'FREE').length,
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
       totalResumes: users.reduce((sum, u) => sum + u.resumesCreated, 0)
     }
 
-    return NextResponse.json({ users, stats })
+    return NextResponse.json({ users: users.map((u) => ({ ...u, ai: ai[u.id] ?? null })), stats })
   } catch (error) {
     console.error('Error fetching users:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

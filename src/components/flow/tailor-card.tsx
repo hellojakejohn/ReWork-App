@@ -115,7 +115,7 @@ export function TailorCard({
               You&apos;ve used all {quota?.limit ?? FREE_TAILORS_PER_MONTH} free tailors this month. Your resume and past results stay here.
             </p>
             <PrimaryButton onClick={() => onUpgrade()}>
-              <Sparkles className="h-4 w-4" /> Get unlimited tailoring
+              <Sparkles className="h-4 w-4" /> Tailor every job with Pro
             </PrimaryButton>
           </div>
         ) : (
@@ -124,7 +124,7 @@ export function TailorCard({
       </CardBody>
       <CardFooter>
         <span className="mr-auto text-xs text-slate-400">
-          {quota?.limit === null ? "Unlimited tailoring" : quota ? `${quota.remaining} of ${quota.limit} free tailors left this month` : ""}
+          {quota?.limit === null ? "Pro: tailor every job you apply to" : quota ? `${quota.remaining} of ${quota.limit} free tailors left this month` : ""}
         </span>
         {!running && error && !outOfTailors && <SecondaryButton onClick={() => void tailor()}>Try again</SecondaryButton>}
         <PrimaryButton className="px-6 py-2.5 text-base" loading={running} disabled={!ready} onClick={() => void tailor()}>

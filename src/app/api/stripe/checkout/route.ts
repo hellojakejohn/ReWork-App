@@ -12,6 +12,7 @@ import {
   billingUnavailable,
   getStripe,
   safeReturnPath,
+  stripePriceId,
 } from '@/lib/stripe'
 
 // POST { offer: 'monthly' | 'pass', returnTo?: '/some/path' } -> { url }
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   const offer = PRICING[body.offer]
 
   const stripe = getStripe()
-  const priceId = process.env[offer.priceEnv]
+  const priceId = stripePriceId(offer)
   if (!stripe || !priceId) return billingUnavailable('Checkout')
 
   try {

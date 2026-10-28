@@ -11,19 +11,19 @@
 //    the guard is dropped, not "fixed".
 // 4. applyRewrites: accepted rewrites replace the bullet in the MASTER. This is the only
 //    place master text comes from AI, and only after an explicit Accept.
-import OpenAI from 'openai'
-import { classifyAIError } from '@/lib/ai-errors'
+import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
+import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
+import { taskRoute } from '@/lib/ai/routing'
 import { extractNumbers, normalizeSpace } from '@/lib/resume-text'
 import { describeFacts, hasUnsupported, unsupportedFacts } from '@/lib/text-facts'
 import { isNonAnswer, type EvidenceAnswer, type EvidenceItem, type EvidenceRewrite } from '@/lib/evidence-shared'
 import type { ParsedResume } from '@/types/parsed-resume'
-import { recordUsage } from '@/lib/ai-usage'
 
 export * from '@/lib/evidence-shared'
 
-export const DEFAULT_EVIDENCE_MODEL = 'gpt-4o'
+/** The configured evidence model for Pro (AI_EVIDENCE, else the default routing). */
 export function evidenceModel(): string {
-  return process.env.OPENAI_EVIDENCE_MODEL || process.env.OPENAI_TAILOR_MODEL || DEFAULT_EVIDENCE_MODEL
+  return taskRoute('evidence').model
 }
 
 export const MIN_ITEMS = 5
@@ -120,58 +120,37 @@ export class EvidenceError extends Error {
     message: string,
     public readonly status: number,
     public readonly userMessage: string,
-    // AIErrorKind from classifyAIError, or 'bad_output' when the call worked but the
-    // response was unusable. Goes on the ai_error event.
-    public readonly kind: string = 'bad_output'
+    // AIErrorKind from classifyAIError ('invalid_output' when the call worked but the
+    // response was unusable). Goes on the ai_error event.
+    public readonly kind: string = 'invalid_output'
   ) {
     super(message)
     this.name = 'EvidenceError'
   }
 }
 
-let defaultClient: OpenAI | null = null
-function getClient(): OpenAI {
-  if (!process.env.OPENAI_API_KEY) {
-    console.error('[OPENAI_NOT_CONFIGURED] OPENAI_API_KEY is not set')
-    throw new EvidenceError('OPENAI_API_KEY is not configured', 503, "The evidence interview is temporarily unavailable, we're on it.", 'not_configured')
-  }
-  defaultClient ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  return defaultClient
-}
-
-export interface EvidenceOptions {
-  client?: OpenAI
-  model?: string
-}
+export type EvidenceOptions = AICallOptions
 
 async function structured<T>(options: EvidenceOptions, name: string, schema: object, system: string, prompt: string, temperature: number): Promise<T> {
-  const client = options.client ?? getClient()
-  const model = options.model ?? evidenceModel()
-  let completion
   try {
-    completion = await client.chat.completions.create({
-      model,
+    const result = await generateStructured<T>({
+      task: 'evidence',
+      system,
+      messages: [{ role: 'user', content: prompt }],
+      schema: schema as Record<string, unknown>,
+      schemaName: name,
+      maxTokens: 2000,
       temperature,
-      max_tokens: 2000,
-      response_format: { type: 'json_schema', json_schema: { name, strict: true, schema: schema as Record<string, unknown> } },
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: prompt },
-      ],
+      effort: 'low',
+      ...callOverrides('evidence', options),
     })
+    return result.data
   } catch (error) {
+    if (error instanceof AIOutputError) {
+      throw new EvidenceError(error.message, 502, 'Something went wrong. Please try again.', 'invalid_output')
+    }
     const classified = classifyAIError(error, 'The evidence interview')
-    throw new EvidenceError(String((error as Error)?.message || 'Unknown OpenAI error'), classified.status, classified.userMessage, classified.kind)
-  }
-  recordUsage(completion, model)
-  const content = completion.choices[0]?.message?.content
-  if (!content || completion.choices[0]?.finish_reason === 'length') {
-    throw new EvidenceError('Empty or truncated model response', 502, 'Something went wrong. Please try again.')
-  }
-  try {
-    return JSON.parse(content) as T
-  } catch {
-    throw new EvidenceError('Model returned invalid JSON', 502, 'Something went wrong. Please try again.')
+    throw new EvidenceError(String((error as Error)?.message || 'Unknown AI error'), classified.status, classified.userMessage, classified.kind)
   }
 }
 

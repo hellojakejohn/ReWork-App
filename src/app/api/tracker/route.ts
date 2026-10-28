@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
-import { FREE_TRACKER_APPLICATIONS, INPUT_LIMITS, PRICING, trackerLimitFor } from '@/lib/plans'
+import { FREE_TRACKER_APPLICATIONS, INPUT_LIMITS, GO_PRO_OFFERS, trackerLimitFor } from '@/lib/plans'
 import { track } from '@/lib/track'
 import { toTrackerCard } from '@/lib/application-dto'
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     await track('limit_hit', { kind: 'tracker' }, userId)
     return NextResponse.json(
       {
-        error: `Free accounts can track up to ${FREE_TRACKER_APPLICATIONS} applications. Go Pro to track every job: ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
+        error: `Free accounts can track up to ${FREE_TRACKER_APPLICATIONS} applications. Go Pro to track every job: ${GO_PRO_OFFERS}.`,
         upgradeRequired: true,
       },
       { status: 402 }

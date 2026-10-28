@@ -21,6 +21,9 @@
 /build
 
 # misc
+# Real resumes for the model eval (personal data) and its output, which quotes them
+/scripts/fixtures/private/
+/eval-results/
 .DS_Store
 *.pem
 

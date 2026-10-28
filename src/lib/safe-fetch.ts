@@ -143,6 +143,8 @@ export function assertSafeUrl(raw: string | URL): URL {
 }
 
 export interface SafeFetchOptions {
+  // Checked on the first URL and on every redirect hop BEFORE it's requested. Throw to stop.
+  checkUrl?: (url: URL) => void
   headers?: Record<string, string>
   maxRedirects?: number
   timeoutMs?: number
@@ -224,6 +226,7 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions = {}): Pr
   try {
     let url = assertSafeUrl(rawUrl)
     for (let hop = 0; ; hop++) {
+      opts.checkUrl?.(url)
       const res = await requestOnce(url, headers, maxBytes, controller.signal)
       if (res.body === null) {
         if (hop >= maxRedirects) throw new UnsafeUrlError('Too many redirects')

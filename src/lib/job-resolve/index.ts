@@ -2,7 +2,10 @@
 //   1. known ATS JSON APIs by URL pattern (Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable)
 //   2. schema.org JobPosting JSON-LD in the page
 //   3. OpenGraph/meta + readable main text, then the model extracts the fields
-//   4. otherwise (JS-rendered page, Indeed/LinkedIn/Glassdoor, blocked): needsPaste
+//   4. otherwise (JS-rendered page, Indeed/Glassdoor, blocked): needsPaste
+// LinkedIn is never fetched server-side (its terms forbid it and it actively litigates
+// scraping): a LinkedIn link goes straight to the paste step, and the page fetcher refuses
+// to follow a redirect into LinkedIn either (see isLinkedInHost / LinkedInUrlError).
 // Fetching and the model call are injected so the chain is testable offline.
 import { matchAtsUrl, parseAtsResponse } from './ats'
 import { extractJsonLdJob } from './json-ld'
@@ -22,9 +25,28 @@ export interface ResolveDeps {
   extractWithModel?: (meta: PageMeta, url: string) => Promise<Omit<ResolvedJob, 'url' | 'source'> | null>
 }
 
+// LinkedIn and its short-link domain. Matched on the hostname, never on path or query.
+const LINKEDIN_HOST = /(^|\.)(linkedin\.(com|cn)|lnkd\.in)$/i
+
+export function isLinkedInHost(hostname: string): boolean {
+  return LINKEDIN_HOST.test(hostname.replace(/\.$/, ''))
+}
+
+/** Thrown by the page fetcher when a URL (or a redirect) points at LinkedIn. */
+export class LinkedInUrlError extends Error {
+  constructor() {
+    super('LinkedIn URLs are never fetched')
+    this.name = 'LinkedInUrlError'
+  }
+}
+
+/** For safeFetch's checkUrl: refuse LinkedIn before any request goes out. */
+export function refuseLinkedIn(url: URL): void {
+  if (isLinkedInHost(url.hostname)) throw new LinkedInUrlError()
+}
+
 const BLOCKED_SITES: [RegExp, string][] = [
   [/(^|\.)indeed\.[a-z.]+$/, 'Indeed'],
-  [/(^|\.)linkedin\.com$/, 'LinkedIn'],
   [/(^|\.)glassdoor\.[a-z.]+$/, 'Glassdoor'],
   [/(^|\.)ziprecruiter\.com$/, 'ZipRecruiter'],
   [/(^|\.)monster\.com$/, 'Monster'],
@@ -37,6 +59,7 @@ const MIN_PAGE_TEXT = 300
 
 export function needsPaste(reason: NeedsPasteReason, site?: string): ResolveResult {
   const messages: Record<NeedsPasteReason, string> = {
+    linkedin: "We don't read LinkedIn pages. Open the job on LinkedIn, copy the description, and paste it here.",
     blocked_site: `${site || 'That site'} doesn't let apps read its job pages. Paste the description instead.`,
     js_rendered: "That page loads the job with JavaScript, so we can't read it. Paste the description instead.",
     blocked: 'That site blocked us. Paste the description instead.',
@@ -58,6 +81,7 @@ export function isJsOnlySite(url: URL): boolean {
 export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<ResolveResult> {
   const url = new URL(rawUrl)
 
+  if (isLinkedInHost(url.hostname)) return needsPaste('linkedin')
   const blocked = blockedSiteName(url)
   if (blocked) return needsPaste('blocked_site', blocked)
   if (isJsOnlySite(url)) return needsPaste('js_rendered')
@@ -82,6 +106,7 @@ export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<Res
   try {
     page = await deps.fetchPage(url.href, 'html')
   } catch (error) {
+    if (error instanceof LinkedInUrlError) return needsPaste('linkedin')
     console.warn('[job-resolve] page fetch failed:', (error as Error)?.message)
     return needsPaste('unreachable')
   }

@@ -11,14 +11,15 @@ import { collectUsage, usageProps } from '@/lib/ai-usage'
 import { track } from '@/lib/track'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 
 const MAX_ANSWER = 300
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const ctx = await evidenceContext(id, { rateLimit: true })
+  const ctx = await evidenceContext(id, { rateLimit: true, ai: true })
   if ('error' in ctx) return ctx.error
+  const ai = ctx.ai!
 
   const body = await request.json().catch(() => null)
   if (!body || !Array.isArray(body.items) || !Array.isArray(body.answers)) {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     data: { evidence: mergeEvidence(ctx.resume.evidence, answers) as unknown as Prisma.InputJsonValue },
   })
 
-  const { run, usage } = collectUsage(() => rewriteWithEvidence(items, answers))
+  const { run, usage } = collectUsage(() => rewriteWithEvidence(items, answers), ai.scope)
   try {
     const rewrites = await run
     await track('ai_usage', { feature: 'evidence_rewrite', ...usageProps(usage()) }, ctx.userId)
@@ -74,5 +75,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ success: false, error: `${error.userMessage} Your answers are saved.` }, { status: error.status })
     }
     throw error
+  } finally {
+    await ai.settle(usage().costUsd)
   }
 }

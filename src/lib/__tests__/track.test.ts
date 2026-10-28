@@ -6,7 +6,8 @@ const db = vi.hoisted(() => ({ create: vi.fn(async (..._: unknown[]) => ({})) })
 vi.mock('@/lib/prisma', () => ({ prisma: { event: { create: db.create } } }))
 
 import { msSince, track } from '@/lib/track'
-import { collectUsage, estimateCostUsd, priceFor, recordUsage, usageProps } from '@/lib/ai-usage'
+import { collectUsage, currentRouting, recordUsage, usageProps, usageRecord } from '@/lib/ai-usage'
+import { costUsd } from '@/lib/ai/models'
 
 beforeEach(() => db.create.mockReset().mockResolvedValue({}))
 
@@ -42,7 +43,8 @@ describe('track', () => {
 })
 
 describe('AI usage', () => {
-  const completion = (model: string, input: number, output: number) => ({ model, usage: { prompt_tokens: input, completion_tokens: output } })
+  const completion = (model: string, input: number, output: number, cached = 0) =>
+    usageRecord(model.startsWith('claude') ? 'anthropic' : 'openai', model, { inputTokens: input, outputTokens: output, cachedInputTokens: cached })
 
   it('collects every call made inside collectUsage, including nested awaits', async () => {
     const { run, usage } = collectUsage(async () => {
@@ -79,14 +81,29 @@ describe('AI usage', () => {
     expect(b.usage().calls).toBe(2)
   })
 
-  it('prices dated snapshots by family and unknown models like gpt-4o', () => {
-    expect(priceFor('gpt-4o-mini-2024-07-18')).toEqual([0.15, 0.6])
-    expect(priceFor('gpt-4o-2024-11-20')).toEqual([2.5, 10])
-    expect(priceFor('some-new-model')).toEqual([2.5, 10])
-    expect(estimateCostUsd([{ model: 'gpt-4o', tokensIn: 1_000_000, tokensOut: 0 }])).toBe(2.5)
+  it('hands every call to the scope sink and carries the routing context', async () => {
+    const seen: string[] = []
+    const { run } = collectUsage(
+      async () => {
+        expect(currentRouting()).toEqual({ tier: 'pro', downgraded: true })
+        recordUsage(completion('claude-opus-5-5', 10, 10))
+      },
+      { routing: { tier: 'pro', downgraded: true }, onCall: (r) => seen.push(r.model) }
+    )
+    await run
+    expect(seen).toEqual(['claude-opus-5-5'])
+    expect(currentRouting()).toBeUndefined()
   })
 
-  it('usageProps is empty when no model ran', () => {
-    expect(usageProps({ calls: 0, tokensIn: 0, tokensOut: 0, costUsd: 0 })).toEqual({})
+  it('prices from models.ts: dated snapshots by family, cache reads, unknown models like Opus', () => {
+    expect(costUsd('gpt-4o-mini-2024-07-18', { inputTokens: 1_000_000, outputTokens: 0, cachedInputTokens: 0 })).toBe(0.15)
+    expect(costUsd('claude-opus-5-5', { inputTokens: 1_000_000, outputTokens: 1_000_000, cachedInputTokens: 1_000_000 })).toBe(24.2)
+    expect(costUsd('claude-sonnet-5-5', { inputTokens: 1_000_000, outputTokens: 1_000_000, cachedInputTokens: 0 })).toBe(12)
+    expect(costUsd('some-new-model', { inputTokens: 1_000_000, outputTokens: 0, cachedInputTokens: 0 })).toBe(4)
+  })
+
+  it('usageProps is empty when no model ran, and never carries costUsd (ai_call events do)', () => {
+    expect(usageProps({ calls: 0, tokensIn: 0, tokensOut: 0, cachedIn: 0, costUsd: 0 })).toEqual({})
+    expect(usageProps({ calls: 1, tokensIn: 5, tokensOut: 5, cachedIn: 0, costUsd: 1, model: 'x' })).not.toHaveProperty('costUsd')
   })
 })

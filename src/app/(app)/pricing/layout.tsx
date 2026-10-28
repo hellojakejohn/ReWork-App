@@ -3,7 +3,7 @@ import { FREE_TAILORS_PER_MONTH, PRICING } from "@/lib/plans"
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Free: ${FREE_TAILORS_PER_MONTH} tailored resumes a month. ${PRICING.monthly.name}: ${PRICING.monthly.display}. ${PRICING.pass.name}: ${PRICING.pass.display}.`,
+  description: `Free: ${FREE_TAILORS_PER_MONTH} tailored resumes a month. ${PRICING.pass.name}: ${PRICING.pass.display}, never renews. ${PRICING.monthly.name}: ${PRICING.monthly.display}.`,
   alternates: { canonical: "/pricing" },
 }
 

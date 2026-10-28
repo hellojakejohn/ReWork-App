@@ -113,6 +113,20 @@ describe('safeFetch limits (local server, blocklist stubbed)', () => {
     expect(res.url).toBe(`${base}/ok`)
   })
 
+  it('runs checkUrl on every hop before requesting it (how LinkedIn redirects are refused)', async () => {
+    const seen: string[] = []
+    const stop = new Error('stop at /ok')
+    await expect(
+      safeFetch(`${base}/redirect/1`, {
+        checkUrl: (u) => {
+          seen.push(u.pathname)
+          if (u.pathname === '/ok') throw stop
+        },
+      })
+    ).rejects.toBe(stop)
+    expect(seen).toEqual(['/redirect/1', '/redirect/0', '/ok'])
+  })
+
   it('rejects a 4th redirect', async () => {
     await expect(safeFetch(`${base}/redirect/3`)).rejects.toThrow('Too many redirects')
   })

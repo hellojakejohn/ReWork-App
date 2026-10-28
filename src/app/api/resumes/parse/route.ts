@@ -15,6 +15,7 @@ import { getAccess } from '@/lib/entitlements'
 import { FREE_MAX_MASTER_RESUMES, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, masterResumeLimitFor } from '@/lib/plans'
 import { checkDailyCeiling } from '@/lib/daily-ceiling'
 import { collectUsage, usageProps } from '@/lib/ai-usage'
+import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap'
 import { msSince, track } from '@/lib/track'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { incrementResumeCount } from '@/lib/resume-count'
@@ -25,7 +26,7 @@ import { CURRENT_PARSER_VERSION, toMasterDTO } from '@/lib/master-dto'
 import { ndjsonResponse } from '@/lib/ndjson'
 
 export const runtime = 'nodejs'
-export const maxDuration = 60
+export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 
 const PDF = 'application/pdf'
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -60,6 +61,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: ceiling.message }, { status: 429 })
   }
 
+  const ai = await getAIBudget(userId)
+  const paused = await aiPausedCheck(ai, userId, 'parse')
+  if (paused) return NextResponse.json({ error: paused.error, aiPaused: true, resetAt: paused.resetAt }, { status: 429 })
+
   const masterLimit = masterResumeLimitFor((await getAccess(userId)).isPro)
   if (masterLimit !== Infinity) {
     const active = await prisma.resume.count({ where: { userId, isActive: true } })
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
       await track('limit_hit', { kind: 'master_resumes' }, userId)
       return NextResponse.json(
         {
-          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one in Manage resumes (account menu) to add another, or go Pro for unlimited.`,
+          error: `Free accounts can keep up to ${FREE_MAX_MASTER_RESUMES} resumes. Delete one in Manage resumes (account menu) to add another, or go Pro to keep more.`,
           upgradeRequired: true,
         },
         { status: 403 }
@@ -107,11 +112,12 @@ export async function POST(request: NextRequest) {
 
   return ndjsonResponse(async (send) => {
     const start = Date.now()
-    const { run, usage } = collectUsage(() => parseResume(input, { onStage: (stage) => send({ type: 'stage', stage }) }))
+    const { run, usage } = collectUsage(() => parseResume(input, { onStage: (stage) => send({ type: 'stage', stage }) }), ai.scope)
     let result
     try {
       result = await run
     } catch (error) {
+      await ai.settle(usage().costUsd)
       const kind = error instanceof ResumeParseError ? error.kind : 'unexpected'
       await track('resume_parsed', { ok: false, ms: msSince(start), source: input.kind, kind, ...usageProps(usage()) }, userId)
       if (error instanceof ResumeParseError) {
@@ -121,6 +127,7 @@ export async function POST(request: NextRequest) {
       }
       throw error
     }
+    await ai.settle(usage().costUsd)
     await track('resume_parsed', { ok: true, ms: msSince(start), source: input.kind, needsReview: result.needsReview.length, ...usageProps(usage()) }, userId)
 
     send({ type: 'stage', stage: 'saving' })

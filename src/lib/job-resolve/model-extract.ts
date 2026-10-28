@@ -1,10 +1,10 @@
 // Last resolver: the model reads a page's meta + main text and pulls out the job fields.
 // Server only.
-import { getOpenAI } from '@/lib/openai'
+import { generateStructured, type AICallOptions, callOverrides } from '@/lib/ai'
+import { taskRoute } from '@/lib/ai/routing'
 import type { PageMeta } from './html-text'
 import { cleanLines } from './html-text'
 import type { ResolvedJob } from './types'
-import { recordUsage } from '@/lib/ai-usage'
 
 const MAX_PAGE_CHARS = 14_000
 
@@ -25,18 +25,30 @@ const SCHEMA = {
   additionalProperties: false,
 }
 
+/** The configured job-extraction model (AI_JOB_EXTRACT, else the default routing). */
 export function jobExtractModel(): string {
-  return process.env.OPENAI_JOB_MODEL || 'gpt-4o-mini'
+  return taskRoute('jobExtract').model
 }
 
-export async function extractJobWithModel(meta: PageMeta, url: string): Promise<Omit<ResolvedJob, 'url' | 'source'> | null> {
-  const completion = await getOpenAI().chat.completions.create({
-    model: jobExtractModel(),
+interface JobPosting {
+  isJobPosting: boolean
+  title: string
+  company: string
+  location: string
+  description: string
+}
+
+export async function extractJobWithModel(meta: PageMeta, url: string, options: AICallOptions = {}): Promise<Omit<ResolvedJob, 'url' | 'source'> | null> {
+  const { data } = await generateStructured<JobPosting>({
+    task: 'jobExtract',
+    system: 'You extract job postings from web pages. Copy text exactly; never write or summarize.',
+    schema: SCHEMA,
+    schemaName: 'job_posting',
+    maxTokens: 4000,
     temperature: 0,
-    max_tokens: 4000,
-    response_format: { type: 'json_schema', json_schema: { name: 'job_posting', strict: true, schema: SCHEMA } },
+    effort: 'low',
+    ...callOverrides('jobExtract', options),
     messages: [
-      { role: 'system', content: 'You extract job postings from web pages. Copy text exactly; never write or summarize.' },
       {
         role: 'user',
         content: `URL: ${url}
@@ -50,10 +62,6 @@ ${meta.mainText.slice(0, MAX_PAGE_CHARS)}`,
       },
     ],
   })
-  recordUsage(completion, jobExtractModel())
-  const content = completion.choices[0]?.message?.content
-  if (!content) throw new Error('Empty model response')
-  const data = JSON.parse(content) as { isJobPosting: boolean; title: string; company: string; location: string; description: string }
   if (!data.isJobPosting || !data.title.trim() || data.description.trim().length < 50) return null
   return {
     title: data.title.trim(),

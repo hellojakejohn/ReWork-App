@@ -1,14 +1,17 @@
-// Shared by the evidence interview routes: auth, ownership, the Pro gate, rate limit.
+// Shared by the evidence interview routes: auth, ownership, the Pro gate, rate limit,
+// the daily ceiling (new interviews only) and the AI cap.
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
-import { canUseEvidenceInterview, PRICING } from '@/lib/plans'
+import { canUseEvidenceInterview, GO_PRO_OFFERS } from '@/lib/plans'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { track } from '@/lib/track'
+import { checkDailyCeiling } from '@/lib/daily-ceiling'
+import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap'
 
-export async function evidenceContext(resumeId: string, { rateLimit = false } = {}) {
+export async function evidenceContext(resumeId: string, { rateLimit = false, dailyCeiling = false, ai: needsAI = false } = {}) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) } as const
@@ -24,7 +27,7 @@ export async function evidenceContext(resumeId: string, { rateLimit = false } = 
     return {
       error: NextResponse.json(
         {
-          error: `The evidence interview is a Pro feature. It asks for your real numbers and rewrites your weakest bullets with them. ${PRICING.monthly.display} or ${PRICING.pass.display}.`,
+          error: `The evidence interview is a Pro feature. It asks for your real numbers and rewrites your weakest bullets with them. ${GO_PRO_OFFERS}.`,
           upgradeRequired: true,
         },
         { status: 402 }
@@ -42,5 +45,17 @@ export async function evidenceContext(resumeId: string, { rateLimit = false } = 
       } as const
     }
   }
-  return { userId, resume } as const
+  if (dailyCeiling) {
+    const ceiling = await checkDailyCeiling(userId, 'evidence')
+    if (!ceiling.allowed) {
+      await track('limit_hit', { kind: 'daily_evidence' }, userId)
+      return { error: NextResponse.json({ success: false, error: ceiling.message }, { status: 429 }) } as const
+    }
+  }
+  // Applying accepted rewrites is editing, not AI: it keeps working while AI is paused.
+  if (!needsAI) return { userId, resume, ai: null } as const
+  const ai = await getAIBudget(userId)
+  const paused = await aiPausedCheck(ai, userId, 'evidence')
+  if (paused) return { error: NextResponse.json(paused, { status: 429 }) } as const
+  return { userId, resume, ai } as const
 }

@@ -23,6 +23,7 @@ export interface AnalyticsReport {
   errorsByKind: { feature: string; kind: string; count: number }[]
   spendByDay: { day: string; calls: number; tokensIn: number; tokensOut: number; costUsd: number }[]
   spendTotalUsd: number
+  spendByModel: { provider: string; model: string; calls: number; tokensIn: number; tokensOut: number; cachedIn: number; costUsd: number }[]
   pro: { activeUsers: number; subscriptions: number; passes: number; comps: number; mrrUsd: number; passRevenue30dUsd: number }
 }
 
@@ -37,8 +38,6 @@ export function buildFunnel(steps: { label: string; users: number }[]): FunnelSt
     pctOfPrevious: i === 0 ? pct(step.users, start) : pct(step.users, steps[i - 1].users),
   }))
 }
-
-const dollars = (amount: string) => Number(amount.replace(/[^0-9.]/g, '')) || 0
 
 type Props = Record<string, unknown> | null
 
@@ -95,9 +94,11 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
     byKind.set(key, { feature: d.feature, kind: d.kind, count: (byKind.get(key)?.count ?? 0) + 1 })
   }
 
+  // Cost lives on ai_call events (one per provider call). Request events from before the
+  // provider layer carried their own costUsd; they're still counted, never both for one call.
   const spendRows = await prisma.$queryRaw<{ day: string; calls: number; tokensIn: number; tokensOut: number; costUsd: number }[]>`
     SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day,
-           COALESCE(SUM((props->>'aiCalls')::numeric), 0)::float8 AS "calls",
+           COALESCE(SUM(COALESCE((props->>'aiCalls')::numeric, CASE WHEN name = 'ai_call' THEN 1 ELSE 0 END)), 0)::float8 AS "calls",
            COALESCE(SUM((props->>'tokensIn')::numeric), 0)::float8 AS "tokensIn",
            COALESCE(SUM((props->>'tokensOut')::numeric), 0)::float8 AS "tokensOut",
            COALESCE(SUM((props->>'costUsd')::numeric), 0)::float8 AS "costUsd"
@@ -106,6 +107,21 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
     GROUP BY 1
     ORDER BY 1 DESC`
   const spendByDay = spendRows.map((r) => ({ ...r, costUsd: Math.round(r.costUsd * 100) / 100 }))
+
+  // Real spend by model: one ai_call event per provider call, priced from src/lib/ai/models.ts.
+  const modelRows = await prisma.$queryRaw<{ provider: string; model: string; calls: number; tokensIn: number; tokensOut: number; cachedIn: number; costUsd: number }[]>`
+    SELECT COALESCE(props->>'provider', 'unknown') AS provider,
+           COALESCE(props->>'model', 'unknown') AS model,
+           COUNT(*)::float8 AS calls,
+           COALESCE(SUM((props->>'tokensIn')::numeric), 0)::float8 AS "tokensIn",
+           COALESCE(SUM((props->>'tokensOut')::numeric), 0)::float8 AS "tokensOut",
+           COALESCE(SUM((props->>'cachedIn')::numeric), 0)::float8 AS "cachedIn",
+           COALESCE(SUM((props->>'costUsd')::numeric), 0)::float8 AS "costUsd"
+    FROM "events"
+    WHERE name = 'ai_call' AND "createdAt" >= ${since}
+    GROUP BY 1, 2
+    ORDER BY "costUsd" DESC`
+  const spendByModel = modelRows.map((r) => ({ ...r, costUsd: Math.round(r.costUsd * 100) / 100 }))
 
   // Pro right now, from entitlements (the source of truth; User.plan is only a mirror).
   const active = await prisma.entitlement.findMany({
@@ -126,13 +142,14 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
     errorsByKind: [...byKind.values()].sort((a, b) => b.count - a.count),
     spendByDay,
     spendTotalUsd: Math.round(spendByDay.reduce((s, r) => s + r.costUsd, 0) * 100) / 100,
+    spendByModel,
     pro: {
       activeUsers: new Set(active.map((e) => e.userId)).size,
       subscriptions,
       passes: active.filter((e) => e.source === 'STRIPE_PASS').length,
       comps: active.filter((e) => e.source === 'COMP').length,
-      mrrUsd: subscriptions * dollars(PRICING.monthly.amount),
-      passRevenue30dUsd: passesSold30d * dollars(PRICING.pass.amount),
+      mrrUsd: subscriptions * PRICING.monthly.priceUsd,
+      passRevenue30dUsd: passesSold30d * PRICING.pass.priceUsd,
     },
   }
 }

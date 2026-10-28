@@ -9,7 +9,8 @@ import { SiteFooter } from "@/components/site/site-footer"
 import { DeletedNotice } from "@/components/site/deleted-notice"
 import { LANDING_EXAMPLE as EX } from "@/components/site/landing-example"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
-import { CONTACT_EMAIL, FREE_FEATURES, FREE_TAILORS_PER_MONTH, PASS_DAYS, PRICING, PRO_FEATURES } from "@/lib/plans"
+import { CONTACT_EMAIL, FREE_FEATURES, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING, PRO_FEATURES } from "@/lib/plans"
+import { showPoweredBy } from "@/lib/ai/routing"
 
 const TITLE = "ReWork: tailor your resume to any job in under a minute. Nothing made up."
 const DESCRIPTION = `Upload your resume, paste a job link, get a tailored resume and cover letter. Every rewrite is fact-checked against your real resume. ${FREE_TAILORS_PER_MONTH} free tailors a month, no card.`
@@ -41,7 +42,7 @@ const STEPS = [
 ]
 
 const PRO_DETAILS = [
-  { icon: Sparkles, title: "Unlimited tailoring", body: `Tailor for every job you apply to, not ${FREE_TAILORS_PER_MONTH} a month.` },
+  { icon: Sparkles, title: "Tailor for every job", body: `Every job you apply to, not ${FREE_TAILORS_PER_MONTH} a month. Fair use: plenty for an active job search.` },
   { icon: MessageSquareText, title: "Cover letters", body: "One per job, in your tone, fact-checked the same way as your resume." },
   { icon: ShieldCheck, title: "Evidence interview", body: "We ask for your real numbers, then rewrite your weakest bullets using only your answers." },
   { icon: ListChecks, title: "Tracker + Word export", body: "Track every application, and download .docx files for portals that prefer Word." },
@@ -72,8 +73,9 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "What happens to my data?",
     a: (
       <>
-        Your resumes and results are stored in our database so they&apos;re there when you come back. Resume and job text is sent to OpenAI&apos;s API
-        to do the rewriting; under OpenAI&apos;s API policy it isn&apos;t used to train their models. We never sell it or share it with employers.
+        Your resumes and results are stored in our database so they&apos;re there when you come back. Resume and job text is sent to the AI provider that
+        does the rewriting (Anthropic&apos;s Claude API, or OpenAI&apos;s API) through their paid business APIs, which don&apos;t use it to train
+        their models. We never sell it or share it with employers.
         You can download everything or delete your account any time from Settings. Details in the <Link href="/privacy">privacy policy</Link>.
       </>
     ),
@@ -82,8 +84,9 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "Which job sites work?",
     a: (
       <>
-        Links from Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages fill in automatically. LinkedIn,
-        Indeed, Glassdoor and ZipRecruiter block apps from reading their pages, so for those, copy the job description and paste it in.
+        Links from Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages fill in automatically. We don&apos;t
+        read LinkedIn pages, and Indeed, Glassdoor and ZipRecruiter block apps from reading theirs, so for those, copy the job description and
+        paste it in.
       </>
     ),
   },
@@ -103,6 +106,7 @@ const container = "mx-auto max-w-5xl px-4"
 const h2 = "text-2xl font-bold tracking-tight text-white sm:text-3xl"
 
 export default function HomePage() {
+  const poweredBy = showPoweredBy()
   return (
     <div className="min-h-screen bg-slate-950 text-slate-300">
       <DeletedNotice />
@@ -216,9 +220,22 @@ export default function HomePage() {
         <section id="pricing" className="scroll-mt-16 border-y border-white/5 bg-slate-900/50 py-16">
           <div className={container}>
             <h2 className={`${h2} text-center`}>Pricing</h2>
-            <p className="mx-auto mt-3 max-w-xl text-center text-slate-300">Start free. Pay by the month, or once for a single job hunt.</p>
+            <p className="mx-auto mt-3 max-w-xl text-center text-slate-300">
+              Start free. For a job search, the {PRICING.pass.name}: {PRICING.pass.headline?.toLowerCase()}
+            </p>
+            {poweredBy && <p className="mt-2 text-center text-xs text-slate-400">{POWERED_BY.copy}</p>}
             <div className="mt-10 grid gap-4 lg:grid-cols-3">
               <PlanCard name="Free" price="$0" period="forever" features={FREE_FEATURES} cta="Get started free" note="No card needed." />
+              <PlanCard
+                name={PRICING.pass.name}
+                price={PRICING.pass.amount}
+                period="one-time, 3 months"
+                tagline={PRICING.pass.headline}
+                features={["Everything in Pro for 3 months", PRICING.pass.blurb, ...PRO_FEATURES.slice(1)]}
+                cta="Start free, upgrade anytime"
+                note={PRICING.pass.cadence}
+                highlight
+              />
               <PlanCard
                 name={PRICING.monthly.name}
                 price={PRICING.monthly.amount}
@@ -226,15 +243,6 @@ export default function HomePage() {
                 features={PRO_FEATURES}
                 cta="Start free, upgrade anytime"
                 note={PRICING.monthly.cadence}
-                highlight
-              />
-              <PlanCard
-                name={PRICING.pass.name}
-                price={PRICING.pass.amount}
-                period={`one-time, ${PASS_DAYS} days`}
-                features={[`Everything in Pro for ${PASS_DAYS} days`, ...PRO_FEATURES.slice(1)]}
-                cta="Start free, upgrade anytime"
-                note={PRICING.pass.cadence}
               />
             </div>
           </div>
@@ -281,6 +289,7 @@ function PlanCard({
   features,
   cta,
   note,
+  tagline,
   highlight = false,
 }: {
   name: string
@@ -289,6 +298,7 @@ function PlanCard({
   features: string[]
   cta: string
   note: string
+  tagline?: string
   highlight?: boolean
 }) {
   return (
@@ -298,6 +308,7 @@ function PlanCard({
         {price}
         <span className="ml-1 text-sm font-normal text-slate-400">{period}</span>
       </p>
+      {tagline && <p className="mt-2 text-sm font-medium text-emerald-300">{tagline}</p>}
       <ul className="mt-5 flex-1 space-y-2">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-slate-200">

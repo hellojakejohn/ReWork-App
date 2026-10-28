@@ -1,95 +1,118 @@
-// Token usage per request, for the admin page's OpenAI spend estimate.
+// Token usage and estimated cost per model call.
 //
-// Every model call site calls recordUsage(completion). A route wraps its work in
-// collectUsage(), which gathers those calls (AsyncLocalStorage, so nothing has to be
-// threaded through the libs) and returns totals to put on the request's event.
-// Outside collectUsage() recordUsage() is a no-op, so tests and scripts don't care.
+// generateStructured() (src/lib/ai/) calls recordUsage() after every provider call. A
+// route wraps its AI work in collectUsage(), which gathers those calls (AsyncLocalStorage,
+// so nothing has to be threaded through the libs) and also carries the user's routing
+// context (plan tier, 75% downgrade) down to the router. Outside collectUsage()
+// recordUsage() is a no-op, so tests and scripts don't care.
+//
+// Prices come from src/lib/ai/models.ts. Estimates for the admin page and the AI cap,
+// not billing: the provider dashboards have the real number.
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { costUsd, type ProviderId } from '@/lib/ai/models'
+import type { AITask, RoutingContext } from '@/lib/ai/routing'
 
 export interface UsageRecord {
+  provider: ProviderId
   model: string
-  tokensIn: number
+  task?: AITask
+  tokensIn: number // uncached input
   tokensOut: number
+  cachedIn: number // cache reads
+  cacheWrite?: number
+  costUsd: number
+  ms?: number
+  ok?: boolean // false when the answer was unusable (still billed)
 }
 
 export interface UsageSummary {
-  model?: string // the last model used, e.g. "gpt-4o-2024-08-06"
+  model?: string // the last model used, e.g. "claude-opus-5-5"
+  provider?: ProviderId
   calls: number
   tokensIn: number
   tokensOut: number
-  costUsd: number // estimate, see PRICES
-}
-
-// USD per 1M tokens [input, output], from OpenAI's public pricing page. An ESTIMATE for
-// the admin page, not billing: check the OpenAI usage dashboard for the real number.
-// Longest prefix wins, so dated snapshots ("gpt-4o-2024-08-06") match their family.
-const PRICES: [prefix: string, input: number, output: number][] = [
-  ['gpt-4o-mini', 0.15, 0.6],
-  ['gpt-4o', 2.5, 10],
-  ['gpt-4.1-nano', 0.1, 0.4],
-  ['gpt-4.1-mini', 0.4, 1.6],
-  ['gpt-4.1', 2, 8],
-]
-// Unknown model: price it like gpt-4o so the estimate errs high.
-const FALLBACK: [number, number] = [2.5, 10]
-
-export function priceFor(model: string): [number, number] {
-  const match = PRICES.filter(([prefix]) => model.startsWith(prefix)).sort((a, b) => b[0].length - a[0].length)[0]
-  return match ? [match[1], match[2]] : FALLBACK
-}
-
-export function estimateCostUsd(records: UsageRecord[]): number {
-  const total = records.reduce((sum, r) => {
-    const [input, output] = priceFor(r.model)
-    return sum + (r.tokensIn * input + r.tokensOut * output) / 1_000_000
-  }, 0)
-  return Math.round(total * 1_000_000) / 1_000_000
+  cachedIn: number
+  costUsd: number
 }
 
 export function summarize(records: UsageRecord[]): UsageSummary {
   return {
     model: records.at(-1)?.model,
+    provider: records.at(-1)?.provider,
     calls: records.length,
     tokensIn: records.reduce((s, r) => s + r.tokensIn, 0),
     tokensOut: records.reduce((s, r) => s + r.tokensOut, 0),
-    costUsd: estimateCostUsd(records),
+    cachedIn: records.reduce((s, r) => s + r.cachedIn, 0),
+    costUsd: Math.round(records.reduce((s, r) => s + r.costUsd, 0) * 1_000_000) / 1_000_000,
   }
 }
 
-const store = new AsyncLocalStorage<UsageRecord[]>()
-
-interface CompletionLike {
-  model?: string
-  usage?: { prompt_tokens?: number; completion_tokens?: number } | null
+export interface UsageScope {
+  routing?: RoutingContext
+  // Called once per provider call (src/lib/ai/scope.ts logs it as an ai_call event).
+  onCall?: (record: UsageRecord) => void
 }
 
-export function recordUsage(completion: CompletionLike | null | undefined, fallbackModel = 'unknown'): void {
-  const records = store.getStore()
-  if (!records || !completion) return
-  records.push({
-    model: completion.model || fallbackModel,
-    tokensIn: completion.usage?.prompt_tokens ?? 0,
-    tokensOut: completion.usage?.completion_tokens ?? 0,
-  })
+interface Store {
+  records: UsageRecord[]
+  scope: UsageScope
+}
+
+const store = new AsyncLocalStorage<Store>()
+
+/** Builds a record from token counts (cost from models.ts). */
+export function usageRecord(
+  provider: ProviderId,
+  model: string,
+  usage: { inputTokens: number; outputTokens: number; cachedInputTokens: number; cacheWriteTokens?: number },
+  extra: Partial<Pick<UsageRecord, 'task' | 'ms' | 'ok'>> = {}
+): UsageRecord {
+  return {
+    provider,
+    model,
+    tokensIn: usage.inputTokens,
+    tokensOut: usage.outputTokens,
+    cachedIn: usage.cachedInputTokens,
+    ...(usage.cacheWriteTokens ? { cacheWrite: usage.cacheWriteTokens } : {}),
+    costUsd: costUsd(model, usage),
+    ...extra,
+  }
+}
+
+export function recordUsage(record: UsageRecord): void {
+  const s = store.getStore()
+  if (!s) return
+  s.records.push(record)
+  s.scope.onCall?.(record)
+}
+
+/** The routing context of the current collectUsage() scope, if any. */
+export function currentRouting(): RoutingContext | undefined {
+  return store.getStore()?.scope.routing
 }
 
 /**
  * Runs `fn` and collects the usage of every model call inside it. `usage` is filled in
  * even when `fn` throws (a failed call can still cost tokens), so read it in a finally.
  */
-export function collectUsage<T>(fn: () => Promise<T>): { run: Promise<T>; usage: () => UsageSummary } {
+export function collectUsage<T>(fn: () => Promise<T>, scope: UsageScope = {}): { run: Promise<T>; usage: () => UsageSummary; records: () => UsageRecord[] } {
   const records: UsageRecord[] = []
-  return { run: store.run(records, fn), usage: () => summarize(records) }
+  return { run: store.run({ records, scope }, fn), usage: () => summarize(records), records: () => [...records] }
 }
 
-/** Usage as flat event props (only when a model was actually called). */
+/**
+ * Usage as flat event props (only when a model was actually called). No costUsd: cost is
+ * logged once per call on its own ai_call event, so summing costUsd over events never
+ * double counts.
+ */
 export function usageProps(summary: UsageSummary): Record<string, string | number> {
   if (summary.calls === 0) return {}
   return {
     model: summary.model ?? 'unknown',
+    ...(summary.provider ? { provider: summary.provider } : {}),
     aiCalls: summary.calls,
     tokensIn: summary.tokensIn,
     tokensOut: summary.tokensOut,
-    costUsd: summary.costUsd,
+    cachedIn: summary.cachedIn,
   }
 }

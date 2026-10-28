@@ -44,19 +44,19 @@ describe('passWindow', () => {
   it('starts now when no pass is running', () => {
     const w = passWindow(now, null)
     expect(w.startsAt).toEqual(now)
-    expect(w.endsAt).toEqual(days(30))
+    expect(w.endsAt).toEqual(days(90))
   })
 
   it('starts now when the previous pass already ended', () => {
     const w = passWindow(now, days(-5))
     expect(w.startsAt).toEqual(now)
-    expect(w.endsAt).toEqual(days(30))
+    expect(w.endsAt).toEqual(days(90))
   })
 
-  it('stacks 30 days onto the end of an active pass', () => {
+  it('stacks 90 days onto the end of an active pass', () => {
     const w = passWindow(now, days(12))
     expect(w.startsAt).toEqual(days(12))
-    expect(w.endsAt).toEqual(days(42))
+    expect(w.endsAt).toEqual(days(102))
   })
 
   it('honors a custom length (comps)', () => {

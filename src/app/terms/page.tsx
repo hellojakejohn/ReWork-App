@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage, Section } from "@/components/site/legal-page"
-import { CONTACT_EMAIL, DAILY_CEILINGS, FREE_PLAN_SUMMARY, PASS_DAYS, PRICING } from "@/lib/plans"
+import { CONTACT_EMAIL, DAILY_CEILINGS, FAIR_USE, FREE_PLAN_SUMMARY, PASS_DAYS, PRICING } from "@/lib/plans"
+
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -24,7 +25,8 @@ export default function TermsPage() {
             period you paid for.
           </li>
           <li>
-            The {PRICING.pass.name} is {PRICING.pass.amount} for {PASS_DAYS} days and never renews. It’s non-refundable once you’ve used it.
+            The {PRICING.pass.name} is {PRICING.pass.amount} for 3 months ({PASS_DAYS} days) of Pro and never renews. It’s non-refundable once
+            you’ve used it.
           </li>
           <li>Otherwise, ask within 7 days of a payment and we’ll refund it.</li>
         </ul>
@@ -75,8 +77,14 @@ export default function TermsPage() {
           <li>Don’t try to break, overload, or get around the limits or security of the service.</li>
           <li>Don’t use ReWork to create false or misleading credentials.</li>
           <li>
-            Every account, Pro included, has daily limits ({DAILY_CEILINGS.tailor} tailored resumes, {DAILY_CEILINGS.coverLetter} cover letters and{" "}
-            {DAILY_CEILINGS.parse} resume uploads per day) to protect the service from scripts. Real job searches don’t come close.
+            Every account, Pro included, has daily limits ({DAILY_CEILINGS.tailor} tailored resumes, {DAILY_CEILINGS.coverLetter} cover letters,{" "}
+            {DAILY_CEILINGS.parse} resume uploads and {DAILY_CEILINGS.evidence} evidence interviews per day) to protect the service from scripts.
+            Real job searches don’t come close.
+          </li>
+          <li>
+            Pro is fair use. {FAIR_USE}. If an account uses far more AI than a job search needs in one billing period, we first switch it to
+            a lighter model and, if usage keeps going, pause the AI features until the period resets. Downloads, the tracker
+            and editing keep working. We show the reset date when this happens.
           </li>
         </ul>
         <p>We may suspend accounts that break these rules. If we do, we’ll tell you why by email.</p>
@@ -92,8 +100,8 @@ export default function TermsPage() {
             the billing portal (Settings, Plan & billing). You keep Pro until the end of the month you paid for; we don’t charge again after that.
           </li>
           <li>
-            <strong>{PRICING.pass.name}</strong>: {PRICING.pass.amount} once, for {PASS_DAYS} days of Pro. It doesn’t renew. Buying another while
-            one is active adds {PASS_DAYS} days.
+            <strong>{PRICING.pass.name}</strong>: {PRICING.pass.amount} once, for {PASS_DAYS} days (3 months) of Pro. It doesn’t renew. Buying
+            another while one is active adds {PASS_DAYS} days.
           </li>
           <li>Prices are in US dollars. Stripe may add sales tax where it applies.</li>
           <li>If we change the price of {PRICING.monthly.name}, we’ll email you at least 14 days before your next charge at the new price.</li>

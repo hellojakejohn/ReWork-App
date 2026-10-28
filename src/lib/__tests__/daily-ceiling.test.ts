@@ -12,7 +12,7 @@ beforeEach(() => db.count.mockReset().mockResolvedValue(0))
 
 describe('daily ceilings', () => {
   it('has the documented numbers', () => {
-    expect(DAILY_CEILINGS).toEqual({ tailor: 40, coverLetter: 40, parse: 60 })
+    expect(DAILY_CEILINGS).toEqual({ tailor: 20, coverLetter: 20, parse: 10, evidence: 10 })
   })
 
   it('counts the matching event since UTC midnight for this user', async () => {
@@ -22,24 +22,32 @@ describe('daily ceilings', () => {
       where: { userId: 'user_1', name: 'tailored', createdAt: { gte: new Date('2026-10-02T00:00:00Z') } },
     })
     expect(startOfUtcDay(now).toISOString()).toBe('2026-10-02T00:00:00.000Z')
-    expect(CEILING_EVENTS).toEqual({ tailor: 'tailored', coverLetter: 'cover_letter_generated', parse: 'resume_parsed' })
+    expect(CEILING_EVENTS).toEqual({ tailor: 'tailored', coverLetter: 'cover_letter_generated', parse: 'resume_parsed', evidence: 'evidence_started' })
   })
 
   it('allows up to the limit and blocks at it', async () => {
-    db.count.mockResolvedValueOnce(39)
+    db.count.mockResolvedValueOnce(19)
     expect((await checkDailyCeiling('u', 'tailor')).allowed).toBe(true)
-    db.count.mockResolvedValueOnce(40)
+    db.count.mockResolvedValueOnce(20)
     const blocked = await checkDailyCeiling('u', 'tailor')
-    expect(blocked).toMatchObject({ allowed: false, used: 40, limit: 40 })
-    expect(blocked.message).toMatch(/today's limit of 40 tailored resumes.*midnight UTC/)
+    expect(blocked).toMatchObject({ allowed: false, used: 20, limit: 20 })
+    expect(blocked.message).toMatch(/today's limit of 20 tailored resumes.*midnight UTC/)
   })
 
   it('uses the parse ceiling for uploads', async () => {
-    db.count.mockResolvedValueOnce(60)
+    db.count.mockResolvedValueOnce(10)
     const res = await checkDailyCeiling('u', 'parse')
     expect(res.allowed).toBe(false)
     expect(db.count.mock.calls[0][0]).toMatchObject({ where: { name: 'resume_parsed' } })
-    expect(dailyCeilingMessage('parse')).toMatch(/60 resume uploads/)
+    expect(dailyCeilingMessage('parse')).toMatch(/10 resume uploads/)
+  })
+
+  it('counts evidence interview runs against their own ceiling', async () => {
+    db.count.mockResolvedValueOnce(10)
+    const res = await checkDailyCeiling('u', 'evidence')
+    expect(res).toMatchObject({ allowed: false, limit: 10 })
+    expect(db.count.mock.calls[0][0]).toMatchObject({ where: { name: 'evidence_started' } })
+    expect(res.message).toMatch(/10 evidence interviews/)
   })
 
   it('fails open when events cannot be read', async () => {
