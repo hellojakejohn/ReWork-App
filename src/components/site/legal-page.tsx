@@ -3,7 +3,7 @@ import { SiteHeader } from "./site-header"
 import { SiteFooter } from "./site-footer"
 
 // Change this when either policy changes.
-export const LEGAL_LAST_UPDATED = "September 25, 2026"
+export const LEGAL_LAST_UPDATED = "October 2, 2026"
 
 export function LegalPage({ title, summary, children }: { title: string; summary: ReactNode; children: ReactNode }) {
   return (

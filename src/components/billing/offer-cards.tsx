@@ -76,7 +76,7 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
               <Icon className="h-4 w-4 opacity-80" aria-hidden />
               <h3 className={cn("text-sm font-bold", !featured && "text-text-muted")}>
                 {offer.name}
-                {featured && " · most popular"}
+                {featured && " · best value"}
               </h3>
             </div>
             <p className={cn("mt-2 font-serif", compact ? "text-3xl" : "text-4xl")}>

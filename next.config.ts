@@ -17,6 +17,7 @@ const CSP_REPORT_ONLY = [
   "base-uri 'self'",
   "form-action 'self' https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
   "frame-ancestors 'none'",
+  'report-uri /api/csp-report',
 ].join('; ');
 
 const SECURITY_HEADERS = [

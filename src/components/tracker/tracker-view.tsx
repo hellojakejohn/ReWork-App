@@ -83,7 +83,7 @@ export function TrackerView() {
   }, [])
 
   useEffect(() => {
-    document.title = "Tracker · ReWork"
+    document.title = "Tracker · rework"
     setTemplate(readTemplate())
     void load()
   }, [load])

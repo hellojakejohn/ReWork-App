@@ -50,7 +50,7 @@ async function failure(res: Response, fallback: string): Promise<Failure> {
 
 const SESSION_EXPIRED = "You've been signed out. Sign in again to keep going; nothing you saved is lost."
 
-const NETWORK: Failure = { ok: false, status: 0, error: "Can't reach ReWork. Check your connection and try again." }
+const NETWORK: Failure = { ok: false, status: 0, error: "Can't reach rework. Check your connection and try again." }
 
 export async function loadDashboard(): Promise<
   { ok: true; masters: MasterResumeDTO[]; applications: ApplicationSummaryDTO[]; quota: Quota; coverLetterQuota: Quota } | Failure
