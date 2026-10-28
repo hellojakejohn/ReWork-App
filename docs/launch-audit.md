@@ -44,7 +44,7 @@ None.
 | H3 | AI cost | The cap failed open: if `events` couldn't be read, a FREE user at 1000% ran as if new. | `src/lib/ai-cap.ts` | Fixed `242ed78` (FREE fails closed, paid fails open) |
 | H4 | AI cost | Parallel requests all passed the cap check, because spend is written after each call. A FREE user at 98% firing 20 parses could spend about $8 on a $0.50 cap; Pro could overshoot about $38. | `src/lib/ai-cap.ts`, routes | Fixed `242ed78`: at most 2 model calls per user in flight (`src/lib/ai-inflight.ts`). Worst overshoot is now about 2 calls (about $0.75). |
 | H5 | AI layer | The SDK timeout (600s x 3 attempts) outlived `maxDuration` 300. A slow Opus call was killed before the route released the FREE quota or logged the spend. | `src/lib/ai/adapters/anthropic.ts:70` | Fixed `242ed78`: every call gets the time left before the route's deadline, no SDK retry |
-| H6 | AI layer | The Opus 5.5 -> Sonnet 5.5 refusal fallback target was never verified, and `/api/health` pinged without it. If Anthropic rejects it, every Opus call 400s. | `src/lib/ai/models.ts`, `src/lib/ai/health.ts` | Fixed the check `1e1ae1b` (health now sends the production shape on Opus). **Jake**: open `/api/health` in prod after deploy and confirm `ai.anthropic.ok` |
+| H6 | AI layer | The Opus 5.5 -> Sonnet 5.5 refusal fallback target was never verified, and `/api/health` pinged without it. If Anthropic rejects it, every Opus call 400s. | `src/lib/ai/models.ts`, `src/lib/ai/health.ts` | Confirmed in prod 2026-10-28: Anthropic rejected it (400), and accepts no fallback for either model. Fixed in #11 (fallback removed) and #12 (app retries an Opus decline once on Sonnet; health pings Sonnet too) |
 | H7 | Exports | PDFs used the non-embedded Times/Helvetica (WinAnsi), so "Trần Nguyễn", "Dvořák", "Łódź" came out garbled in the file an employer opens. The in-app preview looked fine. | `src/lib/resume-pdf.tsx:12` | Fixed `f329717`: embedded Tinos/Arimo (metric twins, same look). CJK and emoji still not covered (Low). |
 | H8 | Exports | react-pdf hyphenated words across lines ("migra-/tion", "cross-func-/tional"), which breaks ATS keyword matching. | `src/lib/resume-pdf.tsx` | Fixed `f329717` |
 | H9 | Ops | No error monitoring. A 500 outside the AI routes reached only the short-lived runtime log; nobody would know prod broke until a user emailed. | n/a | Partly fixed `59379c6` (server errors and webhook failures land in `/admin`), plus a public `/api/health/live` for an uptime monitor `6e9d8f3`. **Jake**: alerts need Sentry and an uptime monitor (below). |
@@ -231,8 +231,7 @@ product can still launch with Stripe off (checkout shows "not configured yet").
 
 ## Not verified here (needs keys, a dashboard, or a human)
 
-- Real model latency and token use per call; whether Sonnet 5.5 is an accepted fallback for
-  Opus 5.5 (H6 check covers it after deploy).
+- Real model latency and token use per call.
 - Which API version the live Stripe endpoint is on (dashboard only).
 - Word, Google Docs and real ATS rendering.
 - Phone layout of the signed-in pages on the deployed build (the rebrand pass shot the flow

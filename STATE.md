@@ -126,10 +126,12 @@ launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
 - Rate limiting is an in-memory speed bump per lambda; daily ceilings and the AI cap are the real caps.
 - AI routes (parse, job URL, tailor, cover letter, evidence) run with maxDuration 300 (Vercel
   Pro), since Opus 5.5 thinks on every call.
-- Refusal fallback is same-provider only: Opus 5.5 -> Sonnet 5.5 server-side. Sonnet 5.5 has
-  none. Nothing ever falls back to OpenAI or OpenRouter (resume PII).
-- OpenRouter is wired but not in the privacy policy; update /privacy before routing
-  production traffic there.
+- Declines: Anthropic accepts no server-side fallback for Opus 5.5 or Sonnet 5.5
+  (`allowed_fallback_models` null, prod 2026-10-28), so an Opus decline is retried once by the
+  app on Sonnet 5.5 (`refusalRetry`). A Sonnet decline isn't retried. Never OpenAI or OpenRouter.
+- Anthropic is the only AI provider in use and the only one in /privacy. The OpenAI and
+  OpenRouter adapters are still in the code (tests use them); update /privacy before routing
+  anything there.
 - LinkedIn job URLs are never fetched (also not through redirects): straight to paste.
 - Landing example is hand-built from `scripts/fixtures/restaurant-manager-to-ops-coordinator.json`
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
