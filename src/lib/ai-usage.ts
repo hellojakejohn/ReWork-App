@@ -51,6 +51,11 @@ export interface UsageScope {
   routing?: RoutingContext
   // Called once per provider call (src/lib/ai/scope.ts logs it as an ai_call event).
   onCall?: (record: UsageRecord) => void
+  // Taken before each provider call and released after it (src/lib/ai-inflight.ts).
+  slot?: () => Promise<() => Promise<void>>
+  // Epoch ms by which every provider call must be done (the route's maxDuration, less
+  // time to save and answer). Calls get the time left as their timeout, with no retries.
+  deadline?: number
 }
 
 interface Store {
@@ -84,6 +89,17 @@ export function recordUsage(record: UsageRecord): void {
   if (!s) return
   s.records.push(record)
   s.scope.onCall?.(record)
+}
+
+/** Takes the current scope's in-flight slot for one provider call; a no-op outside a scope. */
+export async function takeCallSlot(): Promise<() => Promise<void>> {
+  const slot = store.getStore()?.scope.slot
+  return slot ? slot() : async () => {}
+}
+
+/** The current scope's deadline (epoch ms), if any. */
+export function currentDeadline(): number | undefined {
+  return store.getStore()?.scope.deadline
 }
 
 /** The routing context of the current collectUsage() scope, if any. */

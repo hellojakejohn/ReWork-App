@@ -67,7 +67,11 @@ let defaultClient: Anthropic | null = null
 export function anthropicClient(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured')
-  defaultClient ??= new Anthropic({ apiKey, maxRetries: 2 })
+  // Every AI route has maxDuration 300. The SDK default (600s, x3 attempts) outlived the
+  // function, which then died before releasing the user's quota or logging the spend.
+  // Routes pass their own deadline per request (AdapterRequest.timeoutMs); this default
+  // covers scripts and still fits in 300s with one retry.
+  defaultClient ??= new Anthropic({ apiKey, timeout: 140_000, maxRetries: 1 })
   return defaultClient
 }
 
@@ -75,7 +79,8 @@ export const anthropicAdapter: Adapter = {
   provider: 'anthropic',
   async call(req, client): Promise<AdapterResult> {
     const c = (client ?? anthropicClient()) as any
-    const res = await c.beta.messages.create(buildAnthropicRequest(req))
+    const options = req.timeoutMs ? { timeout: req.timeoutMs, maxRetries: 0 } : undefined
+    const res = await c.beta.messages.create(buildAnthropicRequest(req), options)
     const text = (res.content ?? [])
       .filter((b: any) => b?.type === 'text')
       .map((b: any) => b.text)

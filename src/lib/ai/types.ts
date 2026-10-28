@@ -66,6 +66,8 @@ export interface AdapterRequest {
   maxTokens: number
   temperature?: number
   effort?: 'low' | 'medium' | 'high'
+  /** Per-request timeout from the route's deadline; set, the SDK doesn't retry. */
+  timeoutMs?: number
 }
 
 export interface Adapter {

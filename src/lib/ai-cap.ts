@@ -9,9 +9,19 @@
 //   await ai.settle(usage().costUsd)                     // writes the 75% / 100% events
 //
 // Spend is the sum of costUsd on this user's ai_call events since the period started.
-// Fails open like the daily ceilings: if events can't be read, spend counts as 0.
+// If events can't be read, paid users go ahead (spend counts as 0) and FREE users are
+// paused until it can be read again.
+//
+// Two switches above every user's cap (getAIBudget):
+//   AI_DISABLED=1            pauses every AI feature now (incident kill switch)
+//   AI_GLOBAL_DAILY_USD=150  pauses everyone once today's (UTC) total spend reaches it
+//                            (default DEFAULT_GLOBAL_DAILY_USD; 0 turns it off)
+// Every model call also takes an in-flight slot (src/lib/ai-inflight.ts), so parallel
+// requests can't all slip under the cap before their spend is written.
 import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
+import { acquireInflightSlot } from '@/lib/ai-inflight'
+import { startOfUtcDay } from '@/lib/daily-ceiling'
 import { track } from '@/lib/track'
 import type { UsageRecord, UsageScope } from '@/lib/ai-usage'
 import { modelLabel } from '@/lib/ai/models'
@@ -28,7 +38,8 @@ import {
 } from '@/lib/ai-cap-rules'
 import type { EntitlementSource, EntitlementStatus } from '@/lib/entitlement-rules'
 
-export async function spentUsd(userId: string, since: Date): Promise<number> {
+/** This user's spend since `since`, or null when events can't be read. */
+async function readSpend(userId: string, since: Date): Promise<number | null> {
   try {
     const rows = await prisma.$queryRaw<{ spent: number }[]>`
       SELECT COALESCE(SUM((props->>'costUsd')::numeric), 0)::float8 AS spent
@@ -36,9 +47,70 @@ export async function spentUsd(userId: string, since: Date): Promise<number> {
       WHERE "userId" = ${userId} AND name = 'ai_call' AND "createdAt" >= ${since}`
     return Number(rows[0]?.spent ?? 0)
   } catch (error) {
-    console.error('[ai-cap] could not read spend, counting it as 0:', (error as Error)?.message)
-    return 0
+    console.error('[ai-cap] could not read spend:', (error as Error)?.message)
+    return null
   }
+}
+
+export async function spentUsd(userId: string, since: Date): Promise<number> {
+  return (await readSpend(userId, since)) ?? 0
+}
+
+// AI routes run with maxDuration 300; leave 20s to save the result and answer.
+const AI_ROUTE_BUDGET_MS = 280_000
+
+export const DEFAULT_GLOBAL_DAILY_USD = 150
+const GLOBAL_CACHE_MS = 60_000
+let globalCache: { day: number; at: number; spent: number } | null = null
+
+export const AI_DISABLED_MESSAGE =
+  "rework's AI features are paused for a few minutes while we fix something. Downloads, the tracker and editing still work."
+export const AI_GLOBAL_CEILING_MESSAGE =
+  'rework is extra busy today, so AI features are paused until midnight UTC. Downloads, the tracker and editing still work.'
+export const AI_SPEND_UNKNOWN_MESSAGE = "We can't check your AI usage right now. Please try again in a few minutes."
+
+export function globalDailyCeilingUsd(): number {
+  const raw = process.env.AI_GLOBAL_DAILY_USD?.trim()
+  if (!raw) return DEFAULT_GLOBAL_DAILY_USD
+  const value = Number(raw)
+  return Number.isFinite(value) && value >= 0 ? value : DEFAULT_GLOBAL_DAILY_USD
+}
+
+/** Today's (UTC) AI spend across every user, cached for a minute per instance. Null if unreadable. */
+async function globalSpentToday(now: Date): Promise<number | null> {
+  const day = startOfUtcDay(now).getTime()
+  if (globalCache && globalCache.day === day && now.getTime() - globalCache.at < GLOBAL_CACHE_MS) return globalCache.spent
+  try {
+    const rows = await prisma.$queryRaw<{ spent: number }[]>`
+      SELECT COALESCE(SUM((props->>'costUsd')::numeric), 0)::float8 AS spent
+      FROM "events"
+      WHERE name = 'ai_call' AND "createdAt" >= ${new Date(day)}`
+    const spent = Number(rows[0]?.spent ?? 0)
+    globalCache = { day, at: now.getTime(), spent }
+    return spent
+  } catch (error) {
+    console.error('[ai-cap] could not read global spend:', (error as Error)?.message)
+    return null
+  }
+}
+
+/** Why every user's AI is paused right now (kill switch or global ceiling), or null. */
+export async function globalAIBlock(now = new Date()): Promise<string | null> {
+  if (/^(1|true|yes)$/i.test(process.env.AI_DISABLED?.trim() || '')) return AI_DISABLED_MESSAGE
+  const ceiling = globalDailyCeilingUsd()
+  if (ceiling === 0) return null
+  // Unreadable: go ahead. The Anthropic workspace spend limit is the backstop.
+  const spent = await globalSpentToday(now)
+  if (spent !== null && spent >= ceiling) {
+    console.error(`[ai-cap] GLOBAL_CEILING reached: $${spent.toFixed(2)} of $${ceiling} today; AI paused for everyone`)
+    return AI_GLOBAL_CEILING_MESSAGE
+  }
+  return null
+}
+
+/** Test hook: forget the cached global spend. */
+export function resetGlobalSpendCache() {
+  globalCache = null
 }
 
 export async function capOverrideUsd(userId: string): Promise<number | null> {
@@ -59,16 +131,21 @@ export async function userCapPeriod(userId: string, now = new Date()): Promise<C
 }
 
 export async function getCapState(userId: string, now = new Date()): Promise<CapState> {
+  return (await capStateWithReadStatus(userId, now)).state
+}
+
+async function capStateWithReadStatus(userId: string, now: Date): Promise<{ state: CapState; spendUnknown: boolean }> {
   const period = await userCapPeriod(userId, now)
-  const [spent, override] = await Promise.all([spentUsd(userId, period.start), capOverrideUsd(userId)])
-  return capState({
+  const [spent, override] = await Promise.all([readSpend(userId, period.start), capOverrideUsd(userId)])
+  const state = capState({
     period,
-    spentUsd: spent,
+    spentUsd: spent ?? 0,
     ratio: aiCapRatio(),
     overrideUsd: override,
     proAlwaysTopModel: proAlwaysTopModel(),
     downgradeAvailable: downgradeAvailable(),
   })
+  return { state, spendUnknown: spent === null }
 }
 
 export interface AIBudget {
@@ -101,8 +178,11 @@ function logCall(userId: string, record: UsageRecord): Promise<void> {
 }
 
 export async function getAIBudget(userId: string, now = new Date()): Promise<AIBudget> {
-  const [state, access] = await Promise.all([getCapState(userId, now), getAccess(userId, now)])
+  const [capRead, access, globalBlock] = await Promise.all([capStateWithReadStatus(userId, now), getAccess(userId, now), globalAIBlock(now)])
   const tier: PlanTier = access.isPro ? 'pro' : 'free'
+  // FREE fails closed when its spend can't be read; paid users go ahead.
+  const block = globalBlock ?? (capRead.spendUnknown && tier === 'free' ? AI_SPEND_UNKNOWN_MESSAGE : null)
+  const state: CapState = block ? { ...capRead.state, band: 'paused' } : capRead.state
   const pending: Promise<void>[] = []
   return {
     state,
@@ -112,8 +192,10 @@ export async function getAIBudget(userId: string, now = new Date()): Promise<AIB
       onCall: (record) => {
         pending.push(logCall(userId, record))
       },
+      slot: () => acquireInflightSlot(userId),
+      deadline: Date.now() + AI_ROUTE_BUDGET_MS,
     },
-    pausedMessage: pausedMessage(state.period.resetAt),
+    pausedMessage: block ?? pausedMessage(state.period.resetAt),
     settle: async (addedUsd: number) => {
       await Promise.all(pending)
       for (const band of crossedBands(state, addedUsd)) {

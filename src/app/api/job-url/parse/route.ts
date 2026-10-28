@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = session.user.id ?? null;
+  // No user id means no AI cap to run under: refuse rather than call the model uncapped.
+  if (!userId) return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 });
   const start = Date.now();
   // The model reader is the last resolver. It's skipped (straight to paste) when its
   // provider has no key or the user's AI is paused by the AI cap.
