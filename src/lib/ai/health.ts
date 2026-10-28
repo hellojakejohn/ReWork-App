@@ -15,15 +15,18 @@ export interface ProviderCheck {
   ms?: number
   kind?: AIErrorKind
   detail?: string
+  // Anthropic only: each routed model's accepted `fallbacks[i].model` ids (GET /v1/models),
+  // so a refusal fallback is picked from what Anthropic allows. [] = fallbacks unsupported.
+  allowedFallbacks?: Record<string, string[] | null | string>
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function ping(route: ModelRoute): Promise<string> {
   const messages = [{ role: 'user', content: 'Reply with OK.' }]
   if (route.provider === 'anthropic') {
-    // The exact production request shape (structured output, and for Opus the refusal
-    // fallback beta): if Anthropic stops accepting Sonnet 5.5 as Opus's fallback, every
-    // Opus call fails with a 400, and this check has to see that too.
+    // The exact production request shape (structured output, plus the refusal fallback
+    // beta when a model has one): a fallback Anthropic rejects makes every call a 400, and
+    // this check has to see that too.
     const body = buildAnthropicRequest({
       model: route.model,
       system: 'Health check.',
@@ -43,6 +46,21 @@ async function ping(route: ModelRoute): Promise<string> {
   return res.model
 }
 
+/** Accepted fallback ids per routed Anthropic model; an error string per model it couldn't read. */
+async function anthropicFallbacks(models: string[]): Promise<Record<string, string[] | null | string>> {
+  const out: Record<string, string[] | null | string> = {}
+  await Promise.all(
+    models.map(async (id) => {
+      try {
+        out[id] = (await anthropicClient().beta.models.retrieve(id)).allowed_fallback_models ?? null
+      } catch (error) {
+        out[id] = `unreadable: ${String((error as Error)?.message || '').slice(0, 120)}`
+      }
+    })
+  )
+  return out
+}
+
 /** Checks every provider that has a key or a route. Never throws. */
 export async function checkProviders(): Promise<Record<ProviderId, ProviderCheck>> {
   const routes = Object.values(allRoutes()).filter((r): r is ModelRoute => !!r)
@@ -58,10 +76,12 @@ export async function checkProviders(): Promise<Record<ProviderId, ProviderCheck
       }
       // A key with no route still gets checked, on a cheap known model.
       const model = route?.model ?? { anthropic: 'claude-sonnet-5-5', openai: 'gpt-4o-mini', openrouter: 'moonshotai/kimi-k2.6' }[provider]
+      const fallbacks =
+        provider === 'anthropic' ? anthropicFallbacks([...new Set([model, ...mine.map((r) => r.model)])]) : Promise.resolve(undefined)
       const start = Date.now()
       try {
         const served = await ping({ provider, model })
-        return [provider, { configured, used, ok: true, model: served || model, ms: Date.now() - start }]
+        return [provider, { configured, used, ok: true, model: served || model, ms: Date.now() - start, allowedFallbacks: await fallbacks }]
       } catch (error) {
         if (error && typeof error === 'object') Object.assign(error, { provider })
         const classified = classifyAIError(error, 'Health check')
@@ -76,6 +96,7 @@ export async function checkProviders(): Promise<Record<ProviderId, ProviderCheck
             ms: Date.now() - start,
             kind: classified.kind,
             detail: `${classified.kind}${codes.length ? ` (${[...new Set(codes)].join(', ')})` : ''}: ${String((error as Error)?.message || '').slice(0, 200)}`,
+            allowedFallbacks: await fallbacks,
           },
         ]
       }

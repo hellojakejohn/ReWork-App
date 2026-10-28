@@ -9,7 +9,7 @@
 //   depth. Thinking tokens bill as output and count toward max_tokens, so the answer
 //   budget gets headroom.
 // - Refusals: a safety-classifier decline is re-run server-side on the model's named
-//   Anthropic fallback (models.ts refusalFallback: Opus 5.5 -> Sonnet 5.5), using the
+//   Anthropic fallback (models.ts refusalFallback; none today), using the
 //   array form of `fallbacks` (beta server-side-fallback-2026-06-01). Same provider only:
 //   resume text never goes to OpenAI or OpenRouter because Claude declined.
 import Anthropic from '@anthropic-ai/sdk'

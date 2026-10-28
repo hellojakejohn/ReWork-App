@@ -49,7 +49,8 @@ export const MODELS: Record<string, ModelInfo> = {
     temperature: false, // removed on Opus 5.5: any temperature is a 400
     pdf: true,
     strictSchema: true,
-    refusalFallback: 'claude-sonnet-5-5',
+    // No fallback: Anthropic rejects claude-sonnet-5-5 as Opus 5.5's fallback (400 in prod,
+    // 2026-10-28). Add one only from GET /v1/models/claude-opus-5-5 allowed_fallback_models.
   },
   'claude-sonnet-5-5': {
     id: 'claude-sonnet-5-5',

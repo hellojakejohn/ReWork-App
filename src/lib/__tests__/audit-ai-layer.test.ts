@@ -65,11 +65,11 @@ const input: TailorInput = {
 const job = { title: 'Chef', company: 'Bistro', description: 'Cook food.' }
 
 describe('request shape', () => {
-  it('Opus asks for the Sonnet refusal fallback; Sonnet has none; answer budget gets thinking headroom', () => {
+  it('neither model sends a refusal fallback (Anthropic rejected Sonnet 5.5); answer budget gets thinking headroom', () => {
     const base = { system: 's', messages: [{ role: 'user' as const, content: 'x' }], files: [], schema: SCHEMA, schemaName: 't', maxTokens: 8000 }
     const opus = buildAnthropicRequest({ ...base, model: 'claude-opus-5-5' })
-    expect(opus.betas).toEqual([FALLBACK_BETA])
-    expect(opus.fallbacks).toEqual([{ model: 'claude-sonnet-5-5' }])
+    expect(opus.betas).toBeUndefined()
+    expect(opus.fallbacks).toBeUndefined()
     expect(opus.max_tokens).toBe(16000)
     expect(opus.temperature).toBeUndefined()
     const sonnet = buildAnthropicRequest({ ...base, model: 'claude-sonnet-5-5' })
