@@ -5,6 +5,7 @@
 //
 // The cover letter and Word export live inside the Result card, the evidence interview
 // inside the Resume card; the tracker is its own view at /dashboard/tracker.
+import { Button } from "@/components/ui/button"
 import { useCallback, useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
@@ -30,7 +31,7 @@ import { JobCard, jobIsValid } from "./job-card"
 import { TailorCard } from "./tailor-card"
 import { ResultCard } from "./result-card"
 import { RecentDrawer } from "./recent-drawer"
-import { ErrorNote, SecondaryButton } from "./ui"
+import { ErrorNote } from "./ui"
 
 const TEMPLATE_KEY = "rework.template"
 const ACTIVE_MASTER_KEY = "rework.activeMaster"
@@ -272,16 +273,16 @@ export function OneFlow() {
 
   if (!loaded) {
     return (
-      <div className="flex h-[100dvh] flex-col bg-slate-950">
+      <div className="flex h-[100dvh] flex-col bg-bg">
         <AppHeader quota={null} recentCount={0} onOpenRecent={() => {}} onUpgrade={() => {}} flow={null} />
         <div className="flex flex-1 items-center justify-center p-4">
           {loadError ? (
             <div className="w-full max-w-sm space-y-3 text-center">
               <ErrorNote>{loadError}</ErrorNote>
-              <SecondaryButton onClick={() => void load()}>Try again</SecondaryButton>
+              <Button variant="secondary" onClick={() => void load()}>Try again</Button>
             </div>
           ) : (
-            <div className="h-64 w-full max-w-2xl animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+            <div className="h-64 w-full max-w-2xl animate-pulse rounded-panel border border-border bg-surface-raised" />
           )}
         </div>
       </div>
@@ -348,22 +349,25 @@ export function OneFlow() {
       coverLetterQuota={coverLetterQuota}
       onCoverLetterQuota={setCoverLetterQuota}
       onUpgrade={(reason) => setUpgrade({ open: true, reason })}
+      onMasterSaved={(m) => setMasters((list) => list.map((x) => (x.id === m.id ? m : x)))}
       renderChangeExtra={(c) =>
         c.section !== "summary" && c.before ? (
-          <button
+          <Button
+            variant="text"
+            size="sm"
+            className="ml-auto"
             onClick={() => strengthen(c.entryId, c.before)}
-            className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-500/10"
             title="Answer a few questions to add real numbers to this bullet"
           >
             <Sparkles className="h-3 w-3" /> Make it stronger
-          </button>
+          </Button>
         ) : null
       }
     />,
   ]
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-950">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg">
       <CheckoutSuccess />
       <AppHeader
         quota={quota}

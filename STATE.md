@@ -32,6 +32,13 @@ ANTHROPIC_API_KEY is set: claude-opus-5-5 for every task), OpenAI, or OpenRouter
 task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
 `npm run eval:models` compares models on the fixtures (cost, latency, quality).
 
+## Brand
+Lowercase "rework" in brand moments ("ReWork" stays in legal pages, Stripe and OAuth).
+Spec: brand-kit/BRAND.md (gitignored; shipped assets in `public/brand/`). Light first, dark
+follows the system with a Light/Dark/System toggle in the account menu. Headings Newsreader,
+UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
+`node scripts/generate-og-image.js`.
+
 ## Pages
 - `/` landing (server component), `/terms`, `/privacy`: public, no auth JS.
 - `src/app/(app)/`: `/dashboard` (the one-page flow), `/dashboard/tracker`, `/pricing`,

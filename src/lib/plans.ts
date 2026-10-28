@@ -202,6 +202,9 @@ export const FREE_FEATURES = [
   'PDF downloads',
 ]
 
+// The landing page's one-line plan cards.
+export const FREE_PLAN_SHORT = `${FREE_TAILORS_PER_MONTH} tailors, ${FREE_COVER_LETTERS_PER_MONTH} cover letter, ${FREE_TRACKER_APPLICATIONS} tracked jobs`
+
 // Copy used across landing page, settings, status bar, FAQ.
 export const FREE_PLAN_SUMMARY = `${FREE_TAILORS_PER_MONTH} tailored resumes and ${FREE_COVER_LETTERS_PER_MONTH} cover letter per month, a tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs, PDF downloads`
 export const PRO_PLAN_SUMMARY = `Tailoring, cover letters and tracking for your whole search (fair use), plus the evidence interview and Word downloads: ${PRICING.pass.amount} once for a 3-month Job Hunt Pass, or ${PRICING.monthly.display}`

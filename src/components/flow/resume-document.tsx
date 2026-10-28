@@ -7,6 +7,11 @@ import { TEMPLATE_STYLE, toLayout, type TemplateId } from "@/lib/resume-template
 import type { ParsedResume } from "@/types/parsed-resume"
 
 const PAGE_WIDTH = 816
+// The preview mirrors the PDF (src/lib/resume-pdf.tsx), not the app theme: same ink and
+// muted grays, on paper in both themes.
+const INK = "#111827"
+const MUTED = "#4B5563"
+const CHANGED = { backgroundColor: "#E2F0E6", borderRadius: 2 }
 
 export function ResumeDocument({
   resume,
@@ -40,7 +45,7 @@ export function ResumeDocument({
   const font = t.serif ? "'Times New Roman', Times, serif" : "Helvetica, Arial, sans-serif"
   const Heading = ({ children }: { children: React.ReactNode }) => (
     <h3
-      className="mt-4 mb-1.5 pb-0.5 text-[13px] font-bold uppercase tracking-[0.08em]"
+      className="mt-4 mb-1.5 pb-0.5 text-sm font-bold uppercase tracking-[0.08em]"
       style={{ color: t.accent, borderBottom: `${t.serif ? 1 : 0.75}px solid ${t.rule}` }}
     >
       {children}
@@ -51,7 +56,7 @@ export function ResumeDocument({
       {items.map((text, i) => (
         <li key={i} className="flex gap-2">
           <span aria-hidden>•</span>
-          <span className={highlight?.has(text) ? "bg-emerald-100 rounded-sm" : undefined}>{text}</span>
+          <span style={highlight?.has(text) ? CHANGED : undefined}>{text}</span>
         </li>
       ))}
     </ul>
@@ -61,19 +66,19 @@ export function ResumeDocument({
     <div ref={outer} className="w-full overflow-hidden" style={{ height: height * scale }}>
       <div
         ref={inner}
-        className="origin-top-left bg-white text-[13px] leading-[1.4] text-gray-900 shadow-lg"
-        style={{ width: PAGE_WIDTH, minHeight: 1056, padding: "52px 60px", fontFamily: font, transform: `scale(${scale})` }}
+        className="origin-top-left rounded-card bg-resume-paper text-sm leading-[1.4] shadow-float"
+        style={{ width: PAGE_WIDTH, minHeight: 1056, padding: "52px 60px", fontFamily: font, color: INK, transform: `scale(${scale})` }}
       >
         <header className={t.centered ? "text-center" : ""}>
-          {l.name && <h1 className="text-[26px] font-bold" style={{ letterSpacing: t.serif ? "0.04em" : 0 }}>{l.name}</h1>}
-          {l.headline && <p className="text-[14px]" style={{ color: t.serif ? "#374151" : t.accent }}>{l.headline}</p>}
-          {l.contactItems.length > 0 && <p className="mt-1 text-[12px] text-gray-600">{l.contactItems.join("  |  ")}</p>}
+          {l.name && <h1 className="text-2xl font-bold" style={{ letterSpacing: t.serif ? "0.04em" : 0 }}>{l.name}</h1>}
+          {l.headline && <p className="text-sm" style={{ color: t.serif ? "#374151" : t.accent }}>{l.headline}</p>}
+          {l.contactItems.length > 0 && <p className="mt-1 text-xs" style={{ color: MUTED }}>{l.contactItems.join("  |  ")}</p>}
         </header>
 
         {l.summary && (
           <section>
             <Heading>Summary</Heading>
-            <p className={highlight?.has(l.summary) ? "bg-emerald-100 rounded-sm" : undefined}>{l.summary}</p>
+            <p style={highlight?.has(l.summary) ? CHANGED : undefined}>{l.summary}</p>
           </section>
         )}
 
@@ -84,9 +89,9 @@ export function ResumeDocument({
               <div key={e.key} className="mb-2">
                 <div className="flex justify-between gap-4">
                   <span className="font-bold">{[e.title, e.company].filter(Boolean).join(", ")}</span>
-                  <span className="shrink-0 text-gray-600">{e.dates}</span>
+                  <span className="shrink-0" style={{ color: MUTED }}>{e.dates}</span>
                 </div>
-                {e.location && <p className="text-[12px] italic text-gray-600">{e.location}</p>}
+                {e.location && <p className="text-xs italic" style={{ color: MUTED }}>{e.location}</p>}
                 <Bullets items={e.bullets} />
               </div>
             ))}
@@ -101,12 +106,12 @@ export function ResumeDocument({
                 <div className="flex justify-between gap-4">
                   <span>
                     <span className="font-bold">{p.name}</span>
-                    {p.url && <span className="ml-2 text-gray-600">{p.url}</span>}
+                    {p.url && <span className="ml-2" style={{ color: MUTED }}>{p.url}</span>}
                   </span>
-                  <span className="shrink-0 text-gray-600">{p.dates}</span>
+                  <span className="shrink-0" style={{ color: MUTED }}>{p.dates}</span>
                 </div>
                 <Bullets items={p.bullets} />
-                {p.tech && <p className="text-[12px] italic text-gray-600">{p.tech}</p>}
+                {p.tech && <p className="text-xs italic" style={{ color: MUTED }}>{p.tech}</p>}
               </div>
             ))}
           </section>
@@ -119,7 +124,7 @@ export function ResumeDocument({
               <div key={e.key} className="mb-2">
                 <div className="flex justify-between gap-4">
                   <span className="font-bold">{e.school}</span>
-                  <span className="shrink-0 text-gray-600">{e.dates}</span>
+                  <span className="shrink-0" style={{ color: MUTED }}>{e.dates}</span>
                 </div>
                 {e.credential && <p>{e.credential}</p>}
                 <Bullets items={e.details} />

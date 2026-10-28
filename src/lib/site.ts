@@ -7,7 +7,7 @@ export const OG_IMAGE = {
   url: '/og-image.png',
   width: 1200,
   height: 630,
-  alt: 'ReWork: tailor your resume to any job in under a minute. Nothing made up.',
+  alt: 'rework. Same you. Better fit.',
 }
-export const OG_DEFAULTS = { siteName: 'ReWork', locale: 'en_US', type: 'website' as const, images: [OG_IMAGE] }
+export const OG_DEFAULTS = { siteName: 'rework', locale: 'en_US', type: 'website' as const, images: [OG_IMAGE] }
 export const TWITTER_DEFAULTS = { card: 'summary_large_image' as const, images: [OG_IMAGE.url] }

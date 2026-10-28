@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { CheckCircle, Crown, Loader2, Ticket } from "lucide-react"
+import { Check, Crown, Ticket } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { OFFER_IDS, PRICING, PRO_FEATURES, type OfferId } from "@/lib/plans"
 import { describeAccess, type Access } from "@/lib/entitlement-rules"
@@ -64,44 +65,47 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
         return (
           <div
             key={id}
-            className={`flex flex-col rounded-lg border p-5 ${
-              featured ? "border-emerald-500/40 bg-emerald-900/10" : "border-white/10 bg-slate-800/40"
-            }`}
+            className={cn(
+              "flex flex-col rounded-card",
+              compact ? "p-5" : "p-6 sm:p-7",
+              featured ? "bg-inverse text-inverse-fg" : "bg-surface text-text",
+              compact && !featured && "border border-border"
+            )}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Icon className="w-4 h-4 text-emerald-400" />
-              <span className="font-semibold text-white">{offer.name}</span>
+            <div className="flex items-center gap-2">
+              <Icon className="h-4 w-4 opacity-80" aria-hidden />
+              <h3 className={cn("text-sm font-bold", !featured && "text-text-muted")}>
+                {offer.name}
+                {featured && " · most popular"}
+              </h3>
             </div>
-            <div className="text-2xl font-bold text-white">
-              {offer.amount}
-              <span className="text-sm font-normal text-slate-400 ml-1">{offer.period}</span>
-            </div>
-            {offer.headline && <p className="text-sm font-medium text-emerald-300 mt-1">{offer.headline}</p>}
-            <p className="text-xs text-slate-400 mt-1">{offer.cadence}</p>
-            <p className="text-sm text-slate-300 mt-3">{offer.blurb}</p>
+            <p className={cn("mt-2 font-serif", compact ? "text-3xl" : "text-4xl")}>
+              {offer.amount} <span className={cn("text-lg", featured ? "opacity-80" : "text-text-muted")}>{offer.id === "pass" ? "once" : "/ month"}</span>
+            </p>
+            {offer.headline && <p className="mt-2 text-sm font-semibold">{offer.headline}</p>}
+            <p className={cn("mt-1 text-xs", featured ? "opacity-80" : "text-text-muted")}>{offer.cadence}</p>
+            <p className={cn("mt-3 text-sm", featured ? "opacity-90" : "text-text-secondary")}>{offer.blurb}</p>
             {!compact && (
-              <ul className="space-y-2 mt-4">
+              <ul className="mt-5 space-y-2.5">
                 {PRO_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <li key={f} className={cn("flex items-start gap-2 text-sm", featured ? "opacity-90" : "text-text-secondary")}>
+                    <Check className={cn("mt-0.5 h-4 w-4 flex-shrink-0", !featured && "text-success")} aria-hidden />
                     <span>{f}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <div className="mt-auto pt-4">
+            <div className="mt-auto pt-6">
               <Button
                 onClick={a.onClick}
                 disabled={a.disabled || pending !== null}
-                className={`w-full ${
-                  featured
-                    ? "bg-emerald-600 hover:bg-emerald-500 text-white"
-                    : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                }`}
+                loading={busy}
+                variant={featured ? "primary" : "secondary"}
+                className="w-full"
               >
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : a.label}
+                {!busy && a.label}
               </Button>
-              {a.note && <p className="text-xs text-slate-400 mt-2">{a.note}</p>}
+              {a.note && <p className={cn("mt-2 text-xs", featured ? "opacity-80" : "text-text-muted")}>{a.note}</p>}
             </div>
           </div>
         )
@@ -115,17 +119,11 @@ export function AccessSummary({ access, returnTo }: { access: Access; returnTo?:
   const [opening, setOpening] = useState(false)
   return (
     <div
-      className={`p-4 rounded-lg border ${
-        access.pastDue
-          ? "border-amber-500/40 bg-amber-900/20"
-          : access.isPro
-            ? "border-emerald-500/30 bg-emerald-900/20"
-            : "border-white/10 bg-slate-800/30"
-      }`}
+      className={cn("rounded-card p-4", access.pastDue ? "bg-warn-tint" : access.isPro ? "bg-success-tint" : "bg-surface-raised")}
     >
       <div className="flex items-center gap-2">
-        {access.isPro && <Crown className="w-4 h-4 text-emerald-400" />}
-        <span className={`font-medium ${access.pastDue ? "text-amber-300" : access.isPro ? "text-emerald-400" : "text-slate-300"}`}>
+        {access.isPro && <Crown className="h-4 w-4 text-success" aria-hidden />}
+        <span className={cn("font-semibold", access.pastDue ? "text-warn" : "text-text")}>
           {describeAccess(access)}
         </span>
       </div>
@@ -140,9 +138,9 @@ export function AccessSummary({ access, returnTo }: { access: Access; returnTo?:
             }
           }}
           disabled={opening}
-          variant="outline"
+          variant="secondary"
           size="sm"
-          className="mt-3 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+          className="mt-3"
         >
           {opening ? "Opening..." : access.pastDue ? "Update payment method" : "Manage subscription"}
         </Button>

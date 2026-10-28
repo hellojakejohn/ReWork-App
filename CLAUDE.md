@@ -19,6 +19,10 @@
 - `src/lib/tailor.ts`, `src/lib/fact-guard.ts`, `src/lib/tailor-changes.ts` - tailoring, fact checks, per-bullet accept/revert
 - `src/lib/job-resolve/` - job URL resolver chain (ATS APIs -> JSON-LD -> page + model -> needsPaste)
 - `src/lib/resume-pdf.tsx` - Classic/Modern PDF templates (resume + cover letter)
+- `src/app/globals.css` - brand color tokens (light on `:root`, dark on `.dark`); `tailwind.config.ts` maps every color onto them. No raw palette classes (`slate-`, `emerald-`...)
+- `src/lib/theme.ts` + `src/components/theme-toggle.tsx` - Light/Dark/System (localStorage, inline no-flash script in `layout.tsx`)
+- `src/components/ui/button.tsx` - the only button (primary/inverse/secondary/text); `src/components/ui/logo.tsx` - the wordmark (`public/brand/`)
+- `src/lib/receipt.ts` + `src/components/flow/receipt.tsx` - the Result card's "Your receipt" and left-out claims (counts from the tailor report, never hardcoded)
 - `src/lib/resume-docx.ts` - Word export (Classic structure, ATS-safe: no tables/text boxes)
 - `src/lib/cover-letter.ts` + `src/lib/text-facts.ts` - cover letters and the prose fact guard
 - `src/lib/evidence.ts` - evidence interview (questions, answer-only rewrites, apply to master)

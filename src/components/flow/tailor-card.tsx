@@ -1,11 +1,12 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Briefcase, FileText, Sparkles } from "lucide-react"
 import { summarizeResume } from "@/lib/master-resume"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 import { runTailor, type ApplicationDetailDTO, type JobDraft, type MasterResumeDTO, type Quota } from "./api"
-import { Card, CardBody, CardFooter, CardHeader, ErrorNote, PrimaryButton, SecondaryButton, StageList } from "./ui"
+import { Card, CardBody, CardFooter, CardHeader, ErrorNote, StageList } from "./ui"
 import { useAdvance } from "./use-advance"
 
 const TAILOR_STAGES = [
@@ -66,70 +67,70 @@ export function TailorCard({
       <CardHeader title="Tailor" subtitle="We rewrite your bullets for this job, using only what's in your resume." onBack={running ? undefined : onBack} />
       <CardBody className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="rounded-card border border-border bg-surface-raised p-4">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-text-muted">
               <FileText className="h-3.5 w-3.5" /> Resume
             </p>
             {s ? (
               <>
-                <p className="font-semibold text-slate-100">{s.name || master!.title}</p>
-                <p className="text-sm text-slate-400">{s.headline}</p>
-                <p className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-500">
+                <p className="font-semibold text-text">{s.name || master!.title}</p>
+                <p className="text-sm text-text-muted">{s.headline}</p>
+                <p className="mt-1 flex items-center justify-between gap-2 text-xs text-text-muted">
                   <span>
                     {s.roles} {s.roles === 1 ? "role" : "roles"} · {s.projects} {s.projects === 1 ? "project" : "projects"}
                   </span>
                   {!running && (
-                    <button onClick={onReplaceResume} className="text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline">
+                    <Button variant="text" size="sm" className="-mr-2 h-auto py-0.5 underline underline-offset-4" onClick={onReplaceResume}>
                       Replace resume
-                    </button>
+                    </Button>
                   )}
                 </p>
               </>
             ) : (
-              <p className="text-sm text-slate-500">No resume yet</p>
+              <p className="text-sm text-text-muted">No resume yet</p>
             )}
           </div>
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="rounded-card border border-border bg-surface-raised p-4">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-text-muted">
               <Briefcase className="h-3.5 w-3.5" /> Job
             </p>
             {job ? (
               <>
-                <p className="font-semibold text-slate-100">{job.title}</p>
-                <p className="text-sm text-slate-400">{job.company}</p>
-                {job.location && <p className="mt-1 text-xs text-slate-500">{job.location}</p>}
+                <p className="font-semibold text-text">{job.title}</p>
+                <p className="text-sm text-text-muted">{job.company}</p>
+                {job.location && <p className="mt-1 text-xs text-text-muted">{job.location}</p>}
               </>
             ) : (
-              <p className="text-sm text-slate-500">No job yet</p>
+              <p className="text-sm text-text-muted">No job yet</p>
             )}
           </div>
         </div>
 
         {running ? (
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+          <div className="rounded-card border border-border bg-surface-raised p-4">
             <StageList stages={TAILOR_STAGES} current={stage} />
           </div>
         ) : outOfTailors ? (
-          <div className="space-y-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm">
-            <p className="text-slate-200">
+          <div className="space-y-3 rounded-card bg-surface-raised p-4 text-sm">
+            <p className="text-text">
               You&apos;ve used all {quota?.limit ?? FREE_TAILORS_PER_MONTH} free tailors this month. Your resume and past results stay here.
             </p>
-            <PrimaryButton onClick={() => onUpgrade()}>
+            <Button onClick={() => onUpgrade()}>
               <Sparkles className="h-4 w-4" /> Tailor every job with Pro
-            </PrimaryButton>
+            </Button>
           </div>
         ) : (
           error && <ErrorNote>{error}</ErrorNote>
         )}
       </CardBody>
       <CardFooter>
-        <span className="mr-auto text-xs text-slate-400">
+        <span className="mr-auto text-xs text-text-muted">
           {quota?.limit === null ? "Pro: tailor every job you apply to" : quota ? `${quota.remaining} of ${quota.limit} free tailors left this month` : ""}
         </span>
-        {!running && error && !outOfTailors && <SecondaryButton onClick={() => void tailor()}>Try again</SecondaryButton>}
-        <PrimaryButton className="px-6 py-2.5 text-base" loading={running} disabled={!ready} onClick={() => void tailor()}>
+        {!running && error && !outOfTailors && <Button variant="secondary" onClick={() => void tailor()}>Try again</Button>}
+        <Button size="lg" loading={running} disabled={!ready} onClick={() => void tailor()}>
           <Sparkles className="h-4 w-4" /> Tailor
-        </PrimaryButton>
+        </Button>
       </CardFooter>
     </Card>
   )

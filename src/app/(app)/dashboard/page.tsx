@@ -15,14 +15,14 @@ function Dashboard() {
   }, [status])
 
   if (status === "unauthenticated") redirect("/auth/signin")
-  if (!ready && status !== "authenticated") return <div className="h-[100dvh] bg-slate-950" />
+  if (!ready && status !== "authenticated") return <div className="h-[100dvh] bg-bg" />
   return <OneFlow />
 }
 
 export default function DashboardPage() {
   // CheckoutSuccess reads search params, which needs a Suspense boundary.
   return (
-    <Suspense fallback={<div className="h-[100dvh] bg-slate-950" />}>
+    <Suspense fallback={<div className="h-[100dvh] bg-bg" />}>
       <Dashboard />
     </Suspense>
   )

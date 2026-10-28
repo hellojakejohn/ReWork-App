@@ -14,6 +14,6 @@ export default function TrackerPage() {
   }, [status])
 
   if (status === "unauthenticated") redirect("/auth/signin")
-  if (!ready && status !== "authenticated") return <div className="h-[100dvh] bg-slate-950" />
+  if (!ready && status !== "authenticated") return <div className="h-[100dvh] bg-bg" />
   return <TrackerView />
 }

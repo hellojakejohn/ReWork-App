@@ -1,9 +1,10 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import { useEffect, useRef, useState } from "react"
 import { Link2, Loader2, MapPin, Pencil } from "lucide-react"
 import { fetchJobFromUrl, type JobDraft } from "./api"
-import { Card, CardBody, CardFooter, CardHeader, ErrorNote, PrimaryButton, SecondaryButton, inputClass } from "./ui"
+import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
 
@@ -90,20 +91,20 @@ export function JobCard({
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-400">Job title</span>
+          <span className="mb-1 block text-xs font-medium text-text-muted">Job title</span>
           <input className={inputClass} value={draft.title} onChange={(e) => set({ title: e.target.value })} />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-400">Company</span>
+          <span className="mb-1 block text-xs font-medium text-text-muted">Company</span>
           <input className={inputClass} value={draft.company} onChange={(e) => set({ company: e.target.value })} />
         </label>
       </div>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-400">Location (optional)</span>
+        <span className="mb-1 block text-xs font-medium text-text-muted">Location (optional)</span>
         <input className={inputClass} value={draft.location} onChange={(e) => set({ location: e.target.value })} />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-400">Job description</span>
+        <span className="mb-1 block text-xs font-medium text-text-muted">Job description</span>
         <textarea
           className={`${inputClass} min-h-[180px]`}
           value={draft.description}
@@ -122,7 +123,7 @@ export function JobCard({
         {(mode === "url" || mode === "fetching") && (
           <>
             <div className="relative">
-              <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
                 type="url"
                 inputMode="url"
@@ -149,18 +150,18 @@ export function JobCard({
               />
             </div>
             {mode === "fetching" && (
-              <p className="flex items-center gap-2 text-sm text-slate-400" aria-live="polite">
+              <p className="flex items-center gap-2 text-sm text-text-muted" aria-live="polite">
                 <Loader2 className="h-4 w-4 animate-spin" /> Reading the posting...
               </p>
             )}
             {error && <ErrorNote>{error}</ErrorNote>}
-            <p className="text-xs text-slate-500">Works best with Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages.</p>
+            <p className="text-xs text-text-muted">Works best with Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages.</p>
           </>
         )}
 
         {mode === "paste" && (
           <>
-            {pasteNote && <p className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-slate-300">{pasteNote}</p>}
+            {pasteNote && <p className="rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary">{pasteNote}</p>}
             {fields}
           </>
         )}
@@ -171,17 +172,17 @@ export function JobCard({
           ) : (
             <div className="space-y-3">
               <div>
-                <p className="text-lg font-semibold text-white">{draft.title}</p>
-                <p className="text-sm text-slate-300">{draft.company}</p>
+                <p className="text-lg font-semibold text-text">{draft.title}</p>
+                <p className="text-sm text-text-secondary">{draft.company}</p>
                 {draft.location && (
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-text-muted">
                     <MapPin className="h-3 w-3" /> {draft.location}
                   </p>
                 )}
               </div>
-              <div className="relative max-h-56 overflow-hidden rounded-lg border border-white/5 bg-white/[0.02] p-3">
-                <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">{draft.description.slice(0, 1200)}</p>
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-slate-900 to-transparent" />
+              <div className="relative max-h-56 overflow-hidden rounded-input border border-border bg-surface-raised p-3">
+                <p className="whitespace-pre-line text-sm leading-relaxed text-text-secondary">{draft.description.slice(0, 1200)}</p>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-surface-raised to-transparent" />
               </div>
               {!valid && (
                 <ErrorNote>
@@ -195,39 +196,35 @@ export function JobCard({
       </CardBody>
       <CardFooter>
         {mode === "fetched" && (
-          <SecondaryButton onClick={() => setEditing((v) => !v)}>
+          <Button variant="secondary" onClick={() => setEditing((v) => !v)}>
             <Pencil className="h-3.5 w-3.5" /> {editing ? "Done editing" : "Edit"}
-          </SecondaryButton>
+          </Button>
         )}
         {(mode === "url" || mode === "fetching") && (
-          <button
-            type="button"
-            className="mr-auto text-sm text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+          <Button
+            variant="text"
+            className="-ml-3 mr-auto"
             onClick={() => {
               setPasteNote("")
               setMode("paste")
             }}
           >
             Paste the description instead
-          </button>
+          </Button>
         )}
         {mode === "paste" && (
-          <button
-            type="button"
-            className="mr-auto text-sm text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
-            onClick={() => setMode("url")}
-          >
+          <Button variant="text" className="-ml-3 mr-auto" onClick={() => setMode("url")}>
             Use a link instead
-          </button>
+          </Button>
         )}
         {mode === "url" || mode === "fetching" ? (
-          <PrimaryButton loading={mode === "fetching"} disabled={!draft.url.trim()} onClick={() => void fetchUrl(draft.url)}>
+          <Button loading={mode === "fetching"} disabled={!draft.url.trim()} onClick={() => void fetchUrl(draft.url)}>
             Fetch
-          </PrimaryButton>
+          </Button>
         ) : (
-          <PrimaryButton disabled={!valid} onClick={() => onConfirm(draft)}>
+          <Button disabled={!valid} onClick={() => onConfirm(draft)}>
             Looks good
-          </PrimaryButton>
+          </Button>
         )}
       </CardFooter>
     </Card>

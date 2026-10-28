@@ -5,6 +5,7 @@
 // Percent and dates only, never dollars. Data: GET /api/account/ai-usage.
 import { useEffect, useState } from "react"
 import { X } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export interface AIUsage {
   percent: number
@@ -56,11 +57,13 @@ export function AIUsageBanner({ usage }: { usage: AIUsage | null }) {
     <div
       role="status"
       className={`flex items-center gap-3 border-b px-4 py-1.5 text-xs sm:px-6 ${
-        usage.band === "paused" ? "border-amber-500/20 bg-amber-500/10 text-amber-200" : "border-white/5 bg-slate-900 text-slate-300"
+        usage.band === "paused" ? "border-warn/20 bg-warn-tint text-text" : "border-border bg-surface-raised text-text-secondary"
       }`}
     >
       <span className="flex-1">{text}</span>
-      <button
+      <Button
+        variant="text"
+        size="icon-sm"
         onClick={() => {
           setDismissed(true)
           try {
@@ -70,10 +73,9 @@ export function AIUsageBanner({ usage }: { usage: AIUsage | null }) {
           }
         }}
         aria-label="Dismiss"
-        className="rounded p-0.5 text-slate-400 hover:bg-white/10 hover:text-slate-200"
       >
         <X className="h-3.5 w-3.5" />
-      </button>
+      </Button>
     </div>
   )
 }
@@ -81,16 +83,16 @@ export function AIUsageBanner({ usage }: { usage: AIUsage | null }) {
 /** Tiny bar for the account menu. */
 export function AIUsageMeter({ usage }: { usage: AIUsage | null }) {
   if (!usage) return null
-  const color = usage.band === "paused" ? "bg-amber-400" : usage.band === "downgrade" ? "bg-amber-300" : "bg-emerald-400"
+  const color = usage.band === "normal" ? "bg-success" : "bg-warn"
   const reset = new Date(usage.resetAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
   return (
     <div className="mt-2" title={`Resets ${reset}`}>
-      <div className="flex items-center justify-between text-[11px] text-slate-400">
+      <div className="flex items-center justify-between text-xs text-text-muted">
         <span>Monthly usage</span>
         <span>{usage.percent}%</span>
       </div>
       <div
-        className="mt-1 h-1 w-full overflow-hidden rounded-full bg-white/10"
+        className="mt-1 h-1 w-full overflow-hidden rounded-full bg-surface-raised"
         role="progressbar"
         aria-label="Monthly usage"
         aria-valuemin={0}

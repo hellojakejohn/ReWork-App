@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { AnalyticsPanel } from '@/components/admin/analytics-panel'
+import { Button } from '@/components/ui/button'
 
 interface User {
   id: string
@@ -40,7 +41,7 @@ export default function AdminPage() {
   })
 
   useEffect(() => {
-    document.title = "Admin Panel - ReWork"
+    document.title = "Admin · rework"
     if (status === 'loading') return
 
     if (!session) {
@@ -132,138 +133,131 @@ export default function AdminPage() {
   }
 
   if (status === 'loading' || loading) {
-    return <div className="p-8">Loading...</div>
+    return <div className="min-h-screen bg-bg p-8 text-text-muted">Loading...</div>
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-white">Admin Dashboard</h1>
+    <div className="min-h-screen bg-bg text-text">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      <h1 className="font-serif text-3xl font-semibold mb-6 text-text">Admin Dashboard</h1>
       <AnalyticsPanel />
       <div className="mb-8">
-        <h2 className="text-xl font-bold mb-4 text-white">Users</h2>
+        <h2 className="font-serif text-2xl font-semibold mb-4 text-text">Users</h2>
         
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg border">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="bg-surface p-4 rounded-card">
             <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-sm text-gray-600">Total Users</div>
+            <div className="text-sm text-text-muted">Total Users</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border">
+          <div className="bg-surface p-4 rounded-card">
             <div className="text-2xl font-bold">{stats.free}</div>
-            <div className="text-sm text-gray-600">Free Users</div>
+            <div className="text-sm text-text-muted">Free Users</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border">
+          <div className="bg-surface p-4 rounded-card">
             <div className="text-2xl font-bold">{stats.premium}</div>
-            <div className="text-sm text-gray-600">Pro Users</div>
+            <div className="text-sm text-text-muted">Pro Users</div>
           </div>
-          <div className="bg-white p-4 rounded-lg border">
+          <div className="bg-surface p-4 rounded-card">
             <div className="text-2xl font-bold">{stats.totalResumes}</div>
-            <div className="text-sm text-gray-600">Total Resumes</div>
+            <div className="text-sm text-text-muted">Total Resumes</div>
           </div>
         </div>
 
-        <button
-          onClick={exportUsers}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
+        <Button variant="secondary" onClick={exportUsers}>
           Export Users CSV
-        </button>
+        </Button>
       </div>
 
-      <div className="bg-white rounded-lg border overflow-hidden">
+      <div className="bg-surface rounded-card overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-surface-raised">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 User
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 Plan
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 Resumes
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 Joined
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 Last Active
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 AI spend (MTD)
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 AI cap
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-border">
             {users.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user.id} className="hover:bg-surface-raised">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-text">
                     {user.name || 'No name'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{user.email}</div>
+                  <div className="text-sm text-text">{user.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     user.plan === 'PREMIUM' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-success-tint text-success' 
+                      : 'bg-surface-raised text-text-secondary'
                   }`}>
                     {user.plan}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
                   {user.resumesCreated}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
                   {new Date(user.lastActiveAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
                   {user.ai ? usd(user.ai.mtdSpendUsd) : '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
                   {user.ai ? (
                     <span title={`${user.ai.period} period, resets ${new Date(user.ai.resetAt).toLocaleDateString()}`}>
                       {usd(user.ai.periodSpendUsd)} / {usd(user.ai.capUsd)} ({user.ai.percent}%)
-                      {user.ai.band !== 'normal' && <span className="ml-1 text-amber-700">{user.ai.band}</span>}
-                      {user.ai.overrideUsd !== null && <span className="ml-1 text-blue-700">override</span>}
+                      {user.ai.band !== 'normal' && <span className="ml-1 text-warn">{user.ai.band}</span>}
+                      {user.ai.overrideUsd !== null && <span className="ml-1 text-accent-strong">override</span>}
                     </span>
                   ) : (
                     '-'
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <button
-                    onClick={() => compPro(user)}
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
+                  <Button variant="text" size="sm" onClick={() => compPro(user)}>
                     Comp Pro for N days
-                  </button>
-                  <button
-                    onClick={() => setCap(user)}
-                    className="ml-3 text-blue-600 hover:text-blue-800 underline"
-                  >
+                  </Button>
+                  <Button variant="text" size="sm" className="ml-1" onClick={() => setCap(user)}>
                     Set AI cap
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   )
 }

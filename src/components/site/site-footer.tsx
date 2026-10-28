@@ -1,18 +1,20 @@
 import Link from "next/link"
 import { CONTACT_EMAIL } from "@/lib/plans"
 
-// Footer for the public pages (landing, pricing, terms, privacy). Server component.
+// Footer for the public pages (landing, pricing, sign-in, terms, privacy). Server component.
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/10 bg-slate-950/60">
-      <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-slate-400 sm:flex-row">
-        <p>© {new Date().getFullYear()} ReWork · Made in Saint Paul, MN</p>
-        <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <Link href="/pricing" className="hover:text-white">Pricing</Link>
-          <Link href="/terms" className="hover:text-white">Terms</Link>
-          <Link href="/privacy" className="hover:text-white">Privacy</Link>
-          <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-white">Contact</a>
-        </nav>
+    <footer className="bg-bg">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="flex flex-col items-start justify-between gap-4 border-t border-border py-8 text-sm text-text-muted sm:flex-row sm:items-center">
+          <p>© {new Date().getFullYear()} ReWork. Made in Saint Paul, MN.</p>
+          <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link href="/pricing" className="underline-offset-4 hover:text-text hover:underline">Pricing</Link>
+            <Link href="/privacy" className="underline underline-offset-4 hover:text-text">Privacy</Link>
+            <Link href="/terms" className="underline underline-offset-4 hover:text-text">Terms</Link>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="underline-offset-4 hover:text-text hover:underline">Contact</a>
+          </nav>
+        </div>
       </div>
     </footer>
   )

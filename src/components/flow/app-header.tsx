@@ -5,6 +5,8 @@ import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { ChevronDown, FileStack, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
+import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { UserAvatar } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -55,7 +57,7 @@ export function AppHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-white/5 bg-slate-950/90 px-4 backdrop-blur sm:px-6">
+      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface/90 px-4 backdrop-blur sm:px-6">
         <Link
           href="/dashboard"
           onClick={(e) => {
@@ -65,63 +67,55 @@ export function AppHeader({
               flow.onLogo()
             }
           }}
-          className="flex items-center gap-2"
+          aria-label="rework home"
+          className="-ml-1 flex items-center rounded-input"
         >
-          <Logo size="xs" variant="simple" showBadge={false} />
-          <span className="text-[15px] font-semibold tracking-tight text-slate-100">ReWork</span>
+          <Logo height={44} priority />
         </Link>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          {tailorsText && <span className="hidden text-xs text-slate-400 sm:inline">{tailorsText}</span>}
+          {tailorsText && <span className="hidden text-xs text-text-muted sm:inline">{tailorsText}</span>}
 
           {view === "tracker" ? (
-            <Link href="/dashboard" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5" title="Tailor">
+            <Link href="/dashboard" className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-text-secondary hover:bg-surface-raised hover:text-text" title="Tailor">
               <Wand2 className="h-4 w-4" />
               <span className="hidden sm:inline">Tailor</span>
             </Link>
           ) : (
-            <Link href="/dashboard/tracker" className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5" title="Application tracker">
+            <Link href="/dashboard/tracker" className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-text-secondary hover:bg-surface-raised hover:text-text" title="Application tracker">
               <KanbanSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Tracker</span>
             </Link>
           )}
 
           {recentCount > 0 && onOpenRecent && (
-            <button
-              onClick={onOpenRecent}
-              aria-label="Recent tailored resumes"
-              title="Recent"
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-300 hover:bg-white/5"
-            >
+            <Button variant="text" size="sm" onClick={onOpenRecent} aria-label="Recent tailored resumes" title="Recent" className="text-sm">
               <History className="h-4 w-4" />
               <span className="hidden sm:inline">Recent</span>
-            </button>
+            </Button>
           )}
 
           {quota && !quota.isPro && (
-            <button
-              onClick={onUpgrade}
-              className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 px-2.5 py-1.5 text-sm font-medium text-emerald-300 hover:bg-emerald-500/10"
-            >
+            <Button variant="secondary" size="sm" onClick={onUpgrade}>
               <Sparkles className="h-3.5 w-3.5" />
               Upgrade
-            </button>
+            </Button>
           )}
 
           {session && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 rounded-lg p-1 hover:bg-white/5 focus:outline-none" aria-label="Account menu">
+              <DropdownMenuTrigger className="flex items-center gap-1 rounded-full p-1 hover:bg-surface-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-text/40" aria-label="Account menu">
                 <UserAvatar userId={session.user?.id} size="sm" />
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 border-white/10 bg-slate-900 text-slate-200">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel className="font-normal">
-                  <div className="truncate text-sm text-slate-100">{session.user?.name}</div>
-                  <div className="truncate text-xs text-slate-400">{session.user?.email}</div>
-                  {tailorsText && <div className="mt-1 text-xs text-slate-400 sm:hidden">{tailorsText}</div>}
+                  <div className="truncate text-sm font-semibold text-text">{session.user?.name}</div>
+                  <div className="truncate text-xs text-text-muted">{session.user?.email}</div>
+                  {tailorsText && <div className="mt-1 text-xs text-text-muted sm:hidden">{tailorsText}</div>}
                   <AIUsageMeter usage={aiUsage} />
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator />
                 {flow ? (
                   <>
                     <DropdownMenuItem onSelect={flow.onManageResumes}>
@@ -145,7 +139,7 @@ export function AppHeader({
                     </DropdownMenuItem>
                   </>
                 )}
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
                   <Settings className="mr-2 h-4 w-4" /> Settings & billing
                 </DropdownMenuItem>
@@ -159,7 +153,12 @@ export function AppHeader({
                     <Tag className="mr-2 h-4 w-4" /> Pricing
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5">
+                  <div className="mb-1.5 text-xs text-text-muted">Theme</div>
+                  <ThemeToggle />
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setLogoutOpen(true)}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
                 </DropdownMenuItem>

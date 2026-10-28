@@ -2,11 +2,12 @@
 
 // Tracker -> "Add a job": track something without tailoring it. Paste a link to autofill
 // through the job resolver, or type it in.
+import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { addTrackedJob, fetchJobFromUrl, type JobDraft, type TrackerCardDTO } from "@/components/flow/api"
-import { ErrorNote, PrimaryButton, SecondaryButton, inputClass } from "@/components/flow/ui"
+import { ErrorNote, inputClass } from "@/components/flow/ui"
 
 const EMPTY: JobDraft = { url: "", title: "", company: "", location: "", description: "" }
 
@@ -69,7 +70,7 @@ export function AddJobDialog({
 
   const field = (key: keyof JobDraft, label: string, placeholder = "") => (
     <label className="block space-y-1">
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs text-text-muted">{label}</span>
       <input className={inputClass} placeholder={placeholder} value={job[key] ?? ""} onChange={(e) => setJob((j) => ({ ...j, [key]: e.target.value }))} />
     </label>
   )
@@ -82,10 +83,10 @@ export function AddJobDialog({
         onOpenChange(next)
       }}
     >
-      <DialogContent className="max-w-lg border border-white/10 bg-slate-900 text-slate-200">
+      <DialogContent className="max-w-lg border border-border bg-surface text-text">
         <DialogHeader>
-          <DialogTitle className="text-white">Add a job</DialogTitle>
-          <DialogDescription className="text-slate-400">Track it here now; tailor for it whenever you want.</DialogDescription>
+          <DialogTitle className="text-text">Add a job</DialogTitle>
+          <DialogDescription className="text-text-muted">Track it here now; tailor for it whenever you want.</DialogDescription>
         </DialogHeader>
         <form
           className="space-y-3"
@@ -107,11 +108,11 @@ export function AddJobDialog({
                 }
               }}
             />
-            <SecondaryButton type="button" onClick={() => void autofill()} disabled={fetching || !job.url.trim()}>
+            <Button variant="secondary" type="button" onClick={() => void autofill()} disabled={fetching || !job.url.trim()}>
               {fetching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Autofill"}
-            </SecondaryButton>
+            </Button>
           </div>
-          {note && <p className="rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs text-amber-100">{note}</p>}
+          {note && <p className="rounded-input border border-warn/30 bg-warn-tint px-3 py-2 text-xs text-warn">{note}</p>}
           {error && <ErrorNote>{error}</ErrorNote>}
           <div className="grid gap-3 sm:grid-cols-2">
             {field("title", "Job title")}
@@ -119,16 +120,16 @@ export function AddJobDialog({
           </div>
           {field("location", "Location", "Optional")}
           <label className="block space-y-1">
-            <span className="text-xs text-slate-400">Description (optional, needed later to tailor)</span>
+            <span className="text-xs text-text-muted">Description (optional, needed later to tailor)</span>
             <textarea className={`${inputClass} min-h-[96px]`} value={job.description} onChange={(e) => setJob((j) => ({ ...j, description: e.target.value }))} />
           </label>
           <div className="flex justify-end gap-2">
-            <SecondaryButton type="button" onClick={() => onOpenChange(false)}>
+            <Button variant="secondary" type="button" onClick={() => onOpenChange(false)}>
               Cancel
-            </SecondaryButton>
-            <PrimaryButton type="submit" loading={saving} disabled={!job.title.trim() || !job.company.trim()}>
+            </Button>
+            <Button type="submit" loading={saving} disabled={!job.title.trim() || !job.company.trim()}>
               Add to tracker
-            </PrimaryButton>
+            </Button>
           </div>
         </form>
       </DialogContent>
