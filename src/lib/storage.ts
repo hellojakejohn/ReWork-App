@@ -51,8 +51,7 @@ export async function ensureBucketExists() {
 export async function uploadToStorage(
   file: Buffer,
   key: string,
-  contentType: string,
-  metadata?: Record<string, string>
+  contentType: string
 ) {
   try {
     // Ensure bucket exists
@@ -95,30 +94,6 @@ export async function uploadToStorage(
   }
 }
 
-// Generate signed URL for secure file access
-export async function getSignedDownloadUrl(key: string, expiresIn: number = 3600) {
-  try {
-    const { data, error } = await getSupabase().storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(key, expiresIn)
-
-    if (error) {
-      throw error
-    }
-
-    return {
-      success: true,
-      url: data.signedUrl,
-    }
-  } catch (error) {
-    console.error('Supabase signed URL error:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
-  }
-}
-
 // Delete file from Supabase Storage
 export async function deleteFromStorage(key: string) {
   try {
@@ -143,12 +118,12 @@ export async function deleteFromStorage(key: string) {
 }
 
 // Generate unique storage key for a file
-export function generateStorageKey(userId: string, originalFileName: string): string {
+// The extension comes from the detected file kind, never from the user's file name.
+export function generateStorageKey(userId: string, kind: 'pdf' | 'docx'): string {
   const timestamp = Date.now()
   const randomId = Math.random().toString(36).substring(2, 8)
-  const fileExtension = originalFileName.split('.').pop()
 
-  return `users/${userId}/resumes/${timestamp}-${randomId}.${fileExtension}`
+  return `users/${userId}/resumes/${timestamp}-${randomId}.${kind}`
 }
 
 // Helper to get file content type
@@ -167,27 +142,6 @@ export function getContentType(fileName: string): string {
   }
 }
 
-// Download file from Supabase Storage
-export async function downloadFromStorage(key: string): Promise<Buffer | null> {
-  try {
-    const { data, error } = await getSupabase().storage
-      .from(BUCKET_NAME)
-      .download(key)
-
-    if (error) {
-      throw error
-    }
-
-    // Convert Blob to Buffer
-    const arrayBuffer = await data.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    return buffer
-  } catch (error) {
-    console.error('Supabase download error:', error)
-    return null
-  }
-}
 /**
  * Account deletion: removes every file under the user's folder plus any keys the
  * database knows about. Never throws; returns how many were removed and any error.

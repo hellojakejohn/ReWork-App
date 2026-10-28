@@ -101,9 +101,17 @@ export function taskRoute(task: AITask): ModelRoute {
   return { provider: 'openai', model: legacyOpenAIModel(task) }
 }
 
-/** AI_FREE_TIER, or null when unset (FREE users then get the task routing). */
+export const DEFAULT_FREE_TIER_MODEL = 'claude-sonnet-5-5'
+
+/**
+ * AI_FREE_TIER; else Sonnet 5.5 when ANTHROPIC_API_KEY is set; else null (FREE users then
+ * get the task routing).
+ */
 export function freeTierRoute(): ModelRoute | null {
-  return routeFromEnv('AI_FREE_TIER')
+  const configured = routeFromEnv('AI_FREE_TIER')
+  if (configured) return configured
+  if (providerConfigured('anthropic')) return { provider: 'anthropic', model: DEFAULT_FREE_TIER_MODEL }
+  return null
 }
 
 export type PlanTier = 'free' | 'pro'

@@ -9,8 +9,8 @@ import { getAccess } from '@/lib/entitlements'
 import { FREE_TRACKER_APPLICATIONS, INPUT_LIMITS, GO_PRO_OFFERS, trackerLimitFor } from '@/lib/plans'
 import { track } from '@/lib/track'
 import { toTrackerCard } from '@/lib/application-dto'
+import { clip, httpUrlOrNull } from '@/lib/input'
 
-const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -92,7 +92,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Upload your resume first, then you can track jobs here.' }, { status: 400 })
   }
 
-  const url = clip(body?.url, 2000)
   const now = new Date()
   const row = await prisma.jobApplication.create({
     data: {
@@ -101,7 +100,7 @@ export async function POST(request: NextRequest) {
       jobTitle: title,
       company,
       jobDescription: clip(body?.description, INPUT_LIMITS.jobDescriptionChars),
-      jobUrl: /^https?:\/\//i.test(url) ? url : null,
+      jobUrl: httpUrlOrNull(body?.url),
       keywords: [],
       status: 'DRAFT',
       statusUpdatedAt: now,

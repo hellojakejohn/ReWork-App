@@ -66,10 +66,49 @@ export function stripeId(ref: string | { id: string } | null | undefined): strin
 /** Stripe statuses that mean the customer already has a subscription we shouldn't duplicate. */
 export const BLOCKING_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid'])
 
-/** The Stripe price id for an offer. The pass reads STRIPE_PRICE_PASS, then the old STRIPE_PRICE_PASS_30D name. */
+/** The Stripe price id for an offer, from its env var. No fallbacks: a missing id disables that offer. */
 export function stripePriceId(offer: Offer): string | null {
-  const primary = process.env[offer.priceEnv]?.trim()
-  if (primary) return primary
-  const legacy = offer.fallbackEnv ? process.env[offer.fallbackEnv]?.trim() : ''
-  return legacy || null
+  return process.env[offer.priceEnv]?.trim() || null
+}
+
+/** Is this Stripe price the one configured for the offer? Grants are only made for these. */
+export function isConfiguredPrice(offer: Offer, priceId: string | null | undefined): boolean {
+  const configured = stripePriceId(offer)
+  return !!configured && !!priceId && priceId === configured
+}
+
+export interface PriceCheck {
+  ok: boolean
+  priceId: string | null
+  expectedUsd: number
+  detail: string
+}
+
+/**
+ * Fetches the configured price for each offer and checks it against plans.ts: USD, the
+ * same amount, and recurring monthly for a subscription / one-time for a payment.
+ */
+export async function checkStripePrices(stripe: Stripe, offers: Offer[]): Promise<Record<string, PriceCheck>> {
+  const out: Record<string, PriceCheck> = {}
+  for (const offer of offers) {
+    const priceId = stripePriceId(offer)
+    const base = { priceId, expectedUsd: offer.priceUsd }
+    if (!priceId) {
+      out[offer.id] = { ...base, ok: false, detail: `${offer.priceEnv} is not set` }
+      continue
+    }
+    try {
+      const price = await stripe.prices.retrieve(priceId)
+      const problems: string[] = []
+      if (price.currency !== 'usd') problems.push(`currency ${price.currency}`)
+      if (price.unit_amount !== Math.round(offer.priceUsd * 100)) problems.push(`unit_amount ${price.unit_amount} (expected ${Math.round(offer.priceUsd * 100)})`)
+      if (offer.mode === 'subscription' && price.recurring?.interval !== 'month') problems.push('not a monthly recurring price')
+      if (offer.mode === 'payment' && price.type !== 'one_time') problems.push('not a one-time price')
+      if (!price.active) problems.push('price is archived')
+      out[offer.id] = { ...base, ok: problems.length === 0, detail: problems.length ? problems.join('; ') : 'matches plans.ts' }
+    } catch (error) {
+      out[offer.id] = { ...base, ok: false, detail: String((error as Error)?.message || error).slice(0, 200) }
+    }
+  }
+  return out
 }

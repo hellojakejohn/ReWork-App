@@ -49,14 +49,14 @@ Put these in `.env` (not `.env.local`; Prisma reads `.env`). `npm run build` wor
 | `OPENAI_API_KEY` | if routed | Required when any task routes to `openai:` (the default without `ANTHROPIC_API_KEY`) |
 | `OPENROUTER_API_KEY` | no | Only for tasks routed to `openrouter:` (Kimi etc.). Text only, no PDFs |
 | `AI_PARSE`, `AI_JOB_EXTRACT`, `AI_TAILOR`, `AI_COVER_LETTER`, `AI_EVIDENCE` | no | Routing per task, `provider:model`, e.g. `anthropic:claude-opus-5-5` |
-| `AI_FREE_TIER` | no | FREE users' tailor/cover letter/evidence, and paid users past 75% of their AI cap. Recommended `anthropic:claude-sonnet-5-5` |
+| `AI_FREE_TIER` | no | FREE users' tailor/cover letter/evidence, and paid users past 75% of their AI cap. Defaults to `anthropic:claude-sonnet-5-5` when `ANTHROPIC_API_KEY` is set |
 | `AI_CAP_RATIO` | no | Share of net revenue a user's AI spend may reach per period. Default `0.70` |
 | `AI_PRO_ALWAYS_OPUS` | no | `true` skips the 75% downgrade (the 100% pause stays) |
 | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | yes | Storage for uploaded resumes (`resumes` bucket, private) |
 | `STRIPE_SECRET_KEY` | for billing | Without it checkout returns 503 |
 | `STRIPE_WEBHOOK_SECRET` | for billing | Signing secret of the webhook endpoint |
-| `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PASS` | for billing | Price IDs: the $15/month price and the $29 one-time price. `STRIPE_PRICE_PASS_30D` is still read as a fallback |
-| `CRON_SECRET` | yes on Vercel | Authorizes `/api/keepalive` and `/api/cron/expire-entitlements` |
+| `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PASS` | for billing | Price IDs: the $15/month price and the $29 one-time price. No fallback names; `/api/health` checks both amounts against `src/lib/plans.ts` |
+| `CRON_SECRET` | yes on Vercel | Authorizes `/api/keepalive` and `/api/cron/expire-entitlements`. Without it both refuse every request |
 | `ADMIN_EMAILS` | no | Comma separated; defaults to the owner's addresses |
 | `OPENAI_PARSE_MODEL`, `OPENAI_TAILOR_MODEL`, `OPENAI_COVER_LETTER_MODEL`, `OPENAI_EVIDENCE_MODEL`, `OPENAI_JOB_MODEL` | no | Old OpenAI model overrides, used only when no `AI_*` route and no `ANTHROPIC_API_KEY` |
 

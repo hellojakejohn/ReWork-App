@@ -1,15 +1,14 @@
 # ReWork - Claude Code Instructions
 
 ## First Steps for Any New Session
-1. Read STATE.md for current project status
-2. Read TODO.md for prioritized task list
-3. Run `npm run dev` to verify the app boots
-4. Ask what we're working on today
+1. Read STATE.md for current project status (docs/AUDIT.md has the audit and roadmap)
+2. Run `npm run dev` to verify the app boots
+3. Ask what we're working on today
 
 ## Project Structure
 - `src/app/` - Next.js app router pages + API routes (`(app)/` route group = pages that need a session)
 - `src/components/` - React components
-- `src/lib/` - Utilities (storage.ts, openai.ts, prisma.ts)
+- `src/lib/` - Utilities (storage.ts, prisma.ts, input.ts); `src/lib/ai/` is the model provider layer
 - `src/types/` - TypeScript definitions
 - `prisma/` - Database schema
 

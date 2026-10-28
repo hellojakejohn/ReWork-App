@@ -7,9 +7,10 @@ import { applyTailorOutput, buildTailorInput, callTailorModel, TailorError } fro
 import { factGuard } from '@/lib/fact-guard';
 import { coverageReport } from '@/lib/keyword-coverage';
 import { buildChanges } from '@/lib/tailor-changes';
-import { getTailorQuota, incrementTailorCount } from '@/lib/tailor-quota';
+import { getTailorQuota, reserveMonthly } from '@/lib/tailor-quota';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
-import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, GO_PRO_OFFERS } from '@/lib/plans';
+import { FREE_TAILORS_PER_MONTH, INPUT_LIMITS, INPUT_LIMIT_MESSAGES, GO_PRO_OFFERS, TAILOR_FIELD_LIMITS as L } from '@/lib/plans';
+import { clip, clipList, httpUrlOrNull } from '@/lib/input';
 import { checkDailyCeiling } from '@/lib/daily-ceiling';
 import { collectUsage, usageProps } from '@/lib/ai-usage';
 import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap';
@@ -33,7 +34,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -46,10 +47,16 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid request data', success: false }, { status: 400 });
   }
 
-  const { jobTitle, company, companyName, location, description, jobDescription, extraContext, contextTags, applicationId: requestedApplicationId } = requestData;
+  const { description, jobDescription, applicationId: requestedApplicationId } = requestData;
 
-  // Accept both company and companyName for backwards compatibility
-  const actualCompanyName = company || companyName;
+  // Short fields go into the prompt and the DB: clip them. Accept both company and
+  // companyName for backwards compatibility.
+  const jobTitle = clip(requestData.jobTitle, L.jobTitle);
+  const actualCompanyName = clip(requestData.company || requestData.companyName, L.company);
+  const location = clip(requestData.location, L.location);
+  const extraContext = clip(requestData.extraContext, L.extraContext) || undefined;
+  const contextTags = clipList(requestData.contextTags, L.contextTags, L.contextTagChars);
+  const jobUrl = httpUrlOrNull(requestData.jobUrl, L.jobUrl);
   const actualJobDescription = description || jobDescription;
 
   if (!jobTitle || !actualCompanyName || !actualJobDescription) {
@@ -60,14 +67,13 @@ export async function POST(
   }
 
   const resume = await prisma.resume.findUnique({
-    where: { id: resumeId },
-    include: { user: true }
+    where: { id: resumeId }
   });
 
   if (!resume || !resume.isActive) {
     return NextResponse.json({ error: "We couldn't find that resume. Reload the page and pick it again." }, { status: 404 });
   }
-  if (resume.user.email !== session.user.email) {
+  if (resume.userId !== session.user.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -92,9 +98,11 @@ export async function POST(
   const paused = await aiPausedCheck(ai, userId, 'tailor');
   if (paused) return NextResponse.json(paused, { status: 429 });
 
-  // Enforce the monthly limit BEFORE spending a model call
+  // Enforce the monthly limit BEFORE spending a model call: reserve one use atomically
+  // (parallel requests can't all pass), and give it back if nothing gets saved.
   const quota = await getTailorQuota(userId);
-  if (!quota.allowed) {
+  const reservation = quota.allowed ? await reserveMonthly(userId, 'tailor', quota.isPro) : null;
+  if (!reservation) {
     await track('limit_hit', { kind: 'tailor' }, userId);
     return NextResponse.json({
       success: false,
@@ -119,12 +127,22 @@ export async function POST(
   const evidence = evidenceFacts(resume.evidence);
   if (evidence.length > 0) input.evidence = evidence;
   if (input.roles.length === 0 && input.education.length === 0 && input.projects.length === 0) {
+    await reservation.release();
     return NextResponse.json({
       error: 'Your resume has no roles, projects or education yet. Add them first.'
     }, { status: 400 });
   }
 
+  let saved = false;
   const run = async (send: (event: StreamEvent) => void) => {
+    try {
+      await tailor(send);
+    } finally {
+      if (!saved) await reservation.release();
+    }
+  };
+
+  const tailor = async (send: (event: StreamEvent) => void) => {
     send({ type: 'stage', stage: 'reading' });
     send({ type: 'stage', stage: 'rewriting' });
 
@@ -133,7 +151,7 @@ export async function POST(
       callTailorModel(
         input,
         { title: jobTitle, company: actualCompanyName, description: actualJobDescription, location },
-        { extraContext, contextTags: Array.isArray(contextTags) ? contextTags : undefined }
+        { extraContext, contextTags: contextTags.length ? contextTags : undefined }
       ),
       ai.scope
     );
@@ -181,7 +199,7 @@ export async function POST(
       targetKeywords: cleaned.targetKeywords,
       presentBefore: coverage.master.present,
       presentAfter: coverage.tailored.present,
-      jobLocation: typeof location === 'string' ? location : ''
+      jobLocation: location
     };
 
     const applicationData = {
@@ -222,12 +240,12 @@ export async function POST(
             resumeId,
             jobTitle,
             company: actualCompanyName,
-            jobUrl: typeof requestData.jobUrl === 'string' && requestData.jobUrl ? requestData.jobUrl : null
+            jobUrl
           }
         });
 
-    // Count only after the result is saved. Re-tailoring counts too.
-    await incrementTailorCount(userId);
+    // Saved: keep the reserved use. Re-tailoring counts too.
+    saved = true;
     await track('tailored', {
       ms: msSince(start),
       coverageBefore: coverage.master.score,

@@ -11,7 +11,7 @@ import { masterToParsed } from '@/lib/master-resume'
 import { recruiterText } from '@/lib/recruiter-text'
 import { CoverLetterError, generateCoverLetter, isCoverLetterTone, readStoredCoverLetter, type StoredCoverLetter } from '@/lib/cover-letter'
 import { evidenceFacts } from '@/lib/evidence-shared'
-import { getCoverLetterQuota, incrementCoverLetterCount, quotaDTO } from '@/lib/tailor-quota'
+import { getCoverLetterQuota, quotaDTO, reserveMonthly } from '@/lib/tailor-quota'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { FREE_COVER_LETTERS_PER_MONTH, GO_PRO_OFFERS } from '@/lib/plans'
 import { toApplicationDetail } from '@/lib/application-dto'
@@ -64,8 +64,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const paused = await aiPausedCheck(ai, userId, 'cover_letter')
   if (paused) return NextResponse.json(paused, { status: 429 })
 
+  // Reserve one use atomically before the model call; given back if nothing is saved.
   const quota = await getCoverLetterQuota(userId)
-  if (!quota.allowed) {
+  const reservation = quota.allowed ? await reserveMonthly(userId, 'coverLetter', quota.isPro) : null
+  if (!reservation) {
     await track('limit_hit', { kind: 'cover_letter' }, userId)
     return NextResponse.json(
       {
@@ -97,6 +99,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     letter = await run
   } catch (error) {
+    await reservation.release()
     await ai.settle(usage().costUsd)
     await track(
       'ai_error',
@@ -117,11 +120,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   await ai.settle(usage().costUsd)
-  const updated = await prisma.jobApplication.update({
-    where: { id: application.id },
-    data: { coverLetter: letter as unknown as Prisma.InputJsonValue, coverLetterUpdatedAt: new Date() },
-  })
-  await incrementCoverLetterCount(userId)
+  const updated = await prisma.jobApplication
+    .update({
+      where: { id: application.id },
+      data: { coverLetter: letter as unknown as Prisma.InputJsonValue, coverLetterUpdatedAt: new Date() },
+    })
+    .catch(async (error) => {
+      await reservation.release()
+      throw error
+    })
   await track('cover_letter_generated', { ms: msSince(start), tone, ...usageProps(usage()) }, userId)
 
   return NextResponse.json({

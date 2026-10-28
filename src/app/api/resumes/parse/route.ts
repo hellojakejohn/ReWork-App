@@ -20,6 +20,7 @@ import { msSince, track } from '@/lib/track'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { incrementResumeCount } from '@/lib/resume-count'
 import { generateStorageKey, uploadToStorage } from '@/lib/storage'
+import { detectResumeKind } from '@/lib/upload-kind'
 import { parseResume, ResumeParseError, type ParseInput } from '@/lib/parse-resume'
 import { parsedToMaster } from '@/lib/master-resume'
 import { CURRENT_PARSER_VERSION, toMasterDTO } from '@/lib/master-dto'
@@ -31,12 +32,7 @@ export const maxDuration = 300 // Vercel Pro; Opus 5.5 thinks on every call
 const PDF = 'application/pdf'
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
-function kindOf(file: File): 'pdf' | 'docx' | null {
-  const name = file.name.toLowerCase()
-  if (file.type === PDF || name.endsWith('.pdf')) return 'pdf'
-  if (file.type === DOCX || name.endsWith('.docx')) return 'docx'
-  return null
-}
+const NOT_A_RESUME_FILE = 'Upload a PDF or DOCX (older .doc files: save as PDF first), or paste your resume text.'
 
 const titleFrom = (name: string) => name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Resume'
 
@@ -94,11 +90,11 @@ export async function POST(request: NextRequest) {
       if (!(value instanceof File)) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
       file = value
       if (file.size > INPUT_LIMITS.resumeFileBytes) return NextResponse.json({ error: INPUT_LIMIT_MESSAGES.resumeFile }, { status: 413 })
-      const kind = kindOf(file)
-      if (!kind) {
-        return NextResponse.json({ error: 'Upload a PDF or DOCX (older .doc files: save as PDF first), or paste your resume text.' }, { status: 400 })
-      }
-      input = { kind, buffer: Buffer.from(await file.arrayBuffer()), filename: file.name }
+      // Trust the bytes, not the file name or MIME type.
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const kind = detectResumeKind(buffer)
+      if (!kind) return NextResponse.json({ error: NOT_A_RESUME_FILE }, { status: 400 })
+      input = { kind, buffer, filename: file.name }
     } else {
       const body = await request.json()
       const text = typeof body?.text === 'string' ? body.text : ''
@@ -136,11 +132,8 @@ export async function POST(request: NextRequest) {
     // away a good parse, so it's logged and skipped.
     let storageKey: string | null = null
     if (file && input.kind !== 'text') {
-      const key = generateStorageKey(userId, file.name)
-      const upload = await uploadToStorage(input.buffer, key, input.kind === 'pdf' ? PDF : DOCX, {
-        'user-id': userId,
-        'original-filename': file.name,
-      }).catch((error) => ({ success: false, error: String(error) }))
+      const key = generateStorageKey(userId, input.kind)
+      const upload = await uploadToStorage(input.buffer, key, input.kind === 'pdf' ? PDF : DOCX).catch((error) => ({ success: false, error: String(error) }))
       if (upload.success) storageKey = key
       else console.error('[parse] storage upload failed, saving without file:', upload.error)
     }

@@ -2,7 +2,8 @@
 // tiny call succeed on every configured AI provider (Anthropic, OpenAI, OpenRouter).
 // Each provider check says which failure it is (checks.ai.<provider>.kind: quota | auth |
 // rate_limit | overloaded | ...), so an exhausted account or a bad key shows up here
-// before users report "busy". `models` shows the routing in effect.
+// before users report "busy". `models` shows the routing in effect. `checks.stripePrices`
+// fetches both configured Stripe prices and fails if either doesn't match plans.ts.
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -12,6 +13,8 @@ import type { AIErrorKind } from '@/lib/ai-errors'
 import { checkProviders } from '@/lib/ai/health'
 import { allRoutes, formatRoute, proAlwaysTopModel } from '@/lib/ai/routing'
 import { aiCapRatio } from '@/lib/ai-cap-rules'
+import { checkStripePrices, getStripe } from '@/lib/stripe'
+import { OFFER_IDS, PRICING } from '@/lib/plans'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,26 +52,29 @@ export async function GET() {
     storage: set('NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'),
     stripe: set('STRIPE_SECRET_KEY'),
     stripeWebhook: set('STRIPE_WEBHOOK_SECRET'),
-    stripePrices: set('STRIPE_PRICE_PRO_MONTHLY') && (set('STRIPE_PRICE_PASS') || set('STRIPE_PRICE_PASS_30D')),
+    stripePrices: set('STRIPE_PRICE_PRO_MONTHLY', 'STRIPE_PRICE_PASS'),
     auth: set('NEXTAUTH_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'),
     cron: set('CRON_SECRET'),
   }
 
-  const [database, ai] = await Promise.all([
+  const stripe = getStripe()
+  const [database, ai, stripePrices] = await Promise.all([
     timed(async () => {
       await prisma.$queryRaw`SELECT 1`
     }),
     checkProviders(),
+    stripe ? checkStripePrices(stripe, OFFER_IDS.map((id) => PRICING[id])) : Promise.resolve(null),
   ])
   const aiOk = Object.values(ai).every((c) => c.ok)
+  const pricesOk = !!stripePrices && Object.values(stripePrices).every((c) => c.ok)
   const routes = allRoutes()
 
-  const ok = database.ok && aiOk && keys.storage && keys.stripe
+  const ok = database.ok && aiOk && keys.storage && keys.stripe && pricesOk
   return NextResponse.json(
     {
       ok,
       keys,
-      checks: { database, ai },
+      checks: { database, ai, stripePrices },
       models: Object.fromEntries(Object.entries(routes).map(([task, r]) => [task, r ? formatRoute(r) : null])),
       aiCap: { ratio: aiCapRatio(), proAlwaysTopModel: proAlwaysTopModel() },
       time: new Date().toISOString(),

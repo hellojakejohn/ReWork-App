@@ -1,10 +1,14 @@
 // Stripe -> Entitlement sync. Called from the webhook route. Every handler is safe to run twice.
+// Pro is only granted for the price ids configured in env (STRIPE_PRICE_PRO_MONTHLY,
+// STRIPE_PRICE_PASS). A subscription we already track keeps syncing whatever its price, so
+// a later price change doesn't cut off existing subscribers.
 import type Stripe from 'stripe'
 import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { mapStripeSubscriptionStatus, passWindow, restackPasses } from '@/lib/entitlement-rules'
 import { currentChainEnd, refreshPlanMirror } from '@/lib/entitlements'
-import { stripeId, subscriptionPeriodEnd } from '@/lib/stripe'
+import { isConfiguredPrice, stripeId, subscriptionPeriodEnd } from '@/lib/stripe'
+import { PRICING } from '@/lib/plans'
 
 /** Serializes entitlement writes per user so stacked passes can't race each other. */
 async function withUserLock<T>(userId: string, fn: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
@@ -75,6 +79,10 @@ export async function syncSubscription(
       where: { source_externalId: { source: 'STRIPE_SUBSCRIPTION', externalId: sub.id } },
       select: { status: true, pastDueAt: true },
     })
+    if (!existing && !isConfiguredPrice(PRICING.monthly, priceId)) {
+      console.warn(`[stripe] subscription ${sub.id}: price ${priceId} is not STRIPE_PRICE_PRO_MONTHLY, not granting Pro`)
+      return
+    }
     const pastDueAt =
       status === 'PAST_DUE' ? (existing?.status === 'PAST_DUE' && existing.pastDueAt ? existing.pastDueAt : now) : null
 
@@ -120,6 +128,10 @@ export async function grantPassFromCheckout(stripe: Stripe, session: Stripe.Chec
 
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 })
   const priceId = lineItems.data[0]?.price?.id ?? null
+  if (!isConfiguredPrice(PRICING.pass, priceId)) {
+    console.warn(`[stripe] pass checkout ${session.id}: price ${priceId} is not STRIPE_PRICE_PASS, not granting a pass`)
+    return
+  }
 
   await withUserLock(userId, async (tx) => {
     const existing = await tx.entitlement.findUnique({

@@ -104,18 +104,15 @@ describe('POST /api/stripe/checkout', () => {
     expect(mocks.eventCreate).toHaveBeenCalledWith({ data: { name: 'checkout_started', userId: 'user_1', props: { offer: 'pass' } } })
   })
 
-  it('reads STRIPE_PRICE_PASS, falling back to the old STRIPE_PRICE_PASS_30D name', async () => {
+  it('reads STRIPE_PRICE_PASS only: the old STRIPE_PRICE_PASS_30D name is never used', async () => {
     const priceOf = () => (mocks.sessionsCreate.mock.calls.at(-1)![0] as { line_items: { price: string }[] }).line_items[0].price
     await checkout('pass')
     expect(priceOf()).toBe('price_pass')
 
     delete process.env.STRIPE_PRICE_PASS
     process.env.STRIPE_PRICE_PASS_30D = 'price_pass_old_name'
-    await checkout('pass')
-    expect(priceOf()).toBe('price_pass_old_name')
-
-    delete process.env.STRIPE_PRICE_PASS_30D
     const res = await checkout('pass')
-    expect(res.status).toBe(503) // no price configured: billing unavailable
+    expect(res.status).toBe(503) // no price configured: billing unavailable, never the old $15 price
+    delete process.env.STRIPE_PRICE_PASS_30D
   })
 })

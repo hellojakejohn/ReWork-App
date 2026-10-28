@@ -43,6 +43,17 @@ export const INPUT_LIMITS = {
   jobDescriptionChars: 20_000,
 } as const
 
+// Caps on the short tailor fields, clipped server-side (they go into the prompt).
+export const TAILOR_FIELD_LIMITS = {
+  jobTitle: 200,
+  company: 200,
+  location: 200,
+  extraContext: 1000,
+  contextTags: 10,
+  contextTagChars: 40,
+  jobUrl: 2000,
+} as const
+
 export const INPUT_LIMIT_MESSAGES = {
   resumeFile: 'That file is over 4 MB. Try exporting a smaller PDF, or paste your resume text instead.',
   resumeText: 'That text is over 30,000 characters, which is longer than any resume. Paste just your resume.',
@@ -79,9 +90,8 @@ export interface Offer {
   period: string // "/month" or "one-time"
   display: string // "$15/month"
   cadence: string // short phrase for fine print
-  // Env var holding the Stripe price id; fallbackEnv is an older name still read.
+  // Env var holding the Stripe price id. /api/health checks its amount against priceUsd.
   priceEnv: 'STRIPE_PRICE_PRO_MONTHLY' | 'STRIPE_PRICE_PASS'
-  fallbackEnv?: 'STRIPE_PRICE_PASS_30D'
   mode: 'subscription' | 'payment'
   headline?: string
   blurb: string
@@ -97,7 +107,6 @@ export const PRICING: Record<OfferId, Offer> = {
     display: `$${PASS_PRICE_USD} for 3 months`,
     cadence: `${PASS_DAYS} days of Pro. Never renews.`,
     priceEnv: 'STRIPE_PRICE_PASS',
-    fallbackEnv: 'STRIPE_PRICE_PASS_30D',
     mode: 'payment',
     headline: '3 months of Pro. Pay once. Never renews.',
     blurb: `Cheaper than 2 months of Pro ($${PRO_MONTHLY_PRICE_USD * 2}). Nothing to cancel.`,

@@ -8,7 +8,7 @@ import { generateStructured, parseAndValidate, callOverrides } from '@/lib/ai'
 import { buildAnthropicRequest, FALLBACK_BETA, refusalFallbackFor } from '@/lib/ai/adapters/anthropic'
 import { buildOpenAIRequest } from '@/lib/ai/adapters/openai'
 import { buildOpenRouterRequest } from '@/lib/ai/adapters/openrouter'
-import { downgradeAvailable, parseRoute, resolveRoute, showPoweredBy, taskRoute } from '@/lib/ai/routing'
+import { downgradeAvailable, freeTierRoute, parseRoute, resolveRoute, showPoweredBy, taskRoute } from '@/lib/ai/routing'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { collectUsage } from '@/lib/ai-usage'
 import { MODELS, modelInfo } from '@/lib/ai/models'
@@ -345,6 +345,20 @@ describe('routing', () => {
     expect(resolveRoute('parse', { tier: 'free' })).toEqual(opus)
     expect(resolveRoute('jobExtract', { tier: 'pro', downgraded: true })).toEqual(opus)
     expect(downgradeAvailable()).toBe(true)
+  })
+
+  it('defaults AI_FREE_TIER to Sonnet 5.5 when ANTHROPIC_API_KEY is set; env still overrides', () => {
+    expect(freeTierRoute()).toBeNull()
+    expect(resolveRoute('tailor', { tier: 'free' })).toEqual({ provider: 'openai', model: 'gpt-4o' })
+    process.env.ANTHROPIC_API_KEY = 'k'
+    const sonnet = { provider: 'anthropic', model: 'claude-sonnet-5-5' }
+    expect(freeTierRoute()).toEqual(sonnet)
+    expect(resolveRoute('tailor', { tier: 'free' })).toEqual(sonnet)
+    expect(resolveRoute('coverLetter', { tier: 'pro', downgraded: true })).toEqual(sonnet)
+    expect(resolveRoute('tailor', { tier: 'pro' })).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
+    expect(downgradeAvailable()).toBe(true)
+    process.env.AI_FREE_TIER = 'openai:gpt-4o-mini'
+    expect(resolveRoute('tailor', { tier: 'free' })).toEqual({ provider: 'openai', model: 'gpt-4o-mini' })
   })
 
   it('routes inside a usage scope by its plan context', async () => {
