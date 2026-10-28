@@ -2,8 +2,9 @@
 //
 // Picks the provider/model for the task (src/lib/ai/routing.ts, plus the user's plan and
 // AI-cap band from the surrounding collectUsage() scope), calls the adapter, parses the
-// JSON, validates it against the schema, and runs ONE repair retry if it's invalid. Every
-// provider call is recorded with tokens and estimated cost (src/lib/ai-usage.ts).
+// JSON, validates it against the schema, and runs ONE repair retry if it's invalid. A
+// decline from a model with a `refusalRetry` (Opus 5.5) is retried once on that model
+// (Sonnet 5.5), same provider, same messages. Every provider call is recorded with tokens and estimated cost (src/lib/ai-usage.ts).
 //
 // Errors: provider/SDK errors are rethrown tagged with `provider` so classifyAIError()
 // (src/lib/ai-errors.ts) can name it; unusable answers throw AIOutputError.
@@ -11,7 +12,7 @@ import Ajv, { type ValidateFunction } from 'ajv'
 import { AIOutputError } from '@/lib/ai-errors'
 import { currentDeadline, currentRouting, recordUsage, takeCallSlot, usageRecord } from '@/lib/ai-usage'
 import { costUsd, modelInfo, type ProviderId, type TokenUsage } from '@/lib/ai/models'
-import { resolveRoute, taskRoute } from '@/lib/ai/routing'
+import { resolveRoute, taskRoute, type ModelRoute } from '@/lib/ai/routing'
 import { anthropicAdapter } from '@/lib/ai/adapters/anthropic'
 import { openAIAdapter } from '@/lib/ai/adapters/openai'
 import { openRouterAdapter } from '@/lib/ai/adapters/openrouter'
@@ -83,19 +84,28 @@ const add = (a: TokenUsage, b: TokenUsage): TokenUsage => ({
 // Below this, a call can't produce a usable answer before the route's deadline.
 const MIN_CALL_MS = 20_000
 
-export async function generateStructured<T>(req: StructuredRequest): Promise<StructuredResult<T>> {
-  const route = req.route ?? resolveRoute(req.task, currentRouting())
-  const adapter = ADAPTERS[route.provider]
-  const info = modelInfo(route.model, route.provider)
-  const client = req.clients?.[route.provider]
-  // Text-only providers never see files (and resume PDFs never leave for them).
-  const files = info.pdf ? (req.files ?? []) : []
+/** The model to retry a decline on, or null. Only ever another Anthropic model. */
+export function refusalRetryFor(route: ModelRoute): ModelRoute | null {
+  if (route.provider !== 'anthropic') return null
+  const retry = modelInfo(route.model, 'anthropic').refusalRetry
+  if (!retry || retry === route.model || modelInfo(retry).provider !== 'anthropic') return null
+  return { provider: 'anthropic', model: retry }
+}
 
+export async function generateStructured<T>(req: StructuredRequest): Promise<StructuredResult<T>> {
+  let route = req.route ?? resolveRoute(req.task, currentRouting())
   const start = Date.now()
   let total: TokenUsage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, cacheWriteTokens: 0 }
+  let spent = 0
   let messages = req.messages
+  let retried = false
 
   for (let attempt = 1; attempt <= 2; attempt++) {
+    const adapter = ADAPTERS[route.provider]
+    const info = modelInfo(route.model, route.provider)
+    const client = req.clients?.[route.provider]
+    // Text-only providers never see files (and resume PDFs never leave for them).
+    const files = info.pdf ? (req.files ?? []) : []
     const deadline = currentDeadline()
     const timeLeft = deadline ? deadline - Date.now() : undefined
     if (timeLeft !== undefined && timeLeft < MIN_CALL_MS) {
@@ -136,8 +146,20 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
     const outcome: ParseOutcome<T> =
       result.stop === 'stop' && result.text.trim() ? parseAndValidate<T>(result.text, req.schema) : { ok: false, problem: result.stop }
     const record = usageRecord(route.provider, result.model, result.usage, { task: req.task, ms: Date.now() - callStart, ok: outcome.ok })
-    recordUsage(result.costUsd !== undefined ? { ...record, costUsd: result.costUsd } : record)
+    const billed = result.costUsd !== undefined ? { ...record, costUsd: result.costUsd } : record
+    recordUsage(billed)
+    spent += billed.costUsd
 
+    if (result.stop === 'refusal') {
+      const retry = retried ? null : refusalRetryFor(route)
+      if (retry) {
+        // Same attempt again on the retry model: a decline isn't the repair's to fix.
+        retried = true
+        route = retry
+        attempt--
+        continue
+      }
+    }
     if (result.stop === 'refusal') throw new AIOutputError('Model refused', 'refusal', route.provider, result.model)
     if (result.stop === 'length') throw new AIOutputError('Model output truncated', 'truncated', route.provider, result.model)
     if (!result.text.trim()) throw new AIOutputError('Empty model response', 'empty', route.provider, result.model)
@@ -150,7 +172,7 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
         provider: route.provider,
         ms: Date.now() - start,
         attempts: attempt,
-        costUsd: costUsd(result.model, total),
+        costUsd: retried ? spent : costUsd(result.model, total),
       }
     }
     if (attempt === 2) throw new AIOutputError(`Invalid output after repair: ${outcome.problem}`, 'invalid', route.provider, result.model)

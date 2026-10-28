@@ -31,6 +31,10 @@ export interface ModelInfo {
   // the same call (beta server-side-fallback). Always another Anthropic model: resume text
   // never crosses to a different provider because of a refusal. No entry = no fallback.
   refusalFallback?: string
+  // App-side retry when this model declines: one normal call on this Anthropic model
+  // (src/lib/ai/index.ts). Used because Anthropic accepts no server-side fallback for
+  // Opus 5.5 or Sonnet 5.5 (allowed_fallback_models is null for both, 2026-10-28).
+  refusalRetry?: string
 }
 
 const ANTHROPIC_PRICING = 'https://platform.claude.com/docs/en/about-claude/pricing'
@@ -49,8 +53,9 @@ export const MODELS: Record<string, ModelInfo> = {
     temperature: false, // removed on Opus 5.5: any temperature is a 400
     pdf: true,
     strictSchema: true,
-    // No fallback: Anthropic rejects claude-sonnet-5-5 as Opus 5.5's fallback (400 in prod,
-    // 2026-10-28). Add one only from GET /v1/models/claude-opus-5-5 allowed_fallback_models.
+    // No server-side fallback: Anthropic rejects claude-sonnet-5-5 as one (400 in prod,
+    // 2026-10-28). A decline is retried once on Sonnet by the app instead.
+    refusalRetry: 'claude-sonnet-5-5',
   },
   'claude-sonnet-5-5': {
     id: 'claude-sonnet-5-5',
@@ -65,8 +70,7 @@ export const MODELS: Record<string, ModelInfo> = {
     temperature: false, // non-default values are a 400 on Sonnet 5.5
     pdf: true,
     strictSchema: true,
-    // No fallback: Sonnet 5.5 only takes Anthropic's category-routed "default" form, not a
-    // named model. A Sonnet refusal surfaces as the feature's "the AI declined" message.
+    // No fallback or retry: a Sonnet decline surfaces as the feature's "we couldn't" message.
   },
   // Not routed to or used as a fallback. Kept so old ai_call events and any served-by
   // model we don't route to are priced right.

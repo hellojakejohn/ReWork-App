@@ -306,7 +306,7 @@ async function callModel(options: CoverLetterOptions, prompt: string): Promise<{
   } catch (error) {
     if (error instanceof AIOutputError) {
       if (error.reason === 'refusal') {
-        throw new CoverLetterError(`Model refused (${error.model})`, 422, 'The AI declined to write this letter. Check the job description and try again.', 'invalid_output')
+        throw new CoverLetterError(`Model refused (${error.model})`, 422, "We couldn't write a letter for this posting. Check the job description and try again.", 'invalid_output')
       }
       throw new CoverLetterError(error.message, 502, "We couldn't write the letter. Please try again.", 'invalid_output')
     }
