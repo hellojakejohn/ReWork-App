@@ -21,9 +21,9 @@ export interface ProviderCheck {
 async function ping(route: ModelRoute): Promise<string> {
   const messages = [{ role: 'user', content: 'Reply with OK.' }]
   if (route.provider === 'anthropic') {
-    // The exact production request shape (structured output, and for Opus the refusal
-    // fallback beta): if Anthropic stops accepting Sonnet 5.5 as Opus's fallback, every
-    // Opus call fails with a 400, and this check has to see that too.
+    // The exact production request shape (structured output, plus the refusal fallback
+    // beta when a model has one): a fallback Anthropic rejects makes every call a 400, and
+    // this check has to see that too.
     const body = buildAnthropicRequest({
       model: route.model,
       system: 'Health check.',

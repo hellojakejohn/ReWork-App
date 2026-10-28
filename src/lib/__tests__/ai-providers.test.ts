@@ -93,8 +93,9 @@ describe('anthropic adapter', () => {
     expect(body).not.toHaveProperty('output_format') // deprecated param, 400s without its beta
     expect(body).not.toHaveProperty('temperature') // Opus 5.5 rejects temperature
     expect(body.system).toEqual([{ type: 'text', text: 'You tailor resumes.', cache_control: { type: 'ephemeral' } }])
-    expect(body.betas).toEqual([FALLBACK_BETA])
-    expect(body.fallbacks).toEqual([{ model: 'claude-sonnet-5-5' }])
+    // Anthropic rejected Sonnet 5.5 as Opus's fallback, so no fallback is sent.
+    expect(body).not.toHaveProperty('betas')
+    expect(body).not.toHaveProperty('fallbacks')
     expect(body.max_tokens).toBeGreaterThan(1000) // thinking headroom
     expect(body.max_tokens).toBeLessThanOrEqual(16000)
   })
@@ -143,9 +144,9 @@ describe('anthropic adapter', () => {
     expect(classifyAIError(error).kind).toBe('invalid_output')
   })
 
-  it('refusal fallback stays on Anthropic: Opus 5.5 -> Sonnet 5.5, never OpenAI or OpenRouter', async () => {
+  it('refusal fallback stays on Anthropic, never OpenAI or OpenRouter (none configured today)', async () => {
     expect(FALLBACK_BETA).toBe('server-side-fallback-2026-06-01') // the array form's beta
-    expect(refusalFallbackFor('claude-opus-5-5')).toBe('claude-sonnet-5-5')
+    expect(refusalFallbackFor('claude-opus-5-5')).toBeNull()
     // Sonnet 5.5 only accepts the category-routed "default" form, so it gets no fallback.
     expect(refusalFallbackFor('claude-sonnet-5-5')).toBeNull()
     const sonnet = buildAnthropicRequest({ model: 'claude-sonnet-5-5', system: 's', messages: [{ role: 'user', content: 'x' }], files: [], schema: SCHEMA, schemaName: 'x', maxTokens: 10 })
