@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // 500 makes Stripe retry. Handlers are idempotent, so a partial run is safe to repeat.
     console.error(`Error processing webhook ${event.type} ${event.id}:`, error)
+    await track('server_error', { feature: 'stripe_webhook', kind: event.type, message: String((error as Error)?.message ?? '').slice(0, 200) })
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 

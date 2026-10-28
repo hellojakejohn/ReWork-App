@@ -162,6 +162,8 @@ export async function deleteAccount(userId: string) {
   if (files.error) {
     // Greppable: these need a manual clean-up in Supabase Storage (users/<id>/resumes).
     console.error(`[ACCOUNT_DELETE_FILES_FAILED] user ${userId}: ${files.error}`)
+    // Kept past the log's retention: /admin lists it until the prefix is cleaned by hand.
+    await track('server_error', { feature: 'account_delete_files', kind: 'orphan_files', message: `users/${userId}/resumes: ${String(files.error).slice(0, 120)}` })
   }
 
   // 3. The row (and, by cascade, everything else)

@@ -77,10 +77,10 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
   )
   const funnel = buildFunnel([{ label: 'Signed up', users: cohort.length }, ...FUNNEL_STEPS.map((s, i) => ({ label: s.label, users: stepUsers[i] }))])
 
-  // Errors: failed parses and AI errors.
+  // Errors: failed parses, AI errors and server errors (src/instrumentation.ts, webhook).
   const errorWhere: Prisma.EventWhereInput = {
     ...inWindow,
-    OR: [{ name: 'ai_error' }, { name: 'resume_parsed', props: { path: ['ok'], equals: false } }],
+    OR: [{ name: 'ai_error' }, { name: 'server_error' }, { name: 'resume_parsed', props: { path: ['ok'], equals: false } }],
   }
   const errors = await prisma.event.findMany({ where: errorWhere, orderBy: { createdAt: 'desc' }, take: 2000, select: { name: true, props: true, createdAt: true } })
   const describe = (e: { name: string; props: unknown }) => {
