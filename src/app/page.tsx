@@ -65,9 +65,8 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "What happens to my data?",
     a: (
       <>
-        Your resumes and results are stored in our database so they&apos;re there when you come back. Resume and job text is sent to the AI provider that
-        does the rewriting (Anthropic&apos;s Claude API, or OpenAI&apos;s API) through their paid business APIs, which don&apos;t use it to train
-        their models. We never sell it or share it with employers.
+        Your resumes and results are stored in our database so they&apos;re there when you come back. Resume and job text is sent to Anthropic&apos;s
+        paid Claude API to do the rewriting, and Anthropic doesn&apos;t use it to train its models. We never sell it or share it with employers.
         You can download everything or delete your account any time from Settings. Details in the <Link href="/privacy">privacy policy</Link>.
       </>
     ),
