@@ -274,7 +274,8 @@ RULES:
 1. Use the candidate's numbers exactly as given (you may write "about"/"roughly" if they did). Never add a number, tool, employer, or outcome they didn't state.
 2. Start with a strong action verb. One line, two at most. Past tense unless the original is present tense.
 3. Keep every fact from the original bullet.
-4. Return every id exactly once.`
+4. Return every id exactly once.
+5. Punctuation: no em-dashes. Use commas, colons or periods.`
 }
 
 /**

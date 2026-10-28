@@ -141,7 +141,8 @@ RULES (all mandatory):
 5. Greeting: "Dear Hiring Team," or "Dear ${input.job.company} team," unless the job description names the hiring manager. Never invent a person's name.
 6. Sign-off: one or two words with a comma (e.g. "Sincerely,"). No name; we add it.
 7. Don't open with "I am writing to..." or any stock opener. Avoid these phrases entirely: ${BANNED_PHRASES.map((p) => `"${p}"`).join(', ')}.
-8. No bullet points, no headings, no placeholders like [Company].${
+8. No bullet points, no headings, no placeholders like [Company].
+9. Punctuation: no em-dashes (recruiters read them as AI writing). Use commas, colons or periods.${
     feedback.length
       ? `
 
