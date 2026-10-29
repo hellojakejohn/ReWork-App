@@ -4,6 +4,7 @@ import { classifyAIError, errorCodes, type AIErrorKind } from '@/lib/ai-errors'
 import { modelInfo, type ProviderId } from '@/lib/ai/models'
 import { allRoutes, PROVIDER_KEY_ENV, PROVIDERS, providerConfigured, type ModelRoute } from '@/lib/ai/routing'
 import { anthropicClient, buildAnthropicRequest } from '@/lib/ai/adapters/anthropic'
+import { refusalRetryFor } from '@/lib/ai'
 import { openAIClient } from '@/lib/ai/adapters/openai'
 import { openRouterClient } from '@/lib/ai/adapters/openrouter'
 
@@ -18,6 +19,9 @@ export interface ProviderCheck {
   // Anthropic only: each routed model's accepted `fallbacks[i].model` ids (GET /v1/models),
   // so a refusal fallback is picked from what Anthropic allows. [] = fallbacks unsupported.
   allowedFallbacks?: Record<string, string[] | null | string>
+  // Every other routed model on this provider, plus refusal-retry targets (Sonnet 5.5 for
+  // the free tier and Opus declines). `ok` above is false if any of these fail.
+  others?: Record<string, { ok: boolean; ms: number; detail?: string }>
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -44,6 +48,34 @@ async function ping(route: ModelRoute): Promise<string> {
   const tokens = modelInfo(route.model, route.provider).maxCompletionTokens ? { max_completion_tokens: 32 } : { max_tokens: 1 }
   const res = await client.chat.completions.create({ model: route.model, ...tokens, messages })
   return res.model
+}
+
+function describe(error: unknown, provider: ProviderId): { kind: AIErrorKind; detail: string } {
+  if (error && typeof error === 'object') Object.assign(error, { provider })
+  const classified = classifyAIError(error, 'Health check')
+  const codes = errorCodes(error)
+  return {
+    kind: classified.kind,
+    detail: `${classified.kind}${codes.length ? ` (${[...new Set(codes)].join(', ')})` : ''}: ${String((error as Error)?.message || '').slice(0, 200)}`,
+  }
+}
+
+/** Pings each extra model; never throws. */
+async function pingOthers(provider: ProviderId, models: string[]): Promise<ProviderCheck['others']> {
+  if (models.length === 0) return undefined
+  const out: NonNullable<ProviderCheck['others']> = {}
+  await Promise.all(
+    models.map(async (model) => {
+      const start = Date.now()
+      try {
+        await ping({ provider, model })
+        out[model] = { ok: true, ms: Date.now() - start }
+      } catch (error) {
+        out[model] = { ok: false, ms: Date.now() - start, detail: describe(error, provider).detail }
+      }
+    })
+  )
+  return out
 }
 
 /** Accepted fallback ids per routed Anthropic model; an error string per model it couldn't read. */
@@ -78,26 +110,18 @@ export async function checkProviders(): Promise<Record<ProviderId, ProviderCheck
       const model = route?.model ?? { anthropic: 'claude-sonnet-5-5', openai: 'gpt-4o-mini', openrouter: 'moonshotai/kimi-k2.6' }[provider]
       const fallbacks =
         provider === 'anthropic' ? anthropicFallbacks([...new Set([model, ...mine.map((r) => r.model)])]) : Promise.resolve(undefined)
+      const retries = mine.map((r) => refusalRetryFor(r)?.model).filter((m): m is string => !!m)
+      const others = pingOthers(provider, [...new Set([...mine.map((r) => r.model), ...retries])].filter((m) => m !== model))
       const start = Date.now()
       try {
         const served = await ping({ provider, model })
-        return [provider, { configured, used, ok: true, model: served || model, ms: Date.now() - start, allowedFallbacks: await fallbacks }]
+        const rest = await others
+        const ok = Object.values(rest ?? {}).every((o) => o.ok)
+        return [provider, { configured, used, ok, model: served || model, ms: Date.now() - start, allowedFallbacks: await fallbacks, others: rest }]
       } catch (error) {
-        if (error && typeof error === 'object') Object.assign(error, { provider })
-        const classified = classifyAIError(error, 'Health check')
-        const codes = errorCodes(error)
         return [
           provider,
-          {
-            configured,
-            used,
-            ok: false,
-            model,
-            ms: Date.now() - start,
-            kind: classified.kind,
-            detail: `${classified.kind}${codes.length ? ` (${[...new Set(codes)].join(', ')})` : ''}: ${String((error as Error)?.message || '').slice(0, 200)}`,
-            allowedFallbacks: await fallbacks,
-          },
+          { configured, used, ok: false, model, ms: Date.now() - start, ...describe(error, provider), allowedFallbacks: await fallbacks, others: await others },
         ]
       }
     })

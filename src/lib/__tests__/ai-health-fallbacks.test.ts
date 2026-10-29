@@ -1,5 +1,5 @@
-// /api/health lists each routed Anthropic model's accepted refusal fallbacks (GET /v1/models),
-// whether the ping passes or fails, and never throws if the lookup fails.
+// /api/health pings every routed Anthropic model (Opus, and Sonnet for the free tier and the
+// decline retry) and lists each one's accepted refusal fallbacks (GET /v1/models). Never throws.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -33,6 +33,7 @@ describe('health: accepted Anthropic fallbacks', () => {
     api.create.mockResolvedValue({ model: 'claude-opus-5-5' })
     const { anthropic } = await checkProviders()
     expect(anthropic.ok).toBe(true)
+    expect(anthropic.others).toEqual({ 'claude-sonnet-5-5': { ok: true, ms: expect.any(Number) } })
     expect(anthropic.allowedFallbacks).toEqual({ 'claude-opus-5-5': ['claude-opus-4-8'], 'claude-sonnet-5-5': [] })
   })
 
@@ -41,6 +42,18 @@ describe('health: accepted Anthropic fallbacks', () => {
     const { anthropic } = await checkProviders()
     expect(anthropic.ok).toBe(false)
     expect(anthropic.allowedFallbacks?.['claude-opus-5-5']).toEqual(['claude-opus-4-8'])
+  })
+
+  it('pings Sonnet too (free tier and the decline retry), and fails if Sonnet fails', async () => {
+    api.create.mockImplementation(async (body: any) => {
+      if (body.model === 'claude-sonnet-5-5') throw Object.assign(new Error('529 overloaded'), { status: 529 })
+      return { model: body.model }
+    })
+    const { anthropic } = await checkProviders()
+    expect(api.create.mock.calls.map((c: any) => c[0].model).sort()).toEqual(['claude-opus-5-5', 'claude-sonnet-5-5'])
+    expect(anthropic.model).toBe('claude-opus-5-5')
+    expect(anthropic.others?.['claude-sonnet-5-5']).toMatchObject({ ok: false })
+    expect(anthropic.ok).toBe(false)
   })
 
   it('a lookup that fails is reported, not thrown', async () => {

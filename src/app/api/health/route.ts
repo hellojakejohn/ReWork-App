@@ -69,7 +69,8 @@ export async function GET(request: Request) {
     stripe ? checkStripePrices(stripe, OFFER_IDS.map((id) => PRICING[id])) : Promise.resolve(null),
     stripe ? checkStripeWebhook(stripe, baseUrl) : Promise.resolve(null),
   ])
-  const aiOk = Object.values(ai).every((c) => c.ok)
+  // A provider nothing routes to (an old key left set) can't break the app, so it can't fail health.
+  const aiOk = Object.values(ai).every((c) => c.ok || !c.used)
   const pricesOk = !!stripePrices && Object.values(stripePrices).every((c) => c.ok)
   const routes = allRoutes()
 

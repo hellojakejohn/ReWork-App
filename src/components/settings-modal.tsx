@@ -179,7 +179,7 @@ function DataTab() {
         <h3 className="text-lg font-semibold text-text mb-2">Your data</h3>
         <p className="text-sm text-text-muted">
           We keep your resumes, tailored versions, cover letters and tracker in our database so you can come back to them. Text is sent to
-          the AI provider that does the rewriting (Anthropic’s Claude API, or OpenAI’s API), neither of which trains on API data. Details in the{" "}
+          Anthropic’s Claude API to do the rewriting, and Anthropic doesn’t train on API data. Details in the{" "}
           <Link href="/privacy" className="underline hover:text-text">privacy policy</Link>.
         </p>
       </div>

@@ -172,10 +172,13 @@ describe('anthropic adapter', () => {
       MODELS['claude-opus-5-5'].refusalFallback = original
     }
 
-    // A refusal that survives the server-side fallback is an error, not a hop to another provider.
+    // A decline that survives the Sonnet retry is an error, not a hop to another provider.
     process.env.OPENAI_API_KEY = 'sk-test'
     process.env.OPENROUTER_API_KEY = 'or-test'
-    const refused = anthropicMock(anthropicReply('', { stop_reason: 'refusal', model: 'claude-sonnet-5-5' }))
+    const refused = anthropicMock(
+      anthropicReply('', { stop_reason: 'refusal' }),
+      anthropicReply('', { stop_reason: 'refusal', model: 'claude-sonnet-5-5' })
+    )
     const openai = chatMock(chatReply(JSON.stringify(GOOD)))
     const openrouter = chatMock(chatReply(JSON.stringify(GOOD), 'moonshotai/kimi-k2.6'))
     const error = await generateStructured({
@@ -185,7 +188,7 @@ describe('anthropic adapter', () => {
     }).catch((e) => e)
     expect(error).toBeInstanceOf(AIOutputError)
     expect(error).toMatchObject({ reason: 'refusal', provider: 'anthropic' })
-    expect(refused.create).toHaveBeenCalledTimes(1)
+    expect(refused.create).toHaveBeenCalledTimes(2)
     expect(openai.create).not.toHaveBeenCalled()
     expect(openrouter.create).not.toHaveBeenCalled()
   })
@@ -199,8 +202,8 @@ describe('anthropic adapter', () => {
   })
 
   it('maps refusal and max_tokens stop reasons', async () => {
-    const refused = anthropicMock(anthropicReply('', { stop_reason: 'refusal' }))
-    const e1 = await generateStructured({ ...base, route: { provider: 'anthropic', model: 'claude-opus-5-5' }, clients: { anthropic: refused.client } }).catch((e) => e)
+    const refused = anthropicMock(anthropicReply('', { stop_reason: 'refusal', model: 'claude-sonnet-5-5' }))
+    const e1 = await generateStructured({ ...base, route: { provider: 'anthropic', model: 'claude-sonnet-5-5' }, clients: { anthropic: refused.client } }).catch((e) => e)
     expect(e1).toMatchObject({ reason: 'refusal' })
     const cut = anthropicMock(anthropicReply('{"title"', { stop_reason: 'max_tokens' }))
     const e2 = await generateStructured({ ...base, route: { provider: 'anthropic', model: 'claude-opus-5-5' }, clients: { anthropic: cut.client } }).catch((e) => e)

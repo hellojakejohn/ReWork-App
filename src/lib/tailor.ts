@@ -320,7 +320,7 @@ export async function callTailorModel(
   } catch (error: any) {
     if (error instanceof AIOutputError) {
       if (error.reason === 'refusal') {
-        throw new TailorError(`Model refused (${error.model})`, 422, "The AI wouldn't tailor for this posting. Check that the job description is a real job ad and try again. This didn't count toward your limit.", 'invalid_output')
+        throw new TailorError(`Model refused (${error.model})`, 422, "We couldn't tailor for this posting. Check that the job description is a real job ad and try again. This didn't count toward your limit.", 'invalid_output')
       }
       if (error.reason === 'truncated') {
         throw new TailorError('Model output truncated', 400, "That was too much text to tailor in one go. Trim the job description to the role and requirements and try again. This didn't count toward your limit.", 'invalid_output')

@@ -4,7 +4,7 @@
 // what correct behavior is.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { generateStructured } from '@/lib/ai'
+import { generateStructured, refusalRetryFor } from '@/lib/ai'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { collectUsage } from '@/lib/ai-usage'
 import { costUsd } from '@/lib/ai/models'
@@ -79,56 +79,83 @@ describe('request shape', () => {
   })
 })
 
-describe('refusal: Opus -> (server-side Sonnet) -> declined', () => {
-  it('stop_reason refusal (after the fallback also declined) throws AIOutputError(refusal), no repair, one usage record', async () => {
-    const { result, create, records } = await run([{ stop: 'refusal', model: 'claude-sonnet-5-5' }])
-    expect(result).toBeInstanceOf(AIOutputError)
-    expect(result.reason).toBe('refusal')
-    expect(create).toHaveBeenCalledTimes(1)
-    expect(records).toHaveLength(1)
+describe('refusal: Opus -> (app-side Sonnet retry) -> declined', () => {
+  it('Opus declines, Sonnet answers: one retry on Sonnet, both calls recorded and priced at their own model', async () => {
+    const { result, create, records } = await run([{ stop: 'refusal' }, { text: '{"ok":true}', model: 'claude-sonnet-5-5' }])
+    expect(result.data).toEqual({ ok: true })
+    expect(result.model).toBe('claude-sonnet-5-5')
+    expect(create).toHaveBeenCalledTimes(2)
+    expect((create.mock.calls[1] as any)[0].model).toBe('claude-sonnet-5-5')
+    expect(records.map((r) => [r.model, r.ok])).toEqual([['claude-opus-5-5', false], ['claude-sonnet-5-5', true]])
+    const usage = { inputTokens: 1000, outputTokens: 1000, cachedInputTokens: 0, cacheWriteTokens: 0 }
+    expect(result.costUsd).toBeCloseTo(costUsd('claude-opus-5-5', usage) + costUsd('claude-sonnet-5-5', usage), 6)
   })
 
-  it('tailor shows the declined message (422) and promises no charge', async () => {
-    const { client } = mockClient([{ stop: 'refusal' }])
+  it('both decline: AIOutputError(refusal) after exactly two calls, no repair', async () => {
+    const { result, create, records } = await run([{ stop: 'refusal' }, { stop: 'refusal', model: 'claude-sonnet-5-5' }])
+    expect(result).toBeInstanceOf(AIOutputError)
+    expect(result.reason).toBe('refusal')
+    expect(create).toHaveBeenCalledTimes(2)
+    expect(records).toHaveLength(2)
+  })
+
+  it('a Sonnet decline is not retried', async () => {
+    const { result, create } = await run([{ stop: 'refusal', model: 'claude-sonnet-5-5' }], SONNET)
+    expect(result.reason).toBe('refusal')
+    expect(create).toHaveBeenCalledTimes(1)
+  })
+
+  it('the retry is only ever Anthropic', () => {
+    expect(refusalRetryFor(OPUS)).toEqual(SONNET)
+    expect(refusalRetryFor(SONNET)).toBeNull()
+    expect(refusalRetryFor({ provider: 'openai', model: 'gpt-4o' })).toBeNull()
+  })
+
+  it('a decline after a repair still gets its one Sonnet retry, then fails', async () => {
+    const { result, create } = await run([{ text: 'not json' }, { stop: 'refusal' }, { stop: 'refusal', model: 'claude-sonnet-5-5' }])
+    expect(result.reason).toBe('refusal')
+    expect(create).toHaveBeenCalledTimes(3)
+  })
+
+  it('tailor shows its decline message (422) and promises no charge', async () => {
+    const { client } = mockClient([{ stop: 'refusal' }, { stop: 'refusal', model: 'claude-sonnet-5-5' }])
     const err = await callTailorModel(input, job, { route: OPUS, clients: { anthropic: client } }).catch((e) => e)
     expect(err).toBeInstanceOf(TailorError)
     expect(err.status).toBe(422)
     expect(err.userMessage).toBe(
-      "The AI wouldn't tailor for this posting. Check that the job description is a real job ad and try again. This didn't count toward your limit."
+      "We couldn't tailor for this posting. Check that the job description is a real job ad and try again. This didn't count toward your limit."
     )
   })
 
-  it('cover letter shows its declined message (422)', async () => {
-    const { client } = mockClient([{ stop: 'refusal' }])
+  it('cover letter shows its decline message (422)', async () => {
+    const { client } = mockClient([{ stop: 'refusal' }, { stop: 'refusal', model: 'claude-sonnet-5-5' }])
     const err = await generateCoverLetter(
       { master: input, tailoredText: 'Cook', candidateName: 'Pat', job, tone: 'professional' as any },
       { route: OPUS, clients: { anthropic: client } }
     ).catch((e) => e)
     expect(err).toBeInstanceOf(CoverLetterError)
     expect(err.status).toBe(422)
-    expect(err.userMessage).toBe('The AI declined to write this letter. Check the job description and try again.')
+    expect(err.userMessage).toBe("We couldn't write a letter for this posting. Check the job description and try again.")
   })
 
-  // Correct: a refusal should say "declined" (and not invite a paid retry). Evidence maps
-  // every AIOutputError, refusal included, to "Something went wrong. Please try again."
-  it('evidence interview shows a declined message on refusal', async () => {
-    const { client } = mockClient([{ stop: 'refusal' }])
+  // A decline says "we couldn't" (and doesn't invite a paid retry of a sure no).
+  it('evidence interview shows its decline message', async () => {
+    const { client } = mockClient([{ stop: 'refusal' }, { stop: 'refusal', model: 'claude-sonnet-5-5' }])
     const cand = { id: 'c1', section: 'roles' as const, entryId: 'r', entryLabel: 'Cook at Diner', index: 0, bullet: 'Cooked', score: 1, reasons: [] }
     const err = await generateQuestions([cand], { route: OPUS, clients: { anthropic: client } }).catch((e) => e)
     expect(err).toBeInstanceOf(EvidenceError)
-    expect(err.userMessage).toMatch(/declined/i)
+    expect(err.userMessage).toBe("We couldn't rework this bullet. Try a different one, or edit it yourself.")
   })
 
-  // Correct: same as above for resume reading. Today a refusal reads as a file problem.
-  it('resume parse shows a declined message on refusal', async () => {
-    const { client } = mockClient([{ stop: 'refusal' }])
+  it('resume parse shows its decline message', async () => {
+    const { client } = mockClient([{ stop: 'refusal' }, { stop: 'refusal', model: 'claude-sonnet-5-5' }])
     const err = await parseResume({ kind: 'text', text: 'Pat Cook\nLine Cook at Corner Diner, 2020 to present\nCooked breakfast and lunch for guests every day, kept the line stocked, trained new cooks on prep.' } as any, {
       route: OPUS,
       clients: { anthropic: client },
     }).catch((e) => e)
     expect(err).toBeInstanceOf(ResumeParseError)
     expect(err.kind).toBe('invalid_output') // reached the model, not the length check
-    expect(err.userMessage).toMatch(/declined/i)
+    expect(err.userMessage).toBe("We couldn't read this file. Paste your resume text instead, or try a different file.")
   })
 
   // Correct: per the API docs, top-level `usage` covers only the attempt that produced the

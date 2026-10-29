@@ -29,7 +29,7 @@
 - `src/lib/tracker.ts` + `src/components/tracker/` - application tracker at `/dashboard/tracker`
 - `src/lib/plans.ts` - every plan limit and all pricing copy; `src/lib/tailor-quota.ts` meters tailors and cover letters
 - `src/lib/storage.ts` - Supabase Storage (was S3)
-- `src/lib/track.ts` + `src/lib/ai-usage.ts` - analytics events and per-call OpenAI token usage; `src/lib/admin-analytics.ts` feeds `/admin`
+- `src/lib/track.ts` + `src/lib/ai-usage.ts` - analytics events and per-call AI token usage; `src/lib/admin-analytics.ts` feeds `/admin`
 - `src/lib/daily-ceiling.ts` - per-user daily ceilings (Pro included), counted from events
 - `src/lib/ai-cap.ts` + `src/lib/ai-inflight.ts` - AI cap, kill switch, global daily ceiling, per-user in-flight limit
 - `src/lib/token-burn.ts` + `src/components/token/` - burn $REWORK for 30 days of Pro (off unless `REWORK_MINT` is set; own `AI_BURN_DAILY_USD` ceiling)
