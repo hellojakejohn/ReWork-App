@@ -39,6 +39,8 @@ const config: NextConfig = {
   // The PDF fonts are read from disk at render time (src/lib/resume-pdf.tsx).
   outputFileTracingIncludes: {
     '/api/resumes/**/download': ['./src/lib/fonts/**'],
+    // pdfjs's worker (src/lib/resume-source-text.ts); belt and braces with the import there.
+    '/api/resumes/parse': ['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'],
   },
   serverExternalPackages: [
     'sharp',
