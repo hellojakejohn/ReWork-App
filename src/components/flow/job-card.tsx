@@ -170,7 +170,13 @@ export function JobCard({
               </p>
             )}
             {error && <ErrorNote>{error}</ErrorNote>}
-            <p className="text-xs text-text-muted">Works best with Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages.</p>
+            <p className="text-xs text-text-muted">
+              Works best with Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages. On LinkedIn or Indeed?{" "}
+              <a href="/save" target="_blank" rel="noopener" className="font-medium text-text-secondary underline underline-offset-2 hover:text-text">
+                Get the Save to ReWork button
+              </a>
+              .
+            </p>
           </>
         )}
 
@@ -223,7 +229,9 @@ export function JobCard({
                 <ErrorNote>
                   {draft.description.length > INPUT_LIMITS.jobDescriptionChars
                     ? INPUT_LIMIT_MESSAGES.jobDescription
-                    : "The description looks too short. Edit it to paste the full posting."}
+                    : !draft.title.trim() || !draft.company.trim()
+                      ? "Add the job title and company: tap Edit."
+                      : "The description looks too short. Edit it to paste the full posting."}
                 </ErrorNote>
               )}
             </div>

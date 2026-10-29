@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Save to ReWork",
+  "short_name": "ReWork",
+  "version": "0.1.0",
+  "description": "Bring the job you're looking at on LinkedIn, Indeed or any job site into ReWork in one click.",
+  "homepage_url": "https://rework.hellojakejohn.com/save",
+  "action": {
+    "default_title": "Save this job to ReWork",
+    "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png" }
+  },
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["activeTab", "scripting"]
+}

@@ -13,6 +13,7 @@ import { Sparkles } from "lucide-react"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { CheckoutSuccess } from "@/components/billing/checkout-success"
 import { hasContent } from "@/lib/master-dto"
+import { takeSavedJob } from "@/lib/saved-job"
 import type { TemplateId } from "@/lib/resume-templates"
 import {
   loadApplication,
@@ -112,6 +113,13 @@ export function OneFlow() {
       for (const key of ["open", "application", "tailor"]) params.delete(key)
       const query = params.toString()
       window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
+    }
+    // A job brought in by the Save to ReWork button (/save): show it on the Job card to check.
+    const saved = takeSavedJob()
+    if (saved && !applicationParam && !tailorParam && open !== "start") {
+      setJob(saved)
+      if (initial && hasContent(initial.resume)) setStep(1)
+      toast.success(saved.title ? `Saved: ${saved.title}` : "Job saved")
     }
     if (open === "manage") setManageOpen(true)
     if (open === "start") {

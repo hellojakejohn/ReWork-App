@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of `main` on 2026-10-29 (PRs #7 to #22 merged and deployed). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-10-29 (PRs #7 to #23 merged and deployed). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -174,6 +174,14 @@ Tuning ideas not done yet:
   `/api/health` is `ok: false` on stripePrices and stripeWebhook (everything else passes).
   See "Next session" below.
 - LinkedIn job URLs are never fetched (also not through redirects): straight to paste.
+  "Save to ReWork" covers LinkedIn and Indeed client-side: `src/lib/save-job-script.ts` reads
+  the open job page in the user's browser (site selectors, JSON-LD, page title, a
+  description-ish block, an "About the job" heading, the user's selection) and opens
+  `/save#job=<json>`; `/save` keeps it in localStorage (`src/lib/saved-job.ts`, survives
+  sign-in, 1 hour) and the dashboard shows it on the Job card. Two wrappers: a bookmarklet on
+  `/save` and a Chrome extension (`extension/`, built by `npx tsx scripts/build-extension.ts`
+  into `extension-dist.zip`; activeTab + scripting only). Selectors are untested on live
+  LinkedIn/Indeed; when they break, the fallbacks and "select the text, click again" hold.
 - Landing example is hand-built from `scripts/fixtures/restaurant-manager-to-ops-coordinator.json`
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
