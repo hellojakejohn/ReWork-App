@@ -12,10 +12,11 @@
 // Fixtures: the 3 JSON resumes in scripts/fixtures/ (each with its own job), the
 // enhancv-swe.txt resume (parsed first) against jobs/greenhouse-swe.json, the restaurant
 // resume against jobs/ops-coordinator-nontech.json, and any PDFs in
-// scripts/fixtures/private/ (gitignored) against the SWE job.
+// scripts/fixtures/private/ (gitignored) against the SWE job and jobs/dev-support-web3.json.
 //
 // Providers whose key is missing are skipped and noted in the report. Makes real,
 // billed API calls. Costs are estimates from src/lib/ai/models.ts.
+import { loadEnvConfig } from '@next/env'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,6 +32,9 @@ import { modelLabel } from '@/lib/ai/models'
 import { formatRoute, parseRoute, providerConfigured, PROVIDER_KEY_ENV, type ModelRoute } from '@/lib/ai/routing'
 import { netRevenueUsd } from '@/lib/ai-cap-rules'
 import { PASS_PRICE_USD, PRO_MONTHLY_PRICE_USD } from '@/lib/plans'
+
+// Same env loading as `next dev`, so the script sees the app's keys.
+loadEnvConfig(process.cwd())
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURES = path.join(HERE, 'fixtures')
@@ -82,6 +86,7 @@ function loadCases(): Case[] {
 
   const swe = readJson(path.join(FIXTURES, 'jobs', 'greenhouse-swe.json')) as { name: string; job: TailorJob }
   const ops = readJson(path.join(FIXTURES, 'jobs', 'ops-coordinator-nontech.json')) as { name: string; job: TailorJob }
+  const support = readJson(path.join(FIXTURES, 'jobs', 'dev-support-web3.json')) as { name: string; job: TailorJob }
 
   cases.push({ name: 'enhancv-swe.txt (parsed) -> Greenhouse SWE', job: swe.job, parse: { kind: 'text', text: readFileSync(path.join(FIXTURES, 'enhancv-swe.txt'), 'utf8') } })
   const restaurant = jsonFixtures.find((f) => /restaurant/i.test(f.name))
@@ -90,7 +95,9 @@ function loadCases(): Case[] {
   const privateDir = path.join(FIXTURES, 'private')
   if (existsSync(privateDir)) {
     for (const f of readdirSync(privateDir).filter((f) => f.toLowerCase().endsWith('.pdf')).sort()) {
-      cases.push({ name: `private/${f} (parsed) -> Greenhouse SWE`, job: swe.job, parse: { kind: 'pdf', buffer: readFileSync(path.join(privateDir, f)), filename: f } })
+      const parse: ParseInput = { kind: 'pdf', buffer: readFileSync(path.join(privateDir, f)), filename: f }
+      cases.push({ name: `private/${f} (parsed) -> Greenhouse SWE`, job: swe.job, parse })
+      cases.push({ name: `private/${f} (parsed) -> ${support.job.title} (Web3 support)`, job: support.job, parse })
     }
   }
   return cases
@@ -116,6 +123,8 @@ interface Row {
   parse?: StepResult & { needsReview?: number }
   tailor?: StepResult & { warnings?: number; coverageBefore?: number; coverageAfter?: number; summary?: string; bullets?: string[] }
   cover?: StepResult & { bannedHits?: number; regenerated?: boolean; warnings?: number; text?: string }
+  // Everything, for reading the output by hand: written to <out>/cases/*.json, never the report.
+  detail?: Record<string, unknown>
 }
 
 let spent = 0
@@ -170,6 +179,7 @@ async function runCase(route: ModelRoute, c: Case): Promise<Row> {
   if (c.parse) {
     const { value, step } = await measure(() => parseResume(c.parse!, opts))
     row.parse = { ...step, needsReview: value?.needsReview.length }
+    row.detail = { parsed: value?.resume, needsReview: value?.needsReview }
     if (!value) return row
     master = parsedToMaster(value.resume) as MasterResume
   }
@@ -183,6 +193,7 @@ async function runCase(route: ModelRoute, c: Case): Promise<Row> {
   }
   const { cleaned, warnings } = factGuard(input, tailored.value.output)
   const coverage = coverageReport(input, cleaned)
+  row.detail = { ...row.detail, master: input, raw: tailored.value.output, cleaned, guardWarnings: warnings, coverage }
   row.tailor = {
     ...tailored.step,
     warnings: warnings.length,
@@ -210,6 +221,7 @@ async function runCase(route: ModelRoute, c: Case): Promise<Row> {
     warnings: cover.value?.warnings.filter((w) => w.type !== 'regenerated').length,
     text: cover.value?.text,
   }
+  row.detail = { ...row.detail, cover: cover.value }
   return row
 }
 
@@ -359,7 +371,8 @@ function writeReport(rows: Row[], skipped: string[], stoppedEarly: boolean, case
 // ---------- main ----------
 
 async function main() {
-  const cases = loadCases()
+  // Real resumes first, so the spend cap never skips them.
+  const cases = loadCases().sort((a, b) => Number(b.name.startsWith('private/')) - Number(a.name.startsWith('private/')))
   const skipped: string[] = []
   const runnable = models.filter((m) => {
     if (providerConfigured(m.provider)) return true
@@ -381,6 +394,9 @@ async function main() {
       process.stdout.write(`  ${formatRoute(m)} | ${c.name} ... `)
       const row = await runCase(m, c)
       rows.push(row)
+      const slug = `${String(rows.length).padStart(2, '0')}-${formatRoute(m)}-${c.name}`.replace(/[^a-z0-9.-]+/gi, '_').slice(0, 120)
+      mkdirSync(path.join(outDir, 'cases'), { recursive: true })
+      writeFileSync(path.join(outDir, 'cases', `${slug}.json`), JSON.stringify({ model: row.model, case: row.case, job: c.job, ...row.detail }, null, 2))
       const errs = [row.parse, row.tailor, row.cover].filter((s) => s && !s.ok).length
       console.log(`${errs ? `${errs} failed, ` : ''}total ${money(spent)}`)
     }

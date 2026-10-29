@@ -14,6 +14,12 @@ export function compact(value: string): string {
 }
 
 /** URL without protocol, "www.", trailing slash or whitespace, lowercased. */
+/** "JAKOB JOHNSON" -> "Jakob Johnson", "O'BRIEN-SMITH" -> "O'Brien-Smith". Mixed case is left alone. */
+export function nameCase(name: string): string {
+  if (/[a-z]/.test(name) || !/[A-Z]{2}/.test(name)) return name
+  return name.toLowerCase().replace(/(^|[\s'’-])([a-z])/g, (_, sep: string, ch: string) => sep + ch.toUpperCase())
+}
+
 export function normalizeUrl(value: string): string {
   return value
     .trim()
@@ -107,6 +113,8 @@ export function validateParsedResume(
     flag('contact.fullName', fullName, 'Name and headline came out the same.')
     fullName = ''
   }
+  // A header set in capitals is styling, not the name; letters sign with it.
+  fullName = nameCase(fullName)
 
   let email = (c.email || '').trim()
   if (email && (!EMAIL_RE.test(email) || !src.hasEmail(email))) {

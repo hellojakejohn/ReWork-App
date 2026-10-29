@@ -85,6 +85,35 @@ describe('factGuard with certifications and project tech', () => {
   })
 })
 
+describe('extra sections', () => {
+  const withExtra = parsedToMaster({
+    ...parsed,
+    extraSections: [{ heading: 'What I can troubleshoot', items: ['Stuck transactions, nonce issues and gas estimation'] }],
+  })
+
+  it('go to the model as facts', () => {
+    expect(buildTailorInput(withExtra).extraSections).toEqual([
+      { group: 'What I can troubleshoot', items: ['Stuck transactions, nonce issues and gas estimation'] },
+    ])
+  })
+
+  it('count in keyword coverage on both sides, since they print unchanged', () => {
+    const input = buildTailorInput(withExtra)
+    const tailored = { ...factGuard(input, output()).cleaned, targetKeywords: ['gas estimation', 'Kubernetes'] }
+    const coverage = coverageReport(input, tailored)
+    expect(coverage.master.present).toEqual(['gas estimation'])
+    expect(coverage.tailored.present).toEqual(['gas estimation'])
+  })
+
+  it('let the summary use their numbers without a fact-guard revert', () => {
+    const m = parsedToMaster({ ...parsed, extraSections: [{ heading: 'Volunteering', items: ['Mentored 12 students'] }] })
+    const input = buildTailorInput(m)
+    const { cleaned, warnings } = factGuard(input, { ...output(), summary: 'Engineer who mentored 12 students.' })
+    expect(cleaned.summary).toBe('Engineer who mentored 12 students.')
+    expect(warnings.some((w) => w.section === 'summary')).toBe(false)
+  })
+})
+
 describe('applyTailorOutput with skill groups', () => {
   it('keeps the master groups, reorders inside them, and passes certifications through', () => {
     const input = buildTailorInput(master)

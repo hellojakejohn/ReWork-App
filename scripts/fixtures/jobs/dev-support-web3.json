@@ -1,0 +1,10 @@
+{
+  "name": "Developer support, Web3 payments",
+  "source": "Written for the eval: a developer support posting at a crypto payments API company. Fictional company. Mixes skills a Web3 support resume has (RPC, webhooks, Solidity, SQL) with ones it may not (Zendesk, Python, on-call, SLAs) to see whether tailoring invents them.",
+  "job": {
+    "title": "Developer Support Engineer",
+    "company": "Lantern Pay",
+    "location": "Remote (US)",
+    "description": "Lantern Pay lets merchants accept stablecoin and card payments through one API, settling on Ethereum, Base and Solana. Our developer support team is the first line for engineers integrating our API and SDKs.\n\nWhat you'll do\n• Own technical tickets from integrating developers end to end: reproduce the issue, find the root cause, and either fix the integration with the customer or escalate a clear bug report to engineering.\n• Debug failed and stuck transactions, webhook delivery problems, RPC errors and wallet connection issues across EVM chains and Solana.\n• Read customer code (TypeScript, Python, Go) and our API logs to pinpoint where an integration breaks.\n• Write and maintain knowledge-base articles, API guides and sample code so the same question doesn't come back.\n• Spot patterns across tickets and bring them to product and engineering.\n• Join a weekly on-call rotation for merchant-impacting incidents.\n\nWhat we're looking for\n• 2+ years in developer support, solutions engineering, or a software role with customer contact.\n• Strong grasp of how EVM transactions work: gas, nonces, reverts, approvals, token standards (ERC-20, ERC-721).\n• Comfortable with REST APIs, webhooks, Postman or curl, and reading JSON logs.\n• Able to read Solidity and TypeScript; Python is a plus.\n• SQL for digging into customer data.\n• Clear, patient written communication with developers of every level.\n\nNice to have\n• Experience with Zendesk or Intercom and working to response-time SLAs.\n• Solana development experience.\n• Experience with payments, KYC or fiat on-ramps.\n\nWe offer a fully remote team, a $110k to $135k base salary, equity, and a $1,500 learning budget."
+  }
+}

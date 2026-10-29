@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { cleanSourceText, itemsToLines, type PositionedItem } from '@/lib/resume-source-text'
-import { SourceIndex, validateParsedResume } from '@/lib/parse-validate'
+import { nameCase, SourceIndex, validateParsedResume } from '@/lib/parse-validate'
 import { masterToParsed, parsedToMaster } from '@/lib/master-resume'
 import { PARSE_FAILED_MESSAGE, parseResume, ResumeParseError } from '@/lib/parse-resume'
 import type { ParsedResume } from '@/types/parsed-resume'
@@ -123,6 +123,13 @@ describe('validateParsedResume', () => {
     expect(resume.experience.map((e) => e.company)).toEqual(['ReWork', 'Self-employed'])
   })
 
+  it('turns an all-caps header name into a normal one', () => {
+    expect(validateParsedResume(goodParse(), SOURCE).resume.contact.fullName).toBe('Jakob Johnson')
+    expect(nameCase("SEAN O'BRIEN-SMITH")).toBe("Sean O'Brien-Smith")
+    expect(nameCase('Ana McDonald')).toBe('Ana McDonald')
+    expect(nameCase('J')).toBe('J')
+  })
+
   it('drops invented links and flags them', () => {
     const parsed = goodParse()
     parsed.contact.links.push(
@@ -194,7 +201,7 @@ describe('parsedToMaster / masterToParsed', () => {
   it('round-trips a parsed resume through the stored master shape', () => {
     const { resume } = validateParsedResume(goodParse(), SOURCE)
     const master = parsedToMaster(resume)
-    expect(master.contactInfo.firstName).toBe('JAKOB')
+    expect(master.contactInfo.firstName).toBe('Jakob')
     expect(master.contactInfo.linkedin).toBe('https://www.linkedin.com/in/jakob-johnson')
     expect(master.workExperience[0].jobTitle).toBe('Founder & Software Engineer')
     expect(master.workExperience[0].endDate).toBe('Present')

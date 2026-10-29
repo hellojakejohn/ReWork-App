@@ -127,6 +127,22 @@ describe('cover letter fact guard', () => {
     expect(removed[0].attempted).toContain('Kubernetes')
   })
 
+  it('lets "why this role" name what the job post names, but not its numbers', () => {
+    const post = { ...input, job: { ...input.job, description: 'Our Platform team in Minnesota serves 900 clinics with React.' } }
+    const allowed = allowedSourceText(post)
+    const why = 'The Platform team in Minnesota builds what clinics rely on.'
+    expect(checkDraft(draft({ whyThisRole: why }), allowed, post.job.description).facts).toEqual([])
+    expect(checkDraft(draft({ whyThisRole: 'Your 900 clinics need this.' }), allowed, post.job.description).facts[0].detail).toBe('900')
+    // Other paragraphs still only get resume facts.
+    expect(checkDraft(draft({ proof: 'I shipped React apps in Minnesota.' }), allowed, post.job.description).facts[0].detail).toContain('Minnesota')
+    expect(guardDraft(draft({ whyThisRole: why }), post).draft.whyThisRole).toBe(why)
+  })
+
+  it('does not flag generic words and team names', () => {
+    const text = 'I would bring that to your Product Engineering team and its UI and APIs.'
+    expect(checkDraft(draft({ close: text }), allowedSourceText(input)).facts).toEqual([])
+  })
+
   it('lets confirmed evidence answers through like resume facts', () => {
     const withEvidence = { ...input, extraFacts: ['Cut checkout errors by 35% after the Stripe rewrite'] }
     const text = 'After the Stripe rewrite, checkout errors dropped 35%.'
@@ -146,6 +162,12 @@ describe('cover letter fact guard', () => {
     expect(letter.text.endsWith('Sincerely,\nJakob Johnson')).toBe(true)
     expect(letter.text.startsWith('Dear Acme team,\n\n')).toBe(true)
     expect(letter.text.split('\n\n')).toHaveLength(5) // greeting, 3 paragraphs, sign-off
+  })
+
+  it('signs an all-caps stored name in normal case', async () => {
+    const { client } = mockClient([draft()])
+    const letter = await generateCoverLetter({ ...input, candidateName: 'JAKOB JOHNSON' }, { client })
+    expect(letter.text.endsWith('\nJakob Johnson')).toBe(true)
   })
 })
 

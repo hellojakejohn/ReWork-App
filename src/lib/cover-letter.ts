@@ -10,6 +10,7 @@ import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
 import { taskRoute } from '@/lib/ai/routing'
 import { normalizeSpace, tailorInputText } from '@/lib/resume-text'
+import { nameCase } from '@/lib/parse-validate'
 import { describeFacts, dropUnsupportedSentences, hasUnsupported, splitSentences, unsupportedFacts } from '@/lib/text-facts'
 import type { TailorInput } from '@/types/tailor'
 import type { CoverLetterTone, CoverLetterWarning, StoredCoverLetter } from '@/lib/cover-letter-shared'
@@ -172,16 +173,21 @@ export function allowedSourceText(input: Pick<CoverLetterInput, 'master' | 'cand
 
 const PARAGRAPHS = ['whyThisRole', 'proof', 'close'] as const
 
+/** "Why this role" is about the job, so it may name what the post names. Never numbers. */
+function namesFor(paragraph: (typeof PARAGRAPHS)[number], jobDescription: string): string {
+  return paragraph === 'whyThisRole' ? jobDescription : ''
+}
+
 export interface DraftProblems {
   banned: string[]
   facts: { paragraph: (typeof PARAGRAPHS)[number]; detail: string }[]
   words: number
 }
 
-export function checkDraft(draft: CoverLetterDraft, allowedText: string): DraftProblems {
+export function checkDraft(draft: CoverLetterDraft, allowedText: string, jobDescription = ''): DraftProblems {
   const body = PARAGRAPHS.map((p) => draft[p]).join('\n\n')
   const facts = PARAGRAPHS.flatMap((paragraph) => {
-    const f = unsupportedFacts(draft[paragraph] || '', allowedText)
+    const f = unsupportedFacts(draft[paragraph] || '', allowedText, namesFor(paragraph, jobDescription))
     return hasUnsupported(f) ? [{ paragraph, detail: describeFacts(f) }] : []
   })
   return { banned: bannedPhrasesIn(`${draft.greeting}\n${body}\n${draft.signOff}`), facts, words: countWords(body) }
@@ -222,7 +228,7 @@ export function guardDraft(
         warnings.push({ type: 'banned_phrase', message: `Removed a stock phrase ("${banned[0]}").`, attempted: sentence })
         continue
       }
-      const { removed } = dropUnsupportedSentences(sentence, allowedText)
+      const { removed } = dropUnsupportedSentences(sentence, allowedText, namesFor(paragraph, input.job.description))
       if (removed.length) {
         warnings.push({
           type: 'unsupported_fact',
@@ -265,7 +271,7 @@ function nameIn(text: string, name: string): boolean {
 
 /** The letter as plain text: greeting, three paragraphs, sign-off + name. */
 export function draftToText(draft: CoverLetterDraft, candidateName: string): string {
-  return [draft.greeting, ...PARAGRAPHS.map((p) => draft[p]).filter(Boolean), [draft.signOff, candidateName].filter(Boolean).join('\n')]
+  return [draft.greeting, ...PARAGRAPHS.map((p) => draft[p]).filter(Boolean), [draft.signOff, nameCase(candidateName)].filter(Boolean).join('\n')]
     .map((b) => b.trim())
     .filter(Boolean)
     .join('\n\n')
@@ -320,7 +326,7 @@ export async function generateCoverLetter(input: CoverLetterInput, options: Cove
 
   let result = await callModel(options, buildCoverLetterPrompt(input))
   const warnings: CoverLetterWarning[] = []
-  const problems = checkDraft(result.draft, allowedText)
+  const problems = checkDraft(result.draft, allowedText, input.job.description)
   if (hasProblems(problems)) {
     // Regenerate once with the problems spelled out. If the retry fails outright, keep
     // the first draft and let the guard clean it.
