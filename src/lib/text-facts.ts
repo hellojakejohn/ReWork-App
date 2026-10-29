@@ -15,6 +15,8 @@ const STOP_TERMS = new Set(
     'committee', 'sincerely', 'regards', 'best', 'kind', 'warm', 'warmly', 'thank', 'thanks', 'respectfully', 'cheers', 'yours', 'truly',
     'mr', 'ms', 'mrs', 'mx', 'dr', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october',
     'november', 'december', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'english', 'ai',
+    // Generic tech words and team names ("your Product Engineering team"), not claims.
+    'ui', 'ux', 'api', 'apis', 'engineering', 'product', 'design', 'operations', 'support', 'sales', 'marketing', 'finance', 'people',
   ].map((s) => s.toLowerCase())
 )
 
@@ -100,16 +102,19 @@ function wordNumbers(text: string): { raw: string; token: string }[] {
 
 /**
  * Numbers and names in `text` that aren't supported by `allowedText`. A spelled-out
- * number is fine if the source has the word or the digits.
+ * number is fine if the source has the word or the digits. `namesText` allows extra
+ * names but not numbers (a letter may name the job post's team or city, but "five
+ * years" from the post is not the candidate's).
  */
-export function unsupportedFacts(text: string, allowedText: string): UnsupportedFacts {
+export function unsupportedFacts(text: string, allowedText: string, namesText = ''): UnsupportedFacts {
   const allowedNumbers = new Set(extractNumberTokens(allowedText))
   for (const n of wordNumbers(allowedText)) allowedNumbers.add(n.token)
   const numbers = [
     ...extractNumbers(text).filter((n) => !allowedNumbers.has(n.token)),
     ...wordNumbers(text).filter((n) => !allowedNumbers.has(n.token) && !containsTerm(allowedText, n.raw)),
   ].map((n) => n.raw)
-  const terms = nameTerms(text).filter((t) => !termAllowed(t, allowedText))
+  const nameSource = namesText ? `${allowedText}\n${namesText}` : allowedText
+  const terms = nameTerms(text).filter((t) => !termAllowed(t, nameSource))
   return { numbers: [...new Set(numbers)], terms }
 }
 
@@ -118,11 +123,11 @@ export function hasUnsupported(f: UnsupportedFacts): boolean {
 }
 
 /** Drop the sentences that carry unsupported facts. Returns what's left and what went. */
-export function dropUnsupportedSentences(text: string, allowedText: string): { text: string; removed: { sentence: string; facts: UnsupportedFacts }[] } {
+export function dropUnsupportedSentences(text: string, allowedText: string, namesText = ''): { text: string; removed: { sentence: string; facts: UnsupportedFacts }[] } {
   const kept: string[] = []
   const removed: { sentence: string; facts: UnsupportedFacts }[] = []
   for (const sentence of splitSentences(text)) {
-    const facts = unsupportedFacts(sentence, allowedText)
+    const facts = unsupportedFacts(sentence, allowedText, namesText)
     if (hasUnsupported(facts)) removed.push({ sentence, facts })
     else kept.push(sentence)
   }
