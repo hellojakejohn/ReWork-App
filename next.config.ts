@@ -39,8 +39,11 @@ const config: NextConfig = {
   // The PDF fonts are read from disk at render time (src/lib/resume-pdf.tsx).
   outputFileTracingIncludes: {
     '/api/resumes/**/download': ['./src/lib/fonts/**'],
-    // pdfjs's worker (src/lib/resume-source-text.ts); belt and braces with the import there.
-    '/api/resumes/parse': ['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'],
+    // pdfjs (src/lib/resume-source-text.ts): its worker (belt and braces with the import
+    // there) and @napi-rs/canvas, which it loads by a runtime require for DOMMatrix. Without
+    // it pdf.mjs throws "DOMMatrix is not defined" on import. The glob picks up whichever
+    // platform binary npm installed (linux-x64-gnu on Vercel).
+    '/api/resumes/parse': ['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs', './node_modules/@napi-rs/canvas*/**'],
   },
   serverExternalPackages: [
     'sharp',
