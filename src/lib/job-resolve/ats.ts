@@ -1,7 +1,7 @@
 // Known applicant-tracking systems with public JSON APIs. Pure: URL matching and response
 // parsing only; fetching happens in ./index.ts.
 import { cleanLines, decodeEntities, htmlToText } from './html-text'
-import type { JobFacts } from '@/lib/job-checks'
+import { compactFacts, isoDate, type JobFacts } from '@/lib/job-checks'
 import type { JobSource, ResolvedJob } from './types'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -134,18 +134,6 @@ export function matchAtsUrl(input: string | URL): AtsMatch | null {
 
 const s = (v: unknown) => (typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '')
 const joinLoc = (...parts: unknown[]) => [...new Set(parts.map(s).filter(Boolean))].join(', ')
-
-/** An ISO date from a date string or epoch milliseconds; undefined when it isn't one. */
-export function isoDate(v: unknown): string | undefined {
-  const t = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Date.parse(v) : NaN
-  return Number.isFinite(t) && t > Date.UTC(2000, 0, 1) ? new Date(t).toISOString() : undefined
-}
-
-/** Drops empty fields; undefined when nothing is left. */
-export function compactFacts(facts: JobFacts): JobFacts | undefined {
-  const out = Object.fromEntries(Object.entries(facts).filter(([, v]) => v !== undefined && v !== '' && v !== false)) as JobFacts
-  return Object.keys(out).length ? out : undefined
-}
 
 function section(title: string, html: string): string {
   const body = htmlToText(html, { strip: false })

@@ -1,7 +1,7 @@
 // schema.org JobPosting from <script type="application/ld+json">. Most career sites embed
 // it for Google Jobs, so it's the best source after a known ATS API.
 import * as cheerio from 'cheerio'
-import { compactFacts, isoDate } from './ats'
+import { compactFacts, isoDate } from '@/lib/job-checks'
 import { htmlToText } from './html-text'
 import type { ResolvedJob } from './types'
 

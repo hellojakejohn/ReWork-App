@@ -59,6 +59,20 @@ const SOURCE = String.raw`(function () {
     if (a && typeof a === "object") return [a.addressLocality, a.addressRegion].filter(Boolean).join(", ");
     return x.jobLocationType === "TELECOMMUTE" ? "Remote" : "";
   }
+  function allText(selectors) {
+    var out = [];
+    for (var i = 0; i < selectors.length; i++) {
+      var els = document.querySelectorAll(selectors[i]);
+      for (var j = 0; j < els.length; j++) out.push(textOf(els[j]));
+    }
+    return out.join("\n");
+  }
+  function readFacts(t) {
+    var p = t.match(/(Reposted\s+)?(Posted\s+)?(\d+\+?|an?)\s+(minute|hour|day|week|month|year)s?\s+ago/i) || t.match(/\b(Just posted|Today)\b/i);
+    if (p && !job.posted) job.posted = p[0];
+    var a = t.match(/(Over\s+)?\d[\d,]*\+?\s+(applicants|people clicked apply)/i);
+    if (a && !job.applicants) job.applicants = a[0];
+  }
   function biggest(selector) {
     var best = "";
     var els = document.querySelectorAll(selector);
@@ -80,7 +94,7 @@ const SOURCE = String.raw`(function () {
     return "";
   }
 
-  var job = { url: location.href, title: "", company: "", location: "", description: "" };
+  var job = { url: location.href, title: "", company: "", location: "", description: "", posted: "", applicants: "", closes: "", pay: "" };
   var titleParts = document.title.split(/ [|\u2013\u2014-] /).map(function (p) { return p.trim(); });
 
   if (/(^|\.)linkedin\.com$/.test(host)) {
@@ -90,6 +104,7 @@ const SOURCE = String.raw`(function () {
     job.company = first([".job-details-jobs-unified-top-card__company-name a", ".job-details-jobs-unified-top-card__company-name", ".jobs-unified-top-card__company-name", ".topcard__org-name-link", ".top-card-layout__second-subline a"]);
     job.location = first([".job-details-jobs-unified-top-card__primary-description-container .tvm__text", ".job-details-jobs-unified-top-card__bullet", ".topcard__flavor--bullet"]).split(/ \u00b7 /)[0];
     job.description = first(["#job-details", ".jobs-description__content .jobs-box__html-content", ".jobs-description-content__text", ".jobs-description__content", ".show-more-less-html__markup", ".description__text"]);
+    readFacts(allText([".job-details-jobs-unified-top-card__primary-description-container", ".job-details-jobs-unified-top-card__tertiary-description-container", ".jobs-unified-top-card__subtitle-primary-grouping", ".posted-time-ago__text", ".num-applicants__caption", ".topcard__flavor-row"]));
     var li = document.title.split(" | ");
     if (li.length >= 3 && li[li.length - 1].trim() === "LinkedIn") {
       job.title = job.title || li[0].replace(/^\(\d+\)\s*/, "").trim();
@@ -102,6 +117,7 @@ const SOURCE = String.raw`(function () {
     job.company = first(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]', ".jobsearch-CompanyInfoContainer a", ".jobsearch-InlineCompanyRating div"]);
     job.location = first(['[data-testid="inlineHeader-companyLocation"]', '[data-testid="job-location"]', '[data-testid="jobsearch-JobInfoHeader-companyLocation"]']);
     job.description = first(["#jobDescriptionText", ".simple-job-description-html", ".jobsearch-JobComponent-description"]);
+    readFacts(allText(['[data-testid="jobsearch-JobMetadataFooter"]', ".jobsearch-JobMetadataFooter", '[data-testid="myJobsStateDate"]', ".jobsearch-HiringInsights-entry--text"]));
     var box = document.querySelector('[data-testid="vj-job-title"]');
     for (var up = 0; !job.company && box && up < 6; up++) {
       job.company = textOf(box.querySelector('a[href*="/cmp/"]'));
@@ -116,6 +132,9 @@ const SOURCE = String.raw`(function () {
     job.company = job.company || clean(typeof org === "string" ? org : (org && org.name) || "");
     job.location = job.location || ldLocation(ld);
     if (job.description.length < 200) job.description = fromHtml(ld.description) || job.description;
+    job.posted = job.posted || String(ld.datePosted || "");
+    job.closes = String(ld.validThrough || "");
+    job.pay = ld.baseSalary || ld.estimatedSalary ? "yes" : "";
   }
 
   if (!job.title) job.title = first(["h1"]) || titleParts[0] || "";

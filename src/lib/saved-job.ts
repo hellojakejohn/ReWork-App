@@ -2,6 +2,7 @@
 // page) in their own browser. ReWork's server never fetches those sites. The bookmarklet
 // opens /save#job=<json>; /save keeps it in localStorage (so it survives sign-in) and the
 // dashboard picks it up on the Job card for the user to check. Safe for the client.
+import { applicantCount, compactFacts, isoDate, postedDaysAgo, type JobFacts } from '@/lib/job-checks'
 import { INPUT_LIMITS } from '@/lib/plans'
 
 export const SAVED_JOB_KEY = 'rework.savedJob'
@@ -14,6 +15,8 @@ export interface SavedJob {
   company: string
   location: string
   description: string
+  /** Posting date, applicant count and so on, when the page showed them (ghost-job signs). */
+  facts?: JobFacts
 }
 
 function text(value: unknown, max: number): string {
@@ -30,6 +33,20 @@ function httpUrl(value: unknown): string {
   }
 }
 
+// The script sends these flat; a stored job keeps them under `facts`. Only values that read
+// as what they claim to be are kept.
+function cleanFacts(v: Record<string, unknown>): JobFacts | undefined {
+  const f = v.facts && typeof v.facts === 'object' ? (v.facts as Record<string, unknown>) : v
+  const posted = text(f.posted, 100)
+  const applicants = text(f.applicants, 100)
+  return compactFacts({
+    posted: isoDate(posted) ?? (postedDaysAgo(posted) ? posted : undefined),
+    applicants: applicantCount(applicants) !== null ? applicants : undefined,
+    closes: isoDate(text(f.closes, 100)),
+    pay: f.pay === true || f.pay === 'yes',
+  })
+}
+
 /** Any page can open /save, so treat the payload as untrusted: strings only, capped. */
 export function cleanSavedJob(value: unknown): SavedJob | null {
   if (!value || typeof value !== 'object') return null
@@ -42,6 +59,8 @@ export function cleanSavedJob(value: unknown): SavedJob | null {
     // Over the limit still loads; the Job card shows the limit message.
     description: text(v.description, INPUT_LIMITS.jobDescriptionChars + 1),
   }
+  const facts = cleanFacts(v)
+  if (facts) job.facts = facts
   return job.description.length >= 50 ? job : null
 }
 

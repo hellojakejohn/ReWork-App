@@ -156,6 +156,18 @@ export interface JobFacts {
   pay?: boolean
 }
 
+/** An ISO date from a date string or epoch milliseconds; undefined when it isn't one. */
+export function isoDate(v: unknown): string | undefined {
+  const t = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Date.parse(v) : NaN
+  return Number.isFinite(t) && t > Date.UTC(2000, 0, 1) ? new Date(t).toISOString() : undefined
+}
+
+/** Drops empty fields; undefined when nothing is left. */
+export function compactFacts(facts: JobFacts): JobFacts | undefined {
+  const out = Object.fromEntries(Object.entries(facts).filter(([, v]) => v !== undefined && v !== '' && v !== false)) as JobFacts
+  return Object.keys(out).length ? out : undefined
+}
+
 export type GhostSignalId = 'closed' | 'old' | 'reposted' | 'pipeline' | 'agency' | 'applicants' | 'no_pay'
 
 export interface GhostSignal {
