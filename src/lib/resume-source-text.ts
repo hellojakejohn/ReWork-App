@@ -147,6 +147,10 @@ interface PdfjsModule {
 export async function extractPdfText(buffer: Buffer): Promise<string> {
   if (buffer.subarray(0, 5).toString() !== '%PDF-') throw new UnreadableFileError('Not a PDF file')
   const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as PdfjsModule
+  // Hand pdfjs its worker in-process. Left alone it imports pdf.worker.mjs from disk by a
+  // path the bundler can't trace, so on Vercel the file is missing and every PDF fails.
+  const g = globalThis as { pdfjsWorker?: unknown }
+  g.pdfjsWorker ??= await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
   const doc = await pdfjs
     .getDocument({
       data: new Uint8Array(buffer),
