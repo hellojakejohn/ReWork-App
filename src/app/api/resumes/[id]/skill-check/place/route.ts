@@ -3,7 +3,7 @@
 // back as a plain skill: the user said they have it, so that much is always safe.
 import { NextRequest, NextResponse } from 'next/server'
 import { masterToParsed } from '@/lib/master-resume'
-import { cleanAnswers, fallbackAdditions, fitCoverage, MAX_SKILL_QUESTIONS, placeSkills } from '@/lib/skill-check'
+import { cleanAnswers, cleanKeywords, fallbackAdditions, fitCoverage, MAX_SKILL_QUESTIONS, placeSkills } from '@/lib/skill-check'
 import { evidenceContext } from '../../evidence/shared'
 import { collectUsage, usageProps } from '@/lib/ai-usage'
 import { track } from '@/lib/track'
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const resume = masterToParsed(ctx.resume)
   // Only keywords the resume is still missing can be answered.
-  const keywords = (body.keywords as unknown[]).filter((k): k is string => typeof k === 'string').slice(0, 20)
+  const keywords = cleanKeywords((body.keywords as unknown[]).filter((k): k is string => typeof k === 'string'))
   const answers = cleanAnswers(body.answers, fitCoverage(keywords, resume).missing).slice(0, MAX_SKILL_QUESTIONS)
   if (answers.length === 0) return NextResponse.json({ success: true, additions: [] })
 
