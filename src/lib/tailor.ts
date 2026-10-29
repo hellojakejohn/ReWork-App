@@ -259,6 +259,8 @@ export interface TailorJob {
 export interface TailorOptions extends AICallOptions {
   extraContext?: string
   contextTags?: string[]
+  /** Keywords already chosen by the fit check; returned as targetKeywords unchanged. */
+  targetKeywords?: string[]
 }
 
 export function buildTailorPrompt(input: TailorInput, job: TailorJob, options: TailorOptions = {}): string {
@@ -283,6 +285,13 @@ Company: ${job.company}
 ${job.location ? `Location: ${job.location}\n` : ''}Description:
 ${job.description}
 ${context}${
+    options.targetKeywords?.length
+      ? `
+TARGET KEYWORDS (already chosen; return exactly these as targetKeywords, and work in the ones the resume supports):
+${options.targetKeywords.join(', ')}
+`
+      : ''
+  }${
     input.evidence?.length
       ? `
 EVIDENCE RULE: "evidence" lists facts the candidate confirmed about specific bullets (the bullet is in parentheses). You may use those numbers and outcomes in the bullet they're about, and nowhere else.`

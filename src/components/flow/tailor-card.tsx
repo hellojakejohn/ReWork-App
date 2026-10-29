@@ -52,7 +52,7 @@ export function TailorCard({
     if (!master || !job) return
     setError("")
     setStage("reading")
-    const result = await runTailor(master.id, job, setStage)
+    const result = await runTailor(master.id, job, setStage, fit?.keywords)
     setStage(null)
     if (!result.ok) {
       if (result.status === 402 || result.upgradeRequired) {
