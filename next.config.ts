@@ -44,6 +44,8 @@ const config: NextConfig = {
     // it pdf.mjs throws "DOMMatrix is not defined" on import. The glob picks up whichever
     // platform binary npm installed (linux-x64-gnu on Vercel).
     '/api/resumes/parse': ['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs', './node_modules/@napi-rs/canvas*/**'],
+    // /api/health reads a tiny PDF with the same extractor (src/lib/health-files.ts).
+    '/api/health': ['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs', './node_modules/@napi-rs/canvas*/**'],
   },
   serverExternalPackages: [
     'sharp',
