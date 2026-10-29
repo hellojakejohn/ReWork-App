@@ -107,6 +107,8 @@ describe('ghostSignals', () => {
     expect(ghostSignals(paid, { posted: '2026-08-01' }, now)[0].label).toMatch(/^Posted about 3 months ago/)
     expect(ids(paid, { posted: 'Reposted 2 weeks ago' })).toEqual(['reposted'])
     expect(ids(paid, { posted: 'Reposted 1 month ago' })).toEqual(['old', 'reposted'])
+    expect(ghostSignals(paid, { posted: 'Reposted 1 month ago' }, now)[0].label).toMatch(/^Posted 1 month ago\./)
+    expect(ghostSignals(paid, { posted: '2026-09-20' }, now)[0].label).toMatch(/^Posted 39 days ago\./)
     expect(ghostSignals(paid, { posted: '30+ days ago' }, now)[0].label).toMatch(/^Posted 30\+ days ago/)
   })
   it('flags a closed posting', () => {

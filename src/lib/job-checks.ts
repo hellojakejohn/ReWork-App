@@ -241,7 +241,9 @@ export function ghostSignals(description: string, facts: JobFacts = {}, now = ne
   }
   const age = postedDaysAgo(facts.posted, now)
   if (age && age.days >= OLD_POSTING_DAYS) {
-    const when = age.plus ? `${age.days}+ days ago` : age.days >= 60 ? `about ${Math.round(age.days / 30)} months ago` : `${age.days} days ago`
+    // A board phrase keeps the board's words ("1 month ago"); a date becomes days or months.
+    const phrase = (facts.posted || '').match(/\b(\d+\+?|an?)\s+(minute|hour|day|week|month|year)s?\s+ago\b/i)?.[0]
+    const when = phrase ?? (age.days >= 60 ? `about ${Math.round(age.days / 30)} months ago` : `${age.days} days ago`)
     found.push({ id: 'old', label: `Posted ${when}. Older ads are more often filled, paused or left up by mistake.` })
   }
   if (/\breposted\b/i.test(facts.posted || '')) {

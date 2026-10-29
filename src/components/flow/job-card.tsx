@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, Link2, Loader2, MapPin, Pencil, ShieldAlert } from "lucide-react"
+import { ChevronDown, Info, Link2, Loader2, MapPin, Pencil, ShieldAlert } from "lucide-react"
 import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
-import { otherCompanyNamed, scamSignals, SCAM_SAFETY_TIP } from "@/lib/job-checks"
+import { ghostSignals, otherCompanyNamed, scamSignals, SCAM_SAFETY_TIP } from "@/lib/job-checks"
 
 type Mode = "url" | "fetching" | "fetched" | "paste"
 
@@ -134,6 +134,21 @@ export function JobCard({
       <p className="mt-2 border-t border-dashed border-input pt-2 font-semibold">{SCAM_SAFETY_TIP}</p>
     </div>
   )
+  // Ghost-job signs: facts about the posting itself (age, reposts, no pay...). Quieter than the scam alert.
+  const ghosts = useMemo(() => ghostSignals(draft.description, draft.facts), [draft.description, draft.facts])
+  const ghostNote = ghosts.length > 0 && (
+    <div role="status" className="rounded-input border border-border bg-surface-raised px-3 py-3 text-sm text-text-secondary">
+      <p className="flex items-center gap-2 font-semibold text-text">
+        <Info className="h-4 w-4 flex-shrink-0 text-text-muted" aria-hidden />
+        About this posting
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-6">
+        {ghosts.map((g) => (
+          <li key={g.id}>{g.label}</li>
+        ))}
+      </ul>
+    </div>
+  )
   const fields = (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -218,6 +233,7 @@ export function JobCard({
             {fields}
             {companyNote}
             {scamNote}
+            {ghostNote}
           </>
         )}
 
@@ -227,6 +243,7 @@ export function JobCard({
               {fields}
               {companyNote}
               {scamNote}
+              {ghostNote}
             </>
           ) : (
             <div className="space-y-3">
@@ -241,6 +258,7 @@ export function JobCard({
               </div>
               {companyNote}
               {scamNote}
+              {ghostNote}
               <div className="rounded-input border border-border bg-surface-raised">
                 <div
                   ref={descriptionBox}

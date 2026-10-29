@@ -68,7 +68,7 @@ export function AddJobDialog({
     onOpenChange(false)
   }
 
-  const field = (key: keyof JobDraft, label: string, placeholder = "") => (
+  const field = (key: "url" | "title" | "company" | "location", label: string, placeholder = "") => (
     <label className="block space-y-1">
       <span className="text-xs text-text-muted">{label}</span>
       <input className={inputClass} placeholder={placeholder} value={job[key] ?? ""} onChange={(e) => setJob((j) => ({ ...j, [key]: e.target.value }))} />
