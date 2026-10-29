@@ -52,7 +52,7 @@ Money guards, layered:
   $19.50 for 90 days, free $0.50/month). At 75% paid users drop to Sonnet with a banner; at
   100% AI pauses until reset. A Pass therefore covers roughly 200 Opus jobs; Pro about 100 a
   month. Users only ever see a percent.
-- **Daily ceilings** per user (20 tailors, 20 letters, 10 parses, 10 evidence a day).
+- **Daily ceilings** per user (20 tailors, 20 letters, 10 parses, 10 evidence, 30 skill-check calls a day).
 - **Global daily ceilings**: `AI_FREE_DAILY_USD` for all free accounts,
   `AI_BURN_DAILY_USD` for burn-Pro accounts. Both set to $2 in Vercel on 2026-10-28 for a
   cautious start (from Jake's CLI run; confirm in the Vercel dashboard). Code defaults are

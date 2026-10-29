@@ -12,7 +12,7 @@ beforeEach(() => db.count.mockReset().mockResolvedValue(0))
 
 describe('daily ceilings', () => {
   it('has the documented numbers', () => {
-    expect(DAILY_CEILINGS).toEqual({ tailor: 20, coverLetter: 20, parse: 10, evidence: 10 })
+    expect(DAILY_CEILINGS).toEqual({ tailor: 20, coverLetter: 20, parse: 10, evidence: 10, skillCheck: 30 })
   })
 
   it('counts the matching event since UTC midnight for this user', async () => {
@@ -22,7 +22,7 @@ describe('daily ceilings', () => {
       where: { userId: 'user_1', name: 'tailored', createdAt: { gte: new Date('2026-10-02T00:00:00Z') } },
     })
     expect(startOfUtcDay(now).toISOString()).toBe('2026-10-02T00:00:00.000Z')
-    expect(CEILING_EVENTS).toEqual({ tailor: 'tailored', coverLetter: 'cover_letter_generated', parse: 'resume_parsed', evidence: 'evidence_started' })
+    expect(CEILING_EVENTS).toEqual({ tailor: 'tailored', coverLetter: 'cover_letter_generated', parse: 'resume_parsed', evidence: 'evidence_started', skillCheck: 'skill_check' })
   })
 
   it('allows up to the limit and blocks at it', async () => {

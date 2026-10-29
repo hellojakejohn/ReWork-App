@@ -13,7 +13,7 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 - Pro: tailoring and cover letters for a whole search, evidence interview, tracker for every
   job, Word export. Never "unlimited": copy says "Fair use: plenty for an active job search".
 - Daily ceilings for everyone, Pro included (abuse guard): 20 tailors, 20 cover letters,
-  10 parses, 10 evidence interviews per UTC day.
+  10 parses, 10 evidence interviews, 30 skill-check calls per UTC day.
 - AI cap per user (the money guard): AI_CAP_RATIO (0.70) x net revenue for the period
   (Pro ~$9.99/month, pass ~$19.50 for its whole 90 days, FREE $0.50/month, revisit after the real eval). 75%: paid calls
   run on AI_FREE_TIER with a header banner. 100%: AI pauses until the reset date; downloads,
