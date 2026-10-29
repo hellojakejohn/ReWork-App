@@ -47,7 +47,7 @@ export function cleanSavedJob(value: unknown): SavedJob | null {
 
 /** Reads `#job=<encoded json>` from a location hash. */
 export function savedJobFromHash(hash: string): SavedJob | null {
-  const match = /^#?job=(.*)$/s.exec(hash)
+  const match = /^#?job=([^]*)$/.exec(hash)
   if (!match) return null
   try {
     return cleanSavedJob(JSON.parse(decodeURIComponent(match[1])))

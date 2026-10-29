@@ -27,11 +27,15 @@ const SOURCE = String.raw`(function () {
     }
     return "";
   }
-  function fromHtml(html) {
-    var s = String(html || "").replace(/<(br|\/p|\/li|\/h[1-6]|\/div|\/ul|\/ol)[^>]*>/gi, "\n").replace(/<li[^>]*>/gi, "\n- ").replace(/<[^>]+>/g, "");
+  function decode(s) {
     s = s.replace(/&#(\d+);/g, function (m, n) { return String.fromCharCode(+n); }).replace(/&#x([0-9a-f]+);/gi, function (m, n) { return String.fromCharCode(parseInt(n, 16)); });
-    s = s.replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-    return clean(s);
+    return s.replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  }
+  function fromHtml(html) {
+    var s = String(html || "");
+    if (/&lt;[a-z\/]/i.test(s)) s = decode(s);
+    s = s.replace(/<li[^>]*>/gi, "\n- ").replace(/<(br|\/p|\/h[1-6]|\/div|\/ul|\/ol)[^>]*>/gi, "\n").replace(/<[^>]+>/g, "");
+    return clean(decode(s));
   }
   function jsonLd() {
     var nodes = document.querySelectorAll('script[type="application/ld+json"]');
@@ -61,6 +65,17 @@ const SOURCE = String.raw`(function () {
       if (t.length > best.length) best = t;
     }
     return best;
+  }
+  function underHeading() {
+    var els = document.querySelectorAll("h1, h2, h3, h4, strong, span, div");
+    for (var i = 0; i < els.length; i++) {
+      var own = (els[i].textContent || "").trim();
+      if (own.length > 30 || !/^(about the job|job description|full job description|description|about the role)$/i.test(own)) continue;
+      var box = els[i].parentElement;
+      while (box && textOf(box).length < own.length + 200) box = box.parentElement;
+      if (box && box !== document.body) return textOf(box);
+    }
+    return "";
   }
 
   var job = { url: location.href, title: "", company: "", location: "", description: "" };
@@ -105,10 +120,14 @@ const SOURCE = String.raw`(function () {
     var block = biggest('[id*="description" i], [class*="description" i], [id*="job-details" i], [class*="jobDescription"], [class*="job-description"]');
     if (block.length > job.description.length) job.description = block;
   }
+  if (job.description.length < 200) {
+    var near = underHeading();
+    if (near.length > job.description.length) job.description = near;
+  }
 
   var picked = clean(String(window.getSelection ? window.getSelection() : ""));
   if (picked.length >= 200) job.description = picked;
-  job.description = job.description.replace(/^About the job\s*\n/i, "");
+  job.description = job.description.replace(/^(About the job|Job description|Full job description)\s*\n/i, "");
 
   if (job.description.length < 50) {
     alert("ReWork couldn't find a job description on this page. Select the description text, then click Save to ReWork again.");
