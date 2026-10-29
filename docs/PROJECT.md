@@ -68,27 +68,45 @@ The $REWORK token (Solana, Bags launchpad, zero dev allocation, Jake earns creat
 only) is a side channel, never in the product flow. The one token feature is burn for Pro.
 No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-plan.md`.
 
-## Where it stands (2026-10-28)
+## Where it stands (2026-10-29)
 
-- PRs #7 to #13 merged and deployed. Prod health is green except Stripe.
+- PRs #7 to #29 merged. Prod health is green except Stripe.
+- New on Oct 29: free skill check and fit check (#22, #23), tailor keeps the proof in
+  bullets (#24), Save to ReWork for LinkedIn and Indeed (bookmarklet + Chrome extension,
+  #25, #26), Job match before -> after on the receipt (#27), test run and demo files (#28),
+  job-scam warnings on the Job card (#29).
 - AI: Anthropic only. Opus 5.5 everywhere, Sonnet 5.5 for the free tier and as a one-time
-  retry when Opus declines (Anthropic accepts no server-side fallback for either model).
-- Quality: real-resume eval run twice; four fixes shipped in #13 (extra sections reach the
-  tailor, a saner cover-letter guard, all-caps names, smarter keyword matching).
+  retry when Opus declines.
 - Launch blocker: Stripe live setup (prod key is an invalid test key).
+
+## What job hunters hate, and our answer (research 2026-10-29)
+
+Survey sources: Resume Genius, iHire, Greenhouse, TopResume (see `docs/handoff-2026-10-29.md`).
+- No reply after applying (55-58% name it first): tracker today; follow-up nudges next.
+- Fake, ghost and scam jobs (39% call it their main problem; no resume tool checks): scam
+  warnings shipped (#29); ghost-job signals (age, reposts, no pay, agency) next.
+- AI text that sounds like AI (80% of hiring managers say they can tell): banned phrases,
+  proof kept in bullets, per-bullet accept/revert.
+- Competitor AI inventing things (reviews: Rezi invents numbers, Careerflow edits without
+  asking, Teal pastes job requirements in): the fact guard. A trust line, not the headline;
+  our own evals catch an invention in only ~1 of 28 tailors.
+- Monthly billing and free tiers that run out (Enhancv free ends after 7 days): pay once.
+- Headline to test: speed plus the honest match ("Tailored in a minute, 40% -> 72%").
 
 ## Roadmap
 
 **Before launch (Fri Nov 6, 2026)**
 1. Stripe live setup, clear test billing data, one real pass + one subscription, refund
    (`STATE.md` "Next session", `docs/launch-audit.md` items 4 to 6).
-2. Chrome Web Store: Jake pays the $5 developer fee and uploads `extension-dist.zip`
+2. Jake's test run (`docs/test-run.md`, 20 steps; step 17, signed-in LinkedIn, is the big
+   untested one). Record it with the demo files in `docs/demo/` for launch posts.
+3. Chrome Web Store: Jake pays the $5 developer fee and uploads `extension-dist.zip`
    (`extension/README.md`); review usually takes a few days.
-3. Sentry (or accept `/admin`) and an uptime monitor on `/api/health/live`.
-4. Isolate the Preview env (own DB and Stripe test keys, or Deployment Protection).
-5. More quality tuning with real resumes (`STATE.md` "Quality eval" ideas), fresh-account
+4. Sentry (or accept `/admin`) and an uptime monitor on `/api/health/live`.
+5. Isolate the Preview env (own DB and Stripe test keys, or Deployment Protection).
+6. More quality tuning with real resumes (`STATE.md` "Quality eval" ideas), fresh-account
    smoke test on prod, phone check, Word/Google Docs/ATS export check.
-6. Go/no-go list at the bottom of `docs/launch-audit.md`.
+7. Go/no-go list at the bottom of `docs/launch-audit.md`.
 
 **Launch day**: product live and a real Stripe sale verified first; token at midday CT
 (`docs/token-plan.md` section 5).
@@ -96,8 +114,12 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
 **Week 1**: watch `/admin` daily (funnel, `ai_error`, `limit_hit`, spend by model); raise
 the $2 daily ceilings if free users hit them; feedback email to Jake; fix what users hit.
 
-**Month 1**: before/after match score with "keywords we couldn't add honestly" on the Result
-card; real tailor output on the landing; follow-up reminder emails (needs an email
+**Nice before launch, else week 1**: ghost-job signals on the Job card (posting age,
+reposted, no pay, recruiting agency, applicant count; facts, never a verdict; read in the
+browser by Save to ReWork); tracker follow-up nudges ("7 days, no reply: here's a short
+follow-up"); landing headline on speed plus the match.
+
+**Month 1**: real tailor output on the landing; follow-up reminder emails (needs an email
 provider); admin feedback view; one more template; durable rate limit if abuse shows.
 
 **January push** (job-search peak): marketing push, token January plan
