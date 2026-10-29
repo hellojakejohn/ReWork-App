@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { ArrowLeft, ArrowRight, Check, RotateCcw } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { ArrowLeft, ArrowRight, Check, ListChecks, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Segmented } from "@/components/ui/segmented"
@@ -12,6 +12,7 @@ import { CoverLetterPanel } from "./cover-letter-panel"
 import { DownloadMenu } from "./download-menu"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { Card, CardHeader, ErrorNote } from "./ui"
+import { rememberCoverage, SkillCheck } from "./skill-check"
 
 type Tab = "preview" | "changes" | "keywords" | "letter"
 
@@ -58,6 +59,12 @@ function Result({
   const [tab, setTab] = useState<Tab>("preview")
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState("")
+  const [checking, setChecking] = useState(false)
+  const [added, setAdded] = useState(0)
+  useEffect(() => {
+    setChecking(false)
+    setAdded(0)
+  }, [application.id])
   const receipt = useReceipt(application)
 
   const highlight = useMemo(
@@ -170,10 +177,37 @@ function Result({
                 </span>
               ))}
             </div>
-            <p className="mt-2 text-xs text-text-muted">
-              These aren&apos;t in your resume, so we didn&apos;t add them. If they&apos;re true for you, add them to your resume and tailor again.
-            </p>
+            <p className="mt-2 text-xs text-text-muted">These aren&apos;t in your resume, so we didn&apos;t add them.</p>
           </div>
+        )}
+        {added > 0 ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-card bg-success-tint p-3" role="status">
+            <p className="flex-1 text-text">Added {added} to your resume. Tailor again to put {added === 1 ? "it" : "them"} in this version (uses 1 tailor).</p>
+            <Button size="sm" onClick={onBack}>
+              Tailor again
+            </Button>
+          </div>
+        ) : checking ? (
+          <SkillCheck
+            resumeId={application.resumeId}
+            fit={{
+              keywords: keywords.target,
+              coverage: { score: application.coverageBefore ?? 0, present: keywords.presentBefore, missing: keywords.missing },
+            }}
+            onClose={() => setChecking(false)}
+            onSaved={(m, coverage, applied) => {
+              onMasterSaved?.(m)
+              rememberCoverage(application.resumeId, keywords.target, coverage)
+              setAdded(applied)
+              setChecking(false)
+            }}
+          />
+        ) : (
+          keywords.missing.length > 0 && (
+            <Button variant="secondary" size="sm" onClick={() => setChecking(true)}>
+              <ListChecks className="h-4 w-4" /> Have you done any of these?
+            </Button>
+          )
         )}
       </div>
     ),

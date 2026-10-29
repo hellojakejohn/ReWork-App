@@ -18,6 +18,7 @@ import { msSince, track } from '@/lib/track';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
 import { evidenceFacts } from '@/lib/evidence-shared';
+import { cleanKeywords } from '@/lib/skill-check';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
 export const runtime = 'nodejs';
@@ -56,6 +57,12 @@ export async function POST(
   const location = clip(requestData.location, L.location);
   const extraContext = clip(requestData.extraContext, L.extraContext) || undefined;
   const contextTags = clipList(requestData.contextTags, L.contextTags, L.contextTagChars);
+  // The fit check's keywords, when the Tailor card ran one: the tailor aims at the same list
+  // and scores against it, so the fit score and the Keywords tab agree.
+  const fitKeywords = Array.isArray(requestData.targetKeywords)
+    ? cleanKeywords((requestData.targetKeywords as unknown[]).filter((k): k is string => typeof k === 'string'))
+    : [];
+  const targetKeywords = fitKeywords.length >= 5 ? fitKeywords : undefined;
   const jobUrl = httpUrlOrNull(requestData.jobUrl, L.jobUrl);
   const actualJobDescription = description || jobDescription;
 
@@ -151,7 +158,7 @@ export async function POST(
       callTailorModel(
         input,
         { title: jobTitle, company: actualCompanyName, description: actualJobDescription, location },
-        { extraContext, contextTags: contextTags.length ? contextTags : undefined }
+        { extraContext, contextTags: contextTags.length ? contextTags : undefined, targetKeywords }
       ),
       ai.scope
     );
@@ -176,7 +183,7 @@ export async function POST(
 
     await ai.settle(usage().costUsd);
     send({ type: 'stage', stage: 'checking' });
-    const { cleaned, warnings } = factGuard(input, modelResult.output);
+    const { cleaned, warnings } = factGuard(input, targetKeywords ? { ...modelResult.output, targetKeywords } : modelResult.output);
     const coverage = coverageReport(input, cleaned);
     const tailoredResume = applyTailorOutput(master, input, cleaned);
     const changes = buildChanges(input, cleaned);

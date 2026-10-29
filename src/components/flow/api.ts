@@ -166,7 +166,7 @@ export async function fetchJobFromUrl(
   }
 }
 
-export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage: string) => void) {
+export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage: string) => void, targetKeywords?: string[]) {
   try {
     const res = await fetch(`/api/resumes/${resumeId}/tailor`, {
       method: "POST",
@@ -178,6 +178,7 @@ export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage
         description: job.description,
         jobUrl: job.url || undefined,
         applicationId: job.applicationId,
+        targetKeywords,
       }),
     })
     return await streamed<{ application: ApplicationDetailDTO; tailorsRemaining: number | null }>(res, onStage, "Tailoring failed. Please try again.")

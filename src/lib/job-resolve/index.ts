@@ -88,6 +88,17 @@ export function looksLikeJobAd(text: string): boolean {
   return found.size >= 2
 }
 
+/** A client-rendered app shell or a bot check, not a short static page. */
+export function looksLikeJsShell(html: string): boolean {
+  const scripts = (html.match(/<script\b/gi) || []).length
+  return (
+    scripts >= 3 ||
+    /<noscript\b/i.test(html) ||
+    /id=["'](root|app|__next|__nuxt|svelte)["']/i.test(html) ||
+    /enable javascript|checking your browser|just a moment/i.test(html)
+  )
+}
+
 export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<ResolveResult> {
   const result = await resolveRaw(rawUrl, deps)
   // Pages often title the job "Designer - Acme"; the company already has its own field.
@@ -133,7 +144,7 @@ async function resolveRaw(rawUrl: string, deps: ResolveDeps): Promise<ResolveRes
   if (fromJsonLd) return { ok: true, job: fromJsonLd }
 
   const meta = extractPageMeta(page.text)
-  if (meta.mainText.length < MIN_PAGE_TEXT) return needsPaste('js_rendered')
+  if (meta.mainText.length < MIN_PAGE_TEXT) return needsPaste(looksLikeJsShell(page.text) ? 'js_rendered' : 'not_a_job')
 
   if (deps.extractWithModel) {
     try {

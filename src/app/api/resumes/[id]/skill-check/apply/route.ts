@@ -7,7 +7,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { masterToParsed, parsedToMaster } from '@/lib/master-resume'
 import { toMasterDTO } from '@/lib/master-dto'
-import { applySkillAdditions, cleanAnswers, fitCoverage, guardAddition, type SkillAddition } from '@/lib/skill-check'
+import { applySkillAdditions, cleanAnswers, cleanKeywords, fitCoverage, guardAddition, type SkillAddition } from '@/lib/skill-check'
 import { evidenceContext } from '../../evidence/shared'
 import { track } from '@/lib/track'
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if ('error' in ctx) return ctx.error
 
   const resume = masterToParsed(ctx.resume)
-  const keywords = (body.keywords as unknown[]).filter((k): k is string => typeof k === 'string').slice(0, 20)
+  const keywords = cleanKeywords((body.keywords as unknown[]).filter((k): k is string => typeof k === 'string'))
   const answers = cleanAnswers(body.answers, keywords)
   const checked: SkillAddition[] = []
   for (const raw of body.additions as SkillAddition[]) {

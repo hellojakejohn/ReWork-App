@@ -18,6 +18,8 @@ manager to ops coordinator), and technical people (Jake's own Web3 and full-stac
 Why it wins (keep leaning on these):
 - **The fact guard is real.** No competitor (Teal, Huntr, Jobscan, Rezi) enforces it.
 - **The evidence interview** asks for real numbers instead of guessing them.
+- **The skill check (free)** scores fit before a tailor is spent and asks about each missing
+  keyword (No / A little / Yes + where or how); only the user's answers become resume text.
 - **Honest misses.** We show the keywords we couldn't add because you don't have them.
 - **Pay once for a job hunt** ($29 for 90 days) fits how people actually search.
 
@@ -26,7 +28,7 @@ Why it wins (keep leaning on these):
 In (built, on `main`): Google sign-in; PDF/DOCX/paste parse into a master resume; job
 URL resolver (ATS APIs, JSON-LD, page + model, paste fallback; LinkedIn never fetched);
 tailor with fact guard, keyword coverage and per-bullet accept/revert; cover letters with a
-prose fact guard; evidence interview (Pro); application tracker (kanban); Classic/Modern PDF
+prose fact guard; free fit check + skill check on the Tailor card; evidence interview (Pro); application tracker (kanban); Classic/Modern PDF
 and Word export; Stripe pass + subscription; admin analytics; Download my data / Delete my
 account; Burn $REWORK for Pro (off until `REWORK_MINT` is set).
 

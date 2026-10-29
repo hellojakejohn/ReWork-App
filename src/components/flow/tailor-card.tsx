@@ -46,13 +46,13 @@ export function TailorCard({
   const running = stage !== null
   const outOfTailors = limitHit || (quota?.remaining === 0 && quota.limit !== null)
   const ready = !!master && !!job && !running && !outOfTailors && !checking
-  const { fit, loading: fitLoading, failed: fitFailed, update: updateFit } = useFit(master, job, isActiveStep)
+  const { fit, loading: fitLoading, failed: fitFailed, update: updateFit } = useFit(master, job, isActiveStep && !outOfTailors)
 
   const tailor = async () => {
     if (!master || !job) return
     setError("")
     setStage("reading")
-    const result = await runTailor(master.id, job, setStage)
+    const result = await runTailor(master.id, job, setStage, fit?.keywords)
     setStage(null)
     if (!result.ok) {
       if (result.status === 402 || result.upgradeRequired) {
@@ -74,7 +74,7 @@ export function TailorCard({
       <CardBody className="space-y-5">
         {checking && master && fit ? (
           <SkillCheck
-            master={master}
+            resumeId={master.id}
             fit={fit}
             onClose={() => setChecking(false)}
             onSaved={(m, coverage, applied) => {

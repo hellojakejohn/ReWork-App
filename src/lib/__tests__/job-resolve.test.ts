@@ -393,3 +393,18 @@ describe('resolveJob title cleanup', () => {
     expect(result.ok && result.job.title).toBe('Senior Product Designer')
   })
 })
+
+describe('short pages', () => {
+  it('a tiny static page is not a job, not a JavaScript problem', async () => {
+    const url = 'https://example.com/'
+    const html = '<html><head><title>Example Domain</title></head><body><h1>Example Domain</h1><p>This domain is for use in examples.</p></body></html>'
+    const result = await resolveJob(url, { fetchPage: async () => ({ status: 200, url, text: html }) })
+    expect(result).toMatchObject({ ok: false, reason: 'not_a_job' })
+  })
+  it('an app shell is still a JavaScript page', async () => {
+    const url = 'https://jobs.example.com/x'
+    const html = '<html><body><div id="root"></div><script src="/a.js"></script></body></html>'
+    const result = await resolveJob(url, { fetchPage: async () => ({ status: 200, url, text: html }) })
+    expect(result).toMatchObject({ ok: false, reason: 'js_rendered' })
+  })
+})

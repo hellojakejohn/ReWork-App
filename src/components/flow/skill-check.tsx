@@ -20,12 +20,35 @@ export interface Fit {
 // One fit check per resume + job for the session: going Back and forward doesn't re-ask.
 const fitCache = new Map<string, Fit>()
 const fitKey = (master: MasterResumeDTO, job: JobDraft) => `${master.id}\n${job.title}\n${job.company}\n${job.description}`
+const listeners = new Set<() => void>()
+
+/**
+ * A skill check saved from somewhere else (the Keywords tab): update the cached fit for that
+ * resume when it scored the same keywords, otherwise drop it so the Tailor card asks again.
+ */
+export function rememberCoverage(resumeId: string, keywords: string[], coverage: FitCoverage) {
+  const same = (a: string[]) => a.length === keywords.length && a.every((k, i) => k === keywords[i])
+  for (const [key, fit] of fitCache) {
+    if (!key.startsWith(`${resumeId}\n`)) continue
+    if (same(fit.keywords)) fitCache.set(key, { ...fit, coverage })
+    else fitCache.delete(key)
+  }
+  listeners.forEach((l) => l())
+}
 
 /** The fit for this resume and job, fetched once when `enabled`. */
 export function useFit(master: MasterResumeDTO | null, job: JobDraft | null, enabled: boolean) {
   const key = master && job ? fitKey(master, job) : ""
   const [fit, setFit] = useState<Fit | null>(() => (key ? fitCache.get(key) ?? null : null))
   const [state, setState] = useState<"idle" | "loading" | "error">("idle")
+  const [version, setVersion] = useState(0)
+  useEffect(() => {
+    const listener = () => setVersion((v) => v + 1)
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
+    }
+  }, [])
 
   useEffect(() => {
     if (!key) {
@@ -53,7 +76,7 @@ export function useFit(master: MasterResumeDTO | null, job: JobDraft | null, ena
     }
     // master and job are captured by key; refetch only when it changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, enabled])
+  }, [key, enabled, version])
 
   const update = (coverage: FitCoverage) => {
     if (!fit || !key) return
@@ -109,12 +132,12 @@ const LEVELS: { value: SkillLevel; label: string }[] = [
 type Phase = "asking" | "placing" | "review" | "saving"
 
 export function SkillCheck({
-  master,
+  resumeId,
   fit,
   onClose,
   onSaved,
 }: {
-  master: MasterResumeDTO
+  resumeId: string
   fit: Fit
   onClose: () => void
   onSaved: (master: MasterResumeDTO, coverage: FitCoverage, applied: number) => void
@@ -133,7 +156,7 @@ export function SkillCheck({
   const place = async () => {
     setError("")
     setPhase("placing")
-    const result = await placeSkillAnswers(master.id, fit.keywords, given)
+    const result = await placeSkillAnswers(resumeId, fit.keywords, given)
     if (!result.ok) {
       setError(result.error)
       setPhase("asking")
@@ -148,7 +171,7 @@ export function SkillCheck({
     setError("")
     setPhase("saving")
     const accepted = additions.filter((a) => keep[a.keyword])
-    const result = await applySkillAnswers(master.id, fit.keywords, given, accepted)
+    const result = await applySkillAnswers(resumeId, fit.keywords, given, accepted)
     if (!result.ok) {
       setError(result.error)
       setPhase("review")
