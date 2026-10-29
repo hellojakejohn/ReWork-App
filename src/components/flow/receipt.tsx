@@ -28,6 +28,7 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
         Your receipt
       </h3>
       <span className="mt-1.5 inline-block rounded-full bg-sage px-2.5 py-0.5 text-xs font-semibold text-text">Checked against your resume</span>
+      {receipt.match && <MatchMeter {...receipt.match} />}
       <dl className="mt-3 space-y-2">
         <div className={row}>
           <dt className="text-text-secondary">Improvements kept</dt>
@@ -55,6 +56,31 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
         </div>
       </dl>
     </section>
+  )
+}
+
+// The share of the job's keywords your resume shows, before and after tailoring. It only
+// rises with keywords you really have, so it's a floor, not a promise.
+function MatchMeter({ before, after }: { before: number; after: number }) {
+  const gain = after - before
+  return (
+    <div className="mt-4 rounded-input bg-surface-raised p-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm text-text-secondary">Job match</p>
+        <p className="tabular-nums text-text">
+          <span className="text-text-muted">{before}%</span> <span aria-hidden>→</span>
+          <span className="sr-only">to</span> <span className="text-2xl font-bold">{after}%</span>
+        </p>
+      </div>
+      <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-border" aria-hidden>
+        <div className="absolute inset-y-0 left-0 rounded-full bg-success" style={{ width: `${Math.min(100, after)}%` }} />
+        <div className="absolute inset-y-0 left-0 rounded-full bg-text-faint" style={{ width: `${Math.min(100, before, after)}%` }} />
+      </div>
+      <p className="mt-2 text-xs text-text-muted">
+        {gain > 0 ? `+${gain} points. ` : ""}
+        The job&apos;s keywords your resume shows, counting only what you really have.
+      </p>
+    </div>
   )
 }
 

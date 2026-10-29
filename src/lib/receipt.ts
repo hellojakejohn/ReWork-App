@@ -7,6 +7,7 @@ export interface ReceiptInput {
   changes: Pick<BulletChange, 'status'>[]
   keywords: { presentBefore: string[]; presentAfter: string[] }
   coverageBefore: number | null
+  coverageAfter: number | null
   warnings: FactGuardWarning[]
 }
 
@@ -26,6 +27,8 @@ export interface LeftOutClaim {
 }
 
 export interface Receipt {
+  /** Share of the job's keywords the master covered, then the tailored resume. Null for older results. */
+  match: { before: number; after: number } | null
   kept: number
   /** Job keywords the tailored resume covers that the master didn't. Null for results saved before coverage was recorded. */
   keywordsAdded: number | null
@@ -85,7 +88,12 @@ export function buildReceipt(input: ReceiptInput): Receipt {
       evidence: canAsk ? { section: w.section as 'roles' | 'projects', entryId: w.id!, bullet: w.restored!.trim() } : null,
     }
   })
+  const match =
+    added !== null && input.coverageBefore !== null && input.coverageAfter !== null
+      ? { before: input.coverageBefore, after: input.coverageAfter }
+      : null
   return {
+    match,
     kept: input.changes.filter((c) => c.status === 'accepted').length,
     keywordsAdded: added === null ? null : added.length,
     keywordsAddedList: added ?? [],

@@ -40,6 +40,9 @@ export function JobCard({
   const [error, setError] = useState("")
   const [pasteNote, setPasteNote] = useState("")
   const [expanded, setExpanded] = useState(false)
+  // Only offer "Show the full description" when the collapsed box actually cuts it off.
+  const [overflows, setOverflows] = useState(false)
+  const descriptionBox = useRef<HTMLDivElement>(null)
   const request = useRef(0)
 
   // Follow the parent: "Tailor for another job" clears the job (start over at the URL
@@ -88,6 +91,16 @@ export function JobCard({
 
   const valid = jobIsValid(draft)
   useAdvance(isActiveStep && (mode === "fetched" || mode === "paste") && valid, () => onConfirm(draft))
+
+  useEffect(() => {
+    const box = descriptionBox.current
+    if (!box || expanded) return
+    const measure = () => setOverflows(box.scrollHeight > box.clientHeight + 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(box)
+    return () => observer.disconnect()
+  }, [draft.description, mode, editing, expanded])
 
   const set = (patch: Partial<JobDraft>) => setDraft((d) => ({ ...d, ...patch }))
   // A job board reposting another company's ad: the cover letter would greet the wrong one.
@@ -208,14 +221,15 @@ export function JobCard({
               {companyNote}
               <div className="rounded-input border border-border bg-surface-raised">
                 <div
+                  ref={descriptionBox}
                   className={`relative p-3 ${expanded ? "max-h-[60vh] overflow-y-auto" : "max-h-56 overflow-hidden"}`}
                   tabIndex={expanded ? 0 : undefined}
                   aria-label="Job description"
                 >
                   <p className="whitespace-pre-line text-sm leading-relaxed text-text-secondary">{draft.description}</p>
-                  {!expanded && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-surface-raised to-transparent" />}
+                  {!expanded && overflows && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-surface-raised to-transparent" />}
                 </div>
-                <button
+                {(overflows || expanded) && <button
                   type="button"
                   className="flex w-full items-center justify-center gap-1 border-t border-border px-3 py-2 text-xs font-medium text-text-secondary hover:text-text"
                   aria-expanded={expanded}
@@ -223,7 +237,7 @@ export function JobCard({
                 >
                   {expanded ? "Show less" : "Show the full description"}
                   <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                </button>
+                </button>}
               </div>
               {!valid && (
                 <ErrorNote>
