@@ -1,3 +1,5 @@
+import type { JobFacts } from '@/lib/job-checks'
+
 export type JobSource =
   | 'greenhouse'
   | 'lever'
@@ -15,6 +17,8 @@ export interface ResolvedJob {
   description: string
   url: string
   source: JobSource
+  /** Posting date, closing date and structured pay when the source has them (ghost-job signs). */
+  facts?: JobFacts
 }
 
 export type NeedsPasteReason = 'linkedin' | 'blocked_site' | 'js_rendered' | 'blocked' | 'unreachable' | 'not_a_job'

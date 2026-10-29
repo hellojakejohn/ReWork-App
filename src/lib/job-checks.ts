@@ -140,3 +140,129 @@ export function scamSignals(description: string): ScamSignal[] {
 
 export const SCAM_SAFETY_TIP =
   "Never run code, install apps, connect a wallet, pay a fee or send ID for a job you haven't checked. Find the role on the company's own careers page first."
+
+// Ghost-job signs: facts about the posting that make it less likely someone is hiring for
+// it right now (old, reposted, no pay, an agency, "future openings"). Never a verdict, no AI
+// call. The text checks work on any ad; the rest need facts a resolver or the Save to
+// ReWork reader found (posting date, applicant count, closing date, structured pay).
+export interface JobFacts {
+  /** When the ad went up: an ISO date, or the page's own words ("Reposted 2 weeks ago", "30+ days ago"). */
+  posted?: string
+  /** The board's own count, as shown ("Over 100 applicants"). */
+  applicants?: string
+  /** When applications close (ISO date), from schema.org validThrough. */
+  closes?: string
+  /** Pay is listed in a structured field, not only in the text. */
+  pay?: boolean
+}
+
+/** An ISO date from a date string or epoch milliseconds; undefined when it isn't one. */
+export function isoDate(v: unknown): string | undefined {
+  const t = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Date.parse(v) : NaN
+  return Number.isFinite(t) && t > Date.UTC(2000, 0, 1) ? new Date(t).toISOString() : undefined
+}
+
+/** Drops empty fields; undefined when nothing is left. */
+export function compactFacts(facts: JobFacts): JobFacts | undefined {
+  const out = Object.fromEntries(Object.entries(facts).filter(([, v]) => v !== undefined && v !== '' && v !== false)) as JobFacts
+  return Object.keys(out).length ? out : undefined
+}
+
+export type GhostSignalId = 'closed' | 'old' | 'reposted' | 'pipeline' | 'agency' | 'applicants' | 'no_pay'
+
+export interface GhostSignal {
+  id: GhostSignalId
+  label: string
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const UNIT_DAYS: Record<string, number> = { minute: 0, hour: 0, day: 1, week: 7, month: 30, year: 365 }
+// Ads older than this get the "old" sign. Most roles fill in about six weeks.
+export const OLD_POSTING_DAYS = 30
+
+/** Days since the ad went up, and whether that is a floor ("30+ days ago"). Null when unreadable. */
+export function postedDaysAgo(posted: string | undefined, now = new Date()): { days: number; plus: boolean } | null {
+  const text = (posted || '').trim()
+  if (!text) return null
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    const at = Date.parse(text)
+    if (Number.isNaN(at)) return null
+    return { days: Math.max(0, Math.floor((now.getTime() - at) / DAY_MS)), plus: false }
+  }
+  if (/\b(just posted|today|just now|moments? ago)\b/i.test(text)) return { days: 0, plus: false }
+  const m = text.match(/\b(\d+|an?)(\+)?\s+(minute|hour|day|week|month|year)s?\s+ago\b/i)
+  if (!m) return null
+  const n = /^an?$/i.test(m[1]) ? 1 : Number(m[1])
+  return { days: n * UNIT_DAYS[m[3].toLowerCase()], plus: !!m[2] }
+}
+
+/** "Over 100 applicants" -> 100. Null when there is no count. */
+export function applicantCount(text: string | undefined): number | null {
+  const m = (text || '').replace(/,/g, '').match(/\b(\d+)\+?\s+(applicants|applications|people clicked apply)\b/i)
+  return m ? Number(m[1]) : null
+}
+
+const PAY_PATTERNS = [
+  /[$£€]\s?\d/,
+  /\b(usd|eur|gbp|cad|aud)\s?\d/i,
+  /\d\s?(usd|eur|gbp|cad|aud)\b/i,
+  /\b\d{2,3}k\s?(-|–|to)\s?[$£€]?\d{2,3}k\b/i,
+  /\b\d{1,3}(\.\d{2})?\s?(\/|per |an |a )\s?(hour|hr)\b/i,
+  /\b(salary|pay|base pay|compensation|wage|hourly rate)\b[^.\n]{0,60}\b\d{2,3}(,\d{3}|\.\d{2}|k)\b/i,
+]
+
+/** The ad names a pay figure somewhere. */
+export function mentionsPay(description: string): boolean {
+  return PAY_PATTERNS.some((re) => re.test(description))
+}
+
+// Case matters for "our client" (no /i): "our Client Platform team" is a product, not an agency.
+const AGENCY_CLIENT = /\b[Oo]ur client\b(?!\s+[A-Z])/
+const AGENCY = /\b(on behalf of (?:our|a|the) client|confidential client|client of ours|(?:staffing|recruitment|recruiting) (?:agency|firm)|we are recruiting for|recruiting on behalf of)\b/i
+// Only the wording of an ad for no current role. "Broadest talent pool" (EEO boilerplate),
+// "a pipeline of accounts" (sales) and "evergreen campaigns" (marketing) are normal ads.
+const PIPELINE = /\b(evergreen (?:role|position|requisition|req|posting|opening|job)|(?:join|joining) our talent (?:community|network|pool)|not (?:be )?immediately available|no (?:current|immediate) (?:openings?|vacanc(?:y|ies))|(?:building|build) (?:our|a) (?:talent )?pipeline of (?:\w+ )?(?:talent|candidates)|considered for future (?:openings|opportunities|roles|positions))/i
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
+function quoteOf(description: string, re: RegExp): string {
+  const m = description.match(re)
+  return m ? m[0] : ''
+}
+
+/** Every ghost-job sign for this ad, most telling first. Empty when nothing stands out. */
+export function ghostSignals(description: string, facts: JobFacts = {}, now = new Date()): GhostSignal[] {
+  const found: GhostSignal[] = []
+  const closes = facts.closes ? Date.parse(facts.closes) : NaN
+  if (!Number.isNaN(closes) && closes < now.getTime() - DAY_MS) {
+    found.push({ id: 'closed', label: `The posting says applications closed on ${shortDate(facts.closes!)}.` })
+  }
+  const age = postedDaysAgo(facts.posted, now)
+  if (age && age.days >= OLD_POSTING_DAYS) {
+    // A board phrase keeps the board's words ("1 month ago"); a date becomes days or months.
+    const phrase = (facts.posted || '').match(/\b(\d+\+?|an?)\s+(minute|hour|day|week|month|year)s?\s+ago\b/i)?.[0]
+    const when = phrase ?? (age.days >= 60 ? `about ${Math.round(age.days / 30)} months ago` : `${age.days} days ago`)
+    found.push({ id: 'old', label: `Posted ${when}. Older ads are more often filled, paused or left up by mistake.` })
+  }
+  if (/\breposted\b/i.test(facts.posted || '')) {
+    found.push({ id: 'reposted', label: 'It has been reposted. Some roles get reposted for months without a hire.' })
+  }
+  const pipeline = quoteOf(description, PIPELINE)
+  if (pipeline) {
+    found.push({ id: 'pipeline', label: `It mentions "${pipeline.toLowerCase()}". There may be no open role right now, just a list of candidates.` })
+  }
+  const agency = quoteOf(description, AGENCY) || quoteOf(description, AGENCY_CLIENT)
+  if (agency) {
+    found.push({ id: 'agency', label: `It reads like a recruiting agency's ad ("${agency.toLowerCase()}"). The employer may not be named.` })
+  }
+  const applicants = applicantCount(facts.applicants)
+  if (applicants !== null && applicants >= 100) {
+    found.push({ id: 'applicants', label: `${facts.applicants!.trim()} so far. A referral or a note to the hiring team helps you stand out.` })
+  }
+  if (!facts.pay && description.trim().length >= 200 && !mentionsPay(description)) {
+    found.push({ id: 'no_pay', label: "No pay listed. It's fair to ask for the range before you interview." })
+  }
+  return found
+}

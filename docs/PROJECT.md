@@ -74,7 +74,7 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
 - New on Oct 29: free skill check and fit check (#22, #23), tailor keeps the proof in
   bullets (#24), Save to ReWork for LinkedIn and Indeed (bookmarklet + Chrome extension,
   #25, #26), Job match before -> after on the receipt (#27), test run and demo files (#28),
-  job-scam warnings on the Job card (#29).
+  job-scam warnings on the Job card (#29), ghost-job signs (#31).
 - AI: Anthropic only. Opus 5.5 everywhere, Sonnet 5.5 for the free tier and as a one-time
   retry when Opus declines.
 - Launch blocker: Stripe live setup (prod key is an invalid test key).
@@ -84,7 +84,7 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
 Survey sources: Resume Genius, iHire, Greenhouse, TopResume (see `docs/handoff-2026-10-29.md`).
 - No reply after applying (55-58% name it first): tracker today; follow-up nudges next.
 - Fake, ghost and scam jobs (39% call it their main problem; no resume tool checks): scam
-  warnings shipped (#29); ghost-job signals (age, reposts, no pay, agency) next.
+  warnings (#29) and ghost-job signs (#31: age, reposts, no pay, agency, applicants) shipped.
 - AI text that sounds like AI (80% of hiring managers say they can tell): banned phrases,
   proof kept in bullets, per-bullet accept/revert.
 - Competitor AI inventing things (reviews: Rezi invents numbers, Careerflow edits without
@@ -114,9 +114,7 @@ Survey sources: Resume Genius, iHire, Greenhouse, TopResume (see `docs/handoff-2
 **Week 1**: watch `/admin` daily (funnel, `ai_error`, `limit_hit`, spend by model); raise
 the $2 daily ceilings if free users hit them; feedback email to Jake; fix what users hit.
 
-**Nice before launch, else week 1**: ghost-job signals on the Job card (posting age,
-reposted, no pay, recruiting agency, applicant count; facts, never a verdict; read in the
-browser by Save to ReWork); tracker follow-up nudges ("7 days, no reply: here's a short
+**Nice before launch, else week 1**: tracker follow-up nudges ("7 days, no reply: here's a short
 follow-up"); landing headline on speed plus the match.
 
 **Month 1**: real tailor output on the landing; follow-up reminder emails (needs an email

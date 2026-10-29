@@ -1,6 +1,7 @@
 // Known applicant-tracking systems with public JSON APIs. Pure: URL matching and response
 // parsing only; fetching happens in ./index.ts.
 import { cleanLines, decodeEntities, htmlToText } from './html-text'
+import { compactFacts, isoDate, type JobFacts } from '@/lib/job-checks'
 import type { JobSource, ResolvedJob } from './types'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -48,7 +49,7 @@ export function matchAtsUrl(input: string | URL): AtsMatch | null {
     if (board && /^\d+$/.test(id)) {
       return {
         ats: 'greenhouse',
-        apiUrl: `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs/${id}`,
+        apiUrl: `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs/${id}?pay_transparency=true`,
         company: companyFromSlug(board),
         jobId: id,
       }
@@ -141,8 +142,11 @@ function section(title: string, html: string): string {
 
 /** Parse an ATS API response into a job. Returns null when the payload isn't usable. */
 export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): ResolvedJob | null {
-  const job = (partial: Omit<ResolvedJob, 'url' | 'source'>): ResolvedJob | null =>
-    partial.title && partial.description.length > 50 ? { ...partial, description: cleanLines(partial.description), url: pageUrl, source: match.ats } : null
+  const job = ({ facts, ...partial }: Omit<ResolvedJob, 'url' | 'source' | 'facts'> & { facts?: JobFacts }): ResolvedJob | null => {
+    if (!partial.title || partial.description.length <= 50) return null
+    const found = facts && compactFacts(facts)
+    return { ...partial, description: cleanLines(partial.description), url: pageUrl, source: match.ats, ...(found ? { facts: found } : {}) }
+  }
 
   switch (match.ats) {
     case 'greenhouse':
@@ -151,6 +155,11 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         company: s(data?.company_name) || match.company,
         location: s(data?.location?.name),
         description: htmlToText(decodeEntities(s(data?.content)), { strip: false }),
+        facts: {
+          posted: isoDate(data?.first_published),
+          closes: isoDate(data?.application_deadline),
+          pay: Array.isArray(data?.pay_input_ranges) && data.pay_input_ranges.length > 0,
+        },
       })
 
     case 'lever': {
@@ -163,6 +172,7 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         company: match.company,
         location: workplace === 'remote' && !/remote/i.test(location) ? joinLoc(location, 'Remote') : location,
         description: htmlToText(html, { strip: false }) || s(data?.descriptionPlain),
+        facts: { posted: isoDate(data?.createdAt), pay: !!data?.salaryRange },
       })
     }
 
@@ -174,6 +184,7 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         company: s(data?.organizationName) || match.company,
         location: posting.isRemote && !/remote/i.test(s(posting.location)) ? joinLoc(posting.location, 'Remote') : s(posting.location),
         description: posting.descriptionHtml ? htmlToText(s(posting.descriptionHtml), { strip: false }) : s(posting.descriptionPlain),
+        facts: { posted: isoDate(posting.publishedAt), pay: !!s(posting.compensation?.compensationTierSummary) },
       })
     }
 
@@ -184,6 +195,8 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         company: s(data?.hiringOrganization?.name) || match.company,
         location: s(info?.location),
         description: htmlToText(s(info?.jobDescription), { strip: false }),
+        // startDate is the posting date; postedOn is Workday's own words ("Posted 30+ Days Ago").
+        facts: { posted: isoDate(info?.startDate) || s(info?.postedOn) || undefined, closes: isoDate(info?.endDate) },
       })
     }
 
@@ -199,6 +212,7 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         company: s(data?.company?.name) || match.company,
         location: s(loc.fullLocation) || joinLoc(loc.city, loc.region, loc.country, loc.remote ? 'Remote' : ''),
         description,
+        facts: { posted: isoDate(data?.releasedDate) },
       })
     }
 
@@ -216,6 +230,7 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         company: match.company,
         location: joinLoc(loc.city, loc.region, loc.country, data?.remote ? 'Remote' : ''),
         description,
+        facts: { posted: isoDate(data?.published) },
       })
     }
   }

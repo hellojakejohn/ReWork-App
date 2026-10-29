@@ -9,6 +9,7 @@ import type { BulletChange } from "@/types/tailor"
 import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shared"
 import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
 import type { FitCoverage, SkillAddition, SkillAnswer } from "@/lib/skill-check-shared"
+import type { JobFacts } from "@/lib/job-checks"
 
 export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO, TrackerCardDTO }
 
@@ -27,6 +28,8 @@ export interface JobDraft {
   description: string
   /** A job already on the tracker: tailoring fills that application instead of adding one. */
   applicationId?: string
+  /** Posting date, applicants and so on from the link or Save to ReWork (ghost-job signs). Not saved. */
+  facts?: JobFacts
 }
 
 export type Failure = { ok: false; error: string; status: number; upgradeRequired?: boolean }
@@ -160,7 +163,7 @@ export async function fetchJobFromUrl(
     if (data.needsPaste) return { ok: false, needsPaste: true, message: data.message }
     if (!res.ok || !data.success) return { ok: false, status: res.status, error: data.error || "Couldn't read that link." }
     const job = data.job
-    return { ok: true, job: { url, title: job.title, company: job.company, location: job.location, description: job.description } }
+    return { ok: true, job: { url, title: job.title, company: job.company, location: job.location, description: job.description, facts: job.facts } }
   } catch {
     return NETWORK
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanJobTitle, otherCompanyNamed, sameCompany, scamSignals } from '@/lib/job-checks'
+import { cleanJobTitle, ghostSignals, mentionsPay, otherCompanyNamed, postedDaysAgo, sameCompany, scamSignals } from '@/lib/job-checks'
 
 describe('cleanJobTitle', () => {
   it('drops a trailing company name', () => {
@@ -89,5 +89,71 @@ Experience with Ethereum and Solidity required. We build Telegram mini apps for 
     const [s] = scamSignals(`Great pay. ${'Very '.repeat(40)}long: send 10 USDT to start.`)
     expect(s.id).toBe('wallet')
     expect(s.quote.length).toBeLessThanOrEqual(160)
+  })
+})
+
+describe('ghostSignals', () => {
+  const now = new Date('2026-10-29T12:00:00Z')
+  const plain = 'Build payment flows for merchants. You will own the checkout API and work with design. '.repeat(4)
+  const paid = `${plain}\nThe base salary range is $140,000 - $170,000 per year.`
+  const ids = (description: string, facts = {}) => ghostSignals(description, facts, now).map((s) => s.id)
+
+  it('is quiet for a fresh ad with pay', () => {
+    expect(ids(paid, { posted: '2026-10-20' })).toEqual([])
+    expect(ids(paid, { posted: '3 days ago', applicants: '42 applicants' })).toEqual([])
+  })
+  it('flags an old or reposted ad', () => {
+    expect(ids(paid, { posted: '2026-08-01' })).toEqual(['old'])
+    expect(ghostSignals(paid, { posted: '2026-08-01' }, now)[0].label).toMatch(/^Posted about 3 months ago/)
+    expect(ids(paid, { posted: 'Reposted 2 weeks ago' })).toEqual(['reposted'])
+    expect(ids(paid, { posted: 'Reposted 1 month ago' })).toEqual(['old', 'reposted'])
+    expect(ghostSignals(paid, { posted: 'Reposted 1 month ago' }, now)[0].label).toMatch(/^Posted 1 month ago\./)
+    expect(ghostSignals(paid, { posted: '2026-09-20' }, now)[0].label).toMatch(/^Posted 39 days ago\./)
+    expect(ghostSignals(paid, { posted: '30+ days ago' }, now)[0].label).toMatch(/^Posted 30\+ days ago/)
+  })
+  it('flags a closed posting', () => {
+    expect(ids(paid, { closes: '2026-10-01' })).toEqual(['closed'])
+    expect(ids(paid, { closes: '2026-12-01' })).toEqual([])
+  })
+  it('flags no pay, but not when a structured field has it or the text is short', () => {
+    expect(ids(plain)).toEqual(['no_pay'])
+    expect(ids(plain, { pay: true })).toEqual([])
+    expect(ids('Barista wanted, mornings, downtown. Apply in person.')).toEqual([])
+  })
+  it('reads pay written many ways', () => {
+    for (const pay of ['$22/hr', 'USD 90,000', '120k - 150k', '25.50 per hour', 'Salary: 65,000 a year', '£45,000', '90,000 EUR']) {
+      expect(mentionsPay(`${plain} ${pay}`), pay).toBe(true)
+    }
+    expect(mentionsPay(`${plain} We offer a 401(k) match and 20 days off.`)).toBe(false)
+  })
+  it('flags agency and future-openings ads with what matched', () => {
+    const agency = ghostSignals(`Our client, a fast-growing fintech, is hiring. ${paid}`, {}, now)
+    expect(agency.map((s) => s.id)).toEqual(['agency'])
+    expect(agency[0].label).toContain('"our client"')
+    expect(ids(`We are hiring for our client in Denver. ${paid}`)).toEqual(['agency'])
+    expect(ids(`Acme Staffing is recruiting on behalf of a client. ${paid}`)).toEqual(['agency'])
+    expect(ids(`Join our talent community and be considered for future openings. ${paid}`)).toEqual(['pipeline'])
+    expect(ids(`This role may not be immediately available; we are building our pipeline of exceptional talent. ${paid}`)).toEqual(['pipeline'])
+  })
+  it('ignores the same words in normal ads', () => {
+    expect(ids(`Join our Client Platform team. We serve our clients well. ${paid}`)).toEqual([])
+    expect(ids(`We work with the broadest talent pool possible. Build a pipeline of enterprise accounts. Own evergreen campaigns. ${paid}`)).toEqual([])
+  })
+  it('flags a big applicant pile', () => {
+    expect(ids(paid, { applicants: 'Over 100 applicants' })).toEqual(['applicants'])
+    expect(ids(paid, { applicants: '1,204 people clicked apply' })).toEqual(['applicants'])
+  })
+})
+
+describe('postedDaysAgo', () => {
+  const now = new Date('2026-10-29T12:00:00Z')
+  it('reads dates and board phrases', () => {
+    expect(postedDaysAgo('2026-10-19T08:00:00Z', now)).toEqual({ days: 10, plus: false })
+    expect(postedDaysAgo('Posted 3 weeks ago', now)).toEqual({ days: 21, plus: false })
+    expect(postedDaysAgo('an hour ago', now)).toEqual({ days: 0, plus: false })
+    expect(postedDaysAgo('Just posted', now)).toEqual({ days: 0, plus: false })
+    expect(postedDaysAgo('30+ days ago', now)).toEqual({ days: 30, plus: true })
+    expect(postedDaysAgo('Saint Paul, MN', now)).toBeNull()
+    expect(postedDaysAgo(undefined, now)).toBeNull()
   })
 })
