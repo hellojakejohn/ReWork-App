@@ -114,8 +114,17 @@ launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
 - CSP report-only reports to `/api/csp-report` (`[csp]` in runtime logs).
 - Server errors (`src/instrumentation.ts`), webhook failures and orphaned files are
   `server_error` events, listed in `/admin`. `/api/health/live` is a public DB ping for uptime
-  monitors; `/api/health` (admin) also checks the Stripe webhook endpoint and pings Opus with
-  the production request shape.
+  monitors; `/api/health` (admin) also checks the Stripe webhook endpoint, pings Opus with
+  the production request shape, and reads a tiny PDF and DOCX with the real extractors
+  (`checks.files`, `src/lib/health-files.ts`).
+
+## Bundling (Vercel)
+Libraries that load files at runtime by paths the bundler can't see must be listed in
+`outputFileTracingIncludes` (`next.config.ts`). Today: pdfjs's worker and `@napi-rs/canvas`
+(DOMMatrix polyfill) for `/api/resumes/parse` and `/api/health`; the PDF fonts for the
+download routes. Missing ones pass every local test and fail only on Vercel (Oct 28: every PDF
+upload failed). To check a route: `npm run build`, copy only the files in
+`.next/server/app/<route>/route.js.nft.json` into an empty folder and run the library there.
 
 ## Checks
 - `npx tsc --noEmit` clean, `npm test` (Vitest, offline), `npx next lint` 0 errors (lint now
@@ -131,6 +140,10 @@ ANTHROPIC_API_KEY in the local env file. Private resumes go in `scripts/fixtures
 (gitignored, run first, paired with the Greenhouse SWE and Web3 support jobs). Output in
 `eval-results/` (gitignored): a report plus `cases/NN-*.json` with parsed, raw, cleaned,
 coverage and the letter.
+
+Upload round trip (`npx tsx --tsconfig tsconfig.json scripts/eval-parse-roundtrip.ts <case.json>`,
+~$0.30): Classic PDF, Modern PDF, Word and pasted PDF text of the same resume all parse back
+to the same shape (Oct 29, Jake's resume).
 
 Last run (14 cases, after PR #13): no failures, no invented skills. Per full job (tailor +
 letter) Opus ~$0.096 / 31s, Sonnet ~$0.034 / 14s. Letter rewrites 3 of 14 (all real

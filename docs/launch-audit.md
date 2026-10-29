@@ -11,6 +11,21 @@ finding was open at the end of this pass. Before the fixes there were 9 Highs: 8
 in code on this branch, and one (error alerting) needs a Sentry account Jake has to create.
 The rest are Medium/Low and safe to ship with, or dashboard steps only Jake can do.
 
+## Status 2026-10-29 (overnight bug sweep)
+
+- Every PDF upload failed in prod (unreadable_file in 0.1s): pdfjs's worker and
+  `@napi-rs/canvas` were missing from the Vercel bundle. Fixed in #15 and #17; `/api/health`
+  now checks file reading (#18). Jake: open `/api/health` and confirm `checks.files` is ok,
+  then upload a PDF once.
+- Back button after Google sign-in showed "Sign-in didn't finish": the sign-in page now
+  forwards a signed-in user (#16), and the dashboard cards are browser history entries so
+  Back moves between cards instead of leaving the app (#19).
+- Smaller: cut-off streams no longer blame the user's file (#20); JSON-LD job locations
+  dedupe repeated parts (#19).
+- Checked and fine: Greenhouse, Ashby, Lever, JSON-LD job links; LinkedIn/Indeed go to paste;
+  non-job pages are refused; Classic/Modern/Word exports re-parse cleanly; public pages on a
+  phone; download routes bundle their fonts.
+
 ## Status 2026-10-28 (evening)
 
 - Merged and deployed: #7 to #13 (audit fixes, Anthropic restored, Sonnet retry on an Opus
