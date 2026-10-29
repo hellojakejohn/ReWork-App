@@ -6,7 +6,6 @@ import {
   fallbackAdditions,
   fitCoverage,
   guardAddition,
-  placeSkills,
   type SkillAnswer,
 } from '@/lib/skill-check'
 import type { ParsedResume } from '@/types/parsed-resume'
@@ -73,10 +72,16 @@ describe('guardAddition', () => {
   })
 })
 
-describe('placeSkills', () => {
-  it('skips the model for answers with no note', async () => {
-    const out = await placeSkills(resume, [{ keyword: 'Sketch', level: 'yes', note: '' }], { route: { provider: 'anthropic', model: 'never-called' } })
-    expect(out).toEqual(fallbackAdditions(resume, [{ keyword: 'Sketch', level: 'yes', note: '' }]))
+describe('skill groups', () => {
+  it('a keyword can start a new group when none fits', () => {
+    const a = guardAddition(resume, { keyword: 'data visualization', level: 'some', note: '' }, { kind: 'skill', target: '', group: 'Data', text: 'data visualization' })
+    expect(a).toMatchObject({ kind: 'skill', target: 'Data', targetLabel: 'Skills: Data' })
+    const { resume: next } = applySkillAdditions(resume, [a])
+    expect(next.skills.at(-1)).toEqual({ group: 'Data', items: ['data visualization'] })
+  })
+  it('a rejected bullet keeps the group the model picked', () => {
+    const a = guardAddition(resume, { keyword: 'prototyping', level: 'yes', note: 'made prototypes' }, { kind: 'bullet', target: 'proj-1', group: 'Design', text: 'Made prototypes' })
+    expect(a).toMatchObject({ kind: 'skill', target: 'Design' })
   })
 })
 

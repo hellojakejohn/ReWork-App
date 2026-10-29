@@ -143,10 +143,11 @@ const PLACE_SCHEMA = {
         properties: {
           keyword: { type: 'string', description: 'The keyword, copied exactly.' },
           kind: { type: 'string', enum: ['skill', 'bullet', 'training'] },
-          target: { type: 'string', description: 'skill: an existing skills group name, or "" for a new one. bullet: the role or project id. training: "".' },
+          target: { type: 'string', description: 'bullet: the role or project id. Otherwise "".' },
+          group: { type: 'string', description: 'The skills group this keyword belongs in: an existing group name, or a new 1-2 word one ("Design").' },
           text: { type: 'string', description: 'skill: the keyword. bullet or training: one line.' },
         },
-        required: ['keyword', 'kind', 'target', 'text'],
+        required: ['keyword', 'kind', 'target', 'group', 'text'],
         additionalProperties: false,
       },
     },
@@ -180,16 +181,18 @@ ${answers.map((a) => `- keyword: ${a.keyword}\n  level: ${a.level === 'yes' ? 'y
 RULES:
 1. One addition per answer. Copy the keyword exactly.
 2. kind "bullet" only when the note describes work on one of the entries above (target is its id). Start with an action verb, past tense, one line.
-3. kind "training" when the note describes a class, course, bootcamp, certification or self-study. One line, like "Figma fundamentals (3-hour course, University of X)".
-4. Otherwise kind "skill": text is the keyword, target is the best-fitting skills group or "".
-5. Use only words from the note and the keyword. Never add numbers, durations, tools, places or outcomes the note doesn't state. A "a little" answer never says expert, advanced, extensive or proficient.
-6. The keyword must appear in the text. No em-dashes.`
+3. kind "training" when the note describes a class, course, bootcamp, certification or self-study, written like a course line: "Figma fundamentals, 3-hour class at school".
+4. Otherwise kind "skill": text is the keyword.
+5. The keyword must appear (singular or plural is fine: "design system" for "design systems"), worked in naturally as the thing done: "Ran user research with job seekers on their resume pain points while designing ReWork", "Built ReWork's design system: visual system and component library". Never tack it on ("as design systems work") and never change its form ("prototypes" for "prototyping").
+6. Use only facts from the note. Never add numbers, durations, tools, places or outcomes the note doesn't state. A "a little" answer never says expert, advanced, extensive or proficient.
+7. group: where the keyword belongs in the skills list. Use an existing group only if it truly fits; otherwise name a new one ("Design", "Research").
+8. No em-dashes.`
 }
 
 const OVERSTATED = /\b(expert|expertise|advanced|extensive|extensively|deep|mastery|master|proficient|proficiency|senior|seasoned|strong)\b/i
 
-export function guardAddition(resume: ParsedResume, answer: SkillAnswer, raw: { kind: string; target: string; text: string }): SkillAddition {
-  const asSkill = skillAddition(resume, answer.keyword, raw.kind === 'skill' ? raw.target : '')
+export function guardAddition(resume: ParsedResume, answer: SkillAnswer, raw: { kind: string; target: string; text: string; group?: string }): SkillAddition {
+  const asSkill = skillAddition(resume, answer.keyword, raw.group ?? (raw.kind === 'skill' ? raw.target : ''))
   if (raw.kind !== 'bullet' && raw.kind !== 'training') return asSkill
   // A bullet or a Training line needs the user's own words to come from.
   if (!answer.note) return asSkill
@@ -207,8 +210,10 @@ export function guardAddition(resume: ParsedResume, answer: SkillAnswer, raw: { 
 }
 
 function skillAddition(resume: ParsedResume, keyword: string, group: string): SkillAddition {
-  const groups = resume.skills.map((g) => g.group)
-  const target = groups.find((g) => g && g.toLowerCase() === group.trim().toLowerCase()) ?? groups[0] ?? ''
+  const wanted = normalizeSpace(group).replace(/[^\p{L}\p{N} &/+-]/gu, '').slice(0, 30)
+  const existing = resume.skills.find((g) => g.group && g.group.toLowerCase() === wanted.toLowerCase())?.group
+  // A new group name is a heading, not a claim; with no name at all, the first group.
+  const target = existing ?? (wanted && resume.skills.some((g) => g.group) ? wanted : resume.skills[0]?.group ?? '')
   return { keyword, kind: 'skill', target, targetLabel: target ? `Skills: ${target}` : 'Skills', text: keyword }
 }
 
@@ -219,13 +224,15 @@ export function fallbackAdditions(resume: ParsedResume, answers: SkillAnswer[]):
 
 export async function placeSkills(resume: ParsedResume, answers: SkillAnswer[], options: AICallOptions = {}): Promise<SkillAddition[]> {
   if (answers.length === 0) return []
-  // Bare answers (no note) can only ever be skills: no need to ask the model about them.
-  const noted = answers.filter((a) => a.note)
-  let placed: { keyword: string; kind: string; target: string; text: string }[] = []
-  if (noted.length > 0) {
-    const output = await structured<{ additions: typeof placed }>(options, 'skill_additions', PLACE_SCHEMA, PLACE_SYSTEM, buildPlacePrompt(resume, noted))
-    placed = output.additions ?? []
-  }
+  // Bare answers (no note) can only become skills, but the model still picks their group.
+  const output = await structured<{ additions: { keyword: string; kind: string; target: string; group?: string; text: string }[] }>(
+    options,
+    'skill_additions',
+    PLACE_SCHEMA,
+    PLACE_SYSTEM,
+    buildPlacePrompt(resume, answers)
+  )
+  const placed = output.additions ?? []
   const byKeyword = new Map(placed.map((p) => [normalizeSpace(p.keyword).toLowerCase(), p]))
   return answers.map((a) => {
     const raw = byKeyword.get(a.keyword.toLowerCase())
@@ -241,9 +248,9 @@ export function applySkillAdditions(resume: ParsedResume, additions: SkillAdditi
   for (const a of additions) {
     if (a.kind === 'skill') {
       if (next.skills.some((g) => g.items.some((i) => i.toLowerCase() === a.text.toLowerCase()))) continue
-      const group = next.skills.find((g) => g.group === a.target) ?? next.skills[0]
+      const group = next.skills.find((g) => g.group === a.target) ?? (a.target ? null : next.skills[0])
       if (group) group.items.push(a.text)
-      else next.skills.push({ group: '', items: [a.text] })
+      else next.skills.push({ group: a.target, items: [a.text] })
       applied++
     } else if (a.kind === 'bullet') {
       const entry = next.experience.find((e) => e.id === a.target) ?? next.projects.find((p) => p.id === a.target)
