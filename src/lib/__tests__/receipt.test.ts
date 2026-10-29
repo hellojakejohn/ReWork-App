@@ -6,6 +6,7 @@ const base = {
   changes: [],
   keywords: { presentBefore: [], presentAfter: [] },
   coverageBefore: null,
+  coverageAfter: null,
   warnings: [] as FactGuardWarning[],
 }
 
@@ -23,6 +24,13 @@ describe('buildReceipt', () => {
     })
     expect(r.keywordsAdded).toBe(2)
     expect(r.keywordsAddedList).toEqual(['Kubernetes', 'GitHub Actions'])
+  })
+
+  it('reports the job match before and after', () => {
+    const r = buildReceipt({ ...base, keywords: { presentBefore: ['SQL'], presentAfter: ['SQL', 'Go'] }, coverageBefore: 20, coverageAfter: 55 })
+    expect(r.match).toEqual({ before: 20, after: 55 })
+    expect(buildReceipt({ ...base, keywords: { presentBefore: [], presentAfter: ['SQL'] }, coverageBefore: 40, coverageAfter: 60 }).match).toBeNull()
+    expect(buildReceipt({ ...base, keywords: { presentBefore: ['SQL'], presentAfter: ['SQL'] }, coverageBefore: 20, coverageAfter: null }).match).toBeNull()
   })
 
   it('reports keywords added as unknown for results saved before coverage was recorded', () => {
