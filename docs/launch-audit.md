@@ -11,11 +11,22 @@ finding was open at the end of this pass. Before the fixes there were 9 Highs: 8
 in code on this branch, and one (error alerting) needs a Sentry account Jake has to create.
 The rest are Medium/Low and safe to ship with, or dashboard steps only Jake can do.
 
+## Status 2026-10-28 (evening)
+
+- Merged and deployed: #7 to #13 (audit fixes, Anthropic restored, Sonnet retry on an Opus
+  decline, OpenAI out, quality tuning from the real-resume eval).
+- Prod `/api/health`: database, storage, auth, cron and Anthropic (Opus and Sonnet) ok. Only
+  Stripe fails (invalid `sk_test` key): next session is the Stripe live setup (items 4 to 6).
+- Done by Jake: Anthropic prepaid credits ($20, auto-reload off) as the hard spend limit
+  (item 1), new `ANTHROPIC_API_KEY` and `AI_*_DAILY_USD` in Vercel Production (item 2, set to
+  $2 per Jake's CLI run, confirm in the dashboard; the $25 table below is the default, revisit before launch), `OPENAI_API_KEY` deleted.
+- Still open: items 3, 4, 5, 7, 8, 9, 10 below and the go/no-go list.
+
 ## Build health
 
 | Check | Result |
 | --- | --- |
-| Merge order | Linear: `main` is an ancestor of `ai-providers`, which is an ancestor of `launch-blockers`, which is an ancestor of `rebrand`, which is an ancestor of `launch-audit`. No conflicts possible. PRs: [#7](https://github.com/hellojakejohn/ReWork-App/pull/7), [#8](https://github.com/hellojakejohn/ReWork-App/pull/8), [#9](https://github.com/hellojakejohn/ReWork-App/pull/9), none merged. |
+| Merge order | Linear: `main` is an ancestor of `ai-providers`, which is an ancestor of `launch-blockers`, which is an ancestor of `rebrand`, which is an ancestor of `launch-audit`. No conflicts possible. PRs: [#7](https://github.com/hellojakejohn/ReWork-App/pull/7), [#8](https://github.com/hellojakejohn/ReWork-App/pull/8), [#9](https://github.com/hellojakejohn/ReWork-App/pull/9), all merged 2026-10-28. |
 | `npx tsc --noEmit` | Clean |
 | `npm test` | 681 passed, 46 files (321 before this audit; 360 new audit tests) |
 | `npx next lint` | 0 errors, 1 old warning (`feedback-context.tsx:52` unused var) |
@@ -214,7 +225,7 @@ to keep going now" until midnight UTC.
 
 ## Go / no-go checklist for Nov 6
 
-- [ ] All four PRs merged to `main` and deployed; prod `/api/health` returns `ok: true`
+- [ ] All PRs merged to `main` and deployed (done, #7 to #13); prod `/api/health` returns `ok: true` (only Stripe left)
 - [ ] Anthropic workspace spend limit set; `AI_FREE_DAILY_USD` decided (default $25)
 - [ ] Stripe live: prices, webhook (clover, 10 events), portal, one-subscription setting
 - [ ] Test billing data cleared from the prod DB
@@ -231,7 +242,8 @@ product can still launch with Stripe off (checkout shows "not configured yet").
 
 ## Not verified here (needs keys, a dashboard, or a human)
 
-- Real model latency and token use per call.
+- Real model latency and token use per call: measured 2026-10-28 by `npm run eval:models`
+  (STATE.md "Quality eval"); prod numbers show up in `/admin`.
 - Which API version the live Stripe endpoint is on (dashboard only).
 - Word, Google Docs and real ATS rendering.
 - Phone layout of the signed-in pages on the deployed build (the rebrand pass shot the flow
