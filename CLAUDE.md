@@ -1,7 +1,8 @@
 # ReWork - Claude Code Instructions
 
 ## First Steps for Any New Session
-1. Read STATE.md for current project status (docs/AUDIT.md has the audit and roadmap)
+1. Read docs/PROJECT.md (scope, monetization, roadmap, settled decisions, how we work), then
+   STATE.md (current technical truth and its "Next session" list)
 2. Run `npm run dev` to verify the app boots
 3. Ask what we're working on today
 
@@ -34,7 +35,8 @@
 - `src/lib/ai-cap.ts` + `src/lib/ai-inflight.ts` - AI cap, kill switch, global daily ceiling, per-user in-flight limit
 - `src/lib/token-burn.ts` + `src/components/token/` - burn $REWORK for 30 days of Pro (off unless `REWORK_MINT` is set; own `AI_BURN_DAILY_USD` ceiling)
 - `src/instrumentation.ts` - server errors to `events` (shown in `/admin`)
-- `docs/launch-audit.md`, `docs/token-plan.md` - launch go/no-go and the token plan
+- `docs/PROJECT.md` - the whole project on one page; `docs/launch-audit.md`, `docs/token-plan.md` - launch go/no-go and the token plan
+- `scripts/eval-models.ts` - real-model quality eval (private resumes in `scripts/fixtures/private/`, output in `eval-results/`, both gitignored)
 - `src/lib/account.ts` - Download my data / Delete my account (Stripe cancel first)
 - `src/app/page.tsx` + `src/components/site/` - landing, legal pages, public header/footer (no auth JS); session pages live in `src/app/(app)/`
 - `prisma/schema.prisma` - Database schema
@@ -45,6 +47,15 @@
 - Database: Session pooler connection (port 5432)
 
 ## Rules
+- No em-dashes anywhere (code, comments, copy, docs). Concise, phone-sized replies
+- New branch, small commits, PR at the end; never push to main. Jake merges PRs himself
+- Ask before any spend, prod env change, merge, or DB migration (migrations are pasted by hand
+  in the Supabase SQL editor; never `prisma migrate deploy`)
+- Don't reopen settled decisions (docs/PROJECT.md lists them)
+- Secrets never go through chat; Jake pastes them into Vercel or the local env file
+- A local guard hook blocks shell commands whose text mentions the Vercel CLI, the env file or
+  recursive deletes (commit messages included). Don't work around it: hand Jake the command
+- `npm run eval:models` makes real billed calls: ask for a budget first
 - Always test changes after making them
 - Don't upgrade Prisma without explicit permission
 - Don't run `npm audit fix --force` without explicit permission

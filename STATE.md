@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of the `launch-audit` branch (on `rebrand` -> `launch-blockers` -> `ai-providers`, October 2026). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-10-28 (PRs #7 to #13 merged and deployed). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -32,10 +32,12 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 Next.js 15.5 (App Router), TypeScript, Tailwind, Radix UI, Prisma 6.8.2 on Supabase Postgres
 (us-west-2, project ref oxedndnmssyuffkfkcug), Supabase Storage, NextAuth v4 (Google,
 database sessions), Stripe, @react-pdf/renderer, docx, Vercel (+ Analytics, Cron).
-AI: one provider layer in `src/lib/ai/` (`generateStructured`). Anthropic (default when
-ANTHROPIC_API_KEY is set: claude-opus-5-5 for every task), OpenAI, or OpenRouter, routed per
-task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
-`npm run eval:models` compares models on the fixtures (cost, latency, quality).
+AI: one provider layer in `src/lib/ai/` (`generateStructured`). Production is Anthropic only:
+claude-opus-5-5 for every task, claude-sonnet-5-5 for the free tier and the decline retry.
+Prepaid credits ($20, auto-reload off) are the hard spend limit. OpenAI and OpenRouter
+adapters remain in code but nothing routes there and `OPENAI_API_KEY` is deleted in Vercel.
+Routing is per task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
+`npm run eval:models` runs the real pipeline on the fixtures (see "Quality eval" below).
 
 ## Brand
 Lowercase "rework" in brand moments ("ReWork" stays in legal pages, Stripe and OAuth).
@@ -122,6 +124,27 @@ launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
   SEO 100, best practices 96 (only the local 404 of the Vercel Analytics script).
   Simulated LCP 1.8-2.1 s, observed about 0.2 s.
 
+## Quality eval (2026-10-28)
+`npm run -s eval:models -- --models anthropic:claude-opus-5-5,anthropic:claude-sonnet-5-5 --max-usd 3 --out eval-results/<name>`
+runs parse -> tailor -> fact guard -> cover letter for real (billed, no DB). Needs
+ANTHROPIC_API_KEY in the local env file. Private resumes go in `scripts/fixtures/private/`
+(gitignored, run first, paired with the Greenhouse SWE and Web3 support jobs). Output in
+`eval-results/` (gitignored): a report plus `cases/NN-*.json` with parsed, raw, cleaned,
+coverage and the letter.
+
+Last run (14 cases, after PR #13): no failures, no invented skills. Per full job (tailor +
+letter) Opus ~$0.096 / 31s, Sonnet ~$0.034 / 14s. Letter rewrites 3 of 14 (all real
+catches). Jake's resume vs the Web3 support job: 65% (Opus) / 75% (Sonnet) keyword coverage.
+
+Tuning ideas not done yet:
+- Tailoring itself adds only ~+3 coverage points (it never adds skills the resume lacks).
+  The visible win could be surfacing keywords the resume proves in bullets but doesn't list
+  as skills (e.g. "developer support", "RPC errors"), still fact-guarded.
+- Bullets can't draw on extra sections (the guard scopes each bullet to its own role).
+- Parse kept "live on Robinhood Chain mainnet" as its own project bullet; a project
+  tagline/status line could be merged into the first bullet.
+- Run more private resumes (non-tech, senior, long multi-page) before launch.
+
 ## Known gaps / next
 - Rate limiting is an in-memory speed bump per lambda; daily ceilings and the AI cap are the real caps.
 - AI routes (parse, job URL, tailor, cover letter, evidence) run with maxDuration 300 (Vercel
@@ -131,10 +154,27 @@ launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
   app on Sonnet 5.5 (`refusalRetry`). A Sonnet decline isn't retried. Never OpenAI or OpenRouter.
 - Anthropic is the only AI provider in use and the only one in /privacy. The OpenAI and
   OpenRouter adapters are still in the code (tests use them); update /privacy before routing
-  anything there.
+  anything there. Full removal is a post-launch cleanup.
+- Launch blocker: Stripe. Prod `STRIPE_SECRET_KEY` is an invalid `sk_test` key, so
+  `/api/health` is `ok: false` on stripePrices and stripeWebhook (everything else passes).
+  See "Next session" below.
 - LinkedIn job URLs are never fetched (also not through redirects): straight to paste.
 - Landing example is hand-built from `scripts/fixtures/restaurant-manager-to-ops-coordinator.json`
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
   openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
 - Out of scope for launch: job feed, post-a-job, crypto payments, interview prep.
+
+## Next session: Stripe live setup (with Jake at the computer, ~20 min)
+Follow `docs/launch-audit.md` "What Jake must do" items 4 to 6:
+1. Stripe live mode: products/prices $15/month and $29 one-time; put `sk_live_` key and
+   both price ids in Vercel Production (Jake pastes secrets himself, never in chat).
+2. Webhook `https://rework.hellojakejohn.com/api/stripe/webhook` on API version
+   2026-02-25.clover with the 10 listed events; `whsec_` into Vercel.
+3. Portal (only the $15 price, cancel at period end), checkout one-subscription setting.
+4. Clear test billing data in the prod DB (SQL in the audit, counts first).
+5. Redeploy, `/api/health` as admin must be `ok: true`.
+6. One real $29 pass and one $15 subscription, then refund/cancel.
+After that: Sentry + uptime monitor on `/api/health/live`, isolate the Preview env, then more
+quality tuning (ideas above) until launch.
+
