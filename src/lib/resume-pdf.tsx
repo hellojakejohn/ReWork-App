@@ -36,7 +36,8 @@ function styles(template: TemplateId) {
     // name overflowed its line and the headline drew over it.
     name: { fontFamily: bold, fontSize: t.serif ? 20 : 19, lineHeight: 1.2, letterSpacing: t.serif ? 1 : 0, color: t.serif ? '#111827' : '#0F172A' },
     headline: { fontSize: 11, marginTop: 2, color: t.serif ? '#374151' : t.accent },
-    contact: { fontSize: 9, marginTop: 4, color: '#374151', textAlign: t.centered ? 'center' : 'left' },
+    contact: { fontSize: 9, color: '#374151' },
+    contactRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: t.centered ? 'center' : 'flex-start', marginTop: 4 },
     section: { marginTop: 9 },
     heading: {
       fontFamily: bold,
@@ -79,7 +80,16 @@ function Header({ l, s }: { l: ReturnType<typeof toLayout>; s: ReturnType<typeof
     <View style={s.header}>
       {l.name ? <Text style={s.name}>{l.name}</Text> : null}
       {l.headline ? <Text style={s.headline}>{l.headline}</Text> : null}
-      {l.contactItems.length ? <Text style={s.contact}>{l.contactItems.join('  |  ')}</Text> : null}
+      {/* Each item wraps as a unit: one long Text broke lines mid-run and drew a stray "-". */}
+      {l.contactItems.length ? (
+        <View style={s.contactRow}>
+          {l.contactItems.map((item, i) => (
+            <Text key={i} style={s.contact}>
+              {i < l.contactItems.length - 1 ? `${item}  |  ` : item}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   )
 }
