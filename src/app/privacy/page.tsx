@@ -113,6 +113,11 @@ export default function PrivacyPage() {
           When you paste a job link, our server fetches that page (or the job board’s public API) to read the posting. The job site sees a request
           from our server, not from you.
         </p>
+        <p>
+          The Save to ReWork button (a bookmark or our Chrome extension) works the other way round: when you click it on a job page, it reads
+          the job title, company, location and description from that page in your own browser and opens ReWork with them. It runs only when you
+          click it, reads nothing else from the page, and sends nothing anywhere except to ReWork.
+        </p>
       </Section>
 
       <Section title="How long we keep it, and deleting it">

@@ -1,6 +1,6 @@
 # ReWork: the whole project on one page
 
-Last updated 2026-10-28. Read this first, then `STATE.md` (current technical truth). Deeper
+Last updated 2026-10-29. Read this first, then `STATE.md` (current technical truth). Deeper
 docs: `docs/launch-audit.md` (launch go/no-go, Jake's by-hand list), `docs/AUDIT.md`
 (Oct 23 audit, competitor table, full roadmap), `docs/token-plan.md` ($REWORK).
 
@@ -27,6 +27,8 @@ Why it wins (keep leaning on these):
 
 In (built, on `main`): Google sign-in; PDF/DOCX/paste parse into a master resume; job
 URL resolver (ATS APIs, JSON-LD, page + model, paste fallback; LinkedIn never fetched);
+Save to ReWork button (bookmarklet + Chrome extension) that reads LinkedIn/Indeed/any job
+page client-side;
 tailor with fact guard, keyword coverage and per-bullet accept/revert; cover letters with a
 prose fact guard; free fit check + skill check on the Tailor card; evidence interview (Pro); application tracker (kanban); Classic/Modern PDF
 and Word export; Stripe pass + subscription; admin analytics; Download my data / Delete my
@@ -80,11 +82,13 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
 **Before launch (Fri Nov 6, 2026)**
 1. Stripe live setup, clear test billing data, one real pass + one subscription, refund
    (`STATE.md` "Next session", `docs/launch-audit.md` items 4 to 6).
-2. Sentry (or accept `/admin`) and an uptime monitor on `/api/health/live`.
-3. Isolate the Preview env (own DB and Stripe test keys, or Deployment Protection).
-4. More quality tuning with real resumes (`STATE.md` "Quality eval" ideas), fresh-account
+2. Chrome Web Store: Jake pays the $5 developer fee and uploads `extension-dist.zip`
+   (`extension/README.md`); review usually takes a few days.
+3. Sentry (or accept `/admin`) and an uptime monitor on `/api/health/live`.
+4. Isolate the Preview env (own DB and Stripe test keys, or Deployment Protection).
+5. More quality tuning with real resumes (`STATE.md` "Quality eval" ideas), fresh-account
    smoke test on prod, phone check, Word/Google Docs/ATS export check.
-5. Go/no-go list at the bottom of `docs/launch-audit.md`.
+6. Go/no-go list at the bottom of `docs/launch-audit.md`.
 
 **Launch day**: product live and a real Stripe sale verified first; token at midday CT
 (`docs/token-plan.md` section 5).
@@ -99,8 +103,7 @@ provider); admin feedback view; one more template; durable rate limit if abuse s
 **January push** (job-search peak): marketing push, token January plan
 (`docs/token-plan.md` section 6).
 
-**Later**: browser extension to save the open job page (LinkedIn read client-side, the
-biggest gap vs competitors); full OpenAI/OpenRouter code removal; Prisma 7 (needs Jake's
+**Later**: full OpenAI/OpenRouter code removal; Prisma 7 (needs Jake's
 OK); LinkedIn profile suggestions; email magic link.
 
 ## Settled decisions (don't reopen)
