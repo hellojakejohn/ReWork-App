@@ -45,3 +45,7 @@ next-env.d.ts
 
 # Brand kit source files (shipped copies live in public/brand)
 /brand-kit/
+
+# Chrome extension build (scripts/build-extension.ts)
+/extension-dist/
+/extension-dist.zip

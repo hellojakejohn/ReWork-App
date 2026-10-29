@@ -1,7 +1,9 @@
 // The "Save to ReWork" script. It runs in the user's own browser on the job page they have
 // open (LinkedIn, Indeed, any posting), reads the title, company, location and description,
 // and opens ReWork's /save page with them in the URL fragment (never sent to a server).
-// Nothing is fetched and nothing is posted to another site.
+// Nothing is fetched and nothing is posted to another site. The Chrome extension
+// (extension/) runs the same script and opens the tab itself (chrome.runtime is only
+// there inside an extension).
 //
 // It is a plain string, not a compiled function, so what ships is exactly what the tests
 // run. Rules for editing: ES2017, no comments inside (the bookmarklet is one line), no
@@ -12,7 +14,7 @@ const SOURCE = String.raw`(function () {
   var ORIGIN = "__ORIGIN__";
   var host = location.hostname;
   function clean(s) {
-    return (s || "").replace(/ /g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+    return (s || "").replace(/\u00a0/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   }
   function textOf(el) {
     return el ? clean(el.innerText || el.textContent || "") : "";
@@ -79,14 +81,14 @@ const SOURCE = String.raw`(function () {
   }
 
   var job = { url: location.href, title: "", company: "", location: "", description: "" };
-  var titleParts = document.title.split(/ [|–—-] /).map(function (p) { return p.trim(); });
+  var titleParts = document.title.split(/ [|\u2013\u2014-] /).map(function (p) { return p.trim(); });
 
   if (/(^|\.)linkedin\.com$/.test(host)) {
     var id = (location.pathname.match(/\/jobs\/view\/(?:[^/]*?-)?(\d+)/) || [])[1] || new URLSearchParams(location.search).get("currentJobId");
     if (id) job.url = "https://www.linkedin.com/jobs/view/" + id + "/";
     job.title = first([".job-details-jobs-unified-top-card__job-title h1", ".job-details-jobs-unified-top-card__job-title", ".jobs-unified-top-card__job-title", ".top-card-layout__title", ".topcard__title"]);
     job.company = first([".job-details-jobs-unified-top-card__company-name a", ".job-details-jobs-unified-top-card__company-name", ".jobs-unified-top-card__company-name", ".topcard__org-name-link", ".top-card-layout__second-subline a"]);
-    job.location = first([".job-details-jobs-unified-top-card__primary-description-container .tvm__text", ".job-details-jobs-unified-top-card__bullet", ".topcard__flavor--bullet"]).split(/ · /)[0];
+    job.location = first([".job-details-jobs-unified-top-card__primary-description-container .tvm__text", ".job-details-jobs-unified-top-card__bullet", ".topcard__flavor--bullet"]).split(/ \u00b7 /)[0];
     job.description = first(["#job-details", ".jobs-description__content .jobs-box__html-content", ".jobs-description-content__text", ".jobs-description__content", ".show-more-less-html__markup", ".description__text"]);
     var li = document.title.split(" | ");
     if (li.length >= 3 && li[li.length - 1].trim() === "LinkedIn") {
@@ -135,6 +137,10 @@ const SOURCE = String.raw`(function () {
   }
   for (var k in job) job[k] = job[k].slice(0, k === "description" ? 20001 : 2000);
   var target = ORIGIN + "/save#job=" + encodeURIComponent(JSON.stringify(job));
+  if (window.chrome && chrome.runtime && chrome.runtime.id) {
+    chrome.runtime.sendMessage({ open: target });
+    return;
+  }
   var opened = window.open(target, "_blank");
   if (!opened) location.href = target;
 })();`
