@@ -26,7 +26,8 @@ gitignored. Bump `version` in `manifest.json` before each upload.
 
 1. Register at the Chrome Web Store developer dashboard ($5 one-time).
 2. New item, upload `extension-dist.zip`.
-3. Listing: name "Save to ReWork", category Productivity, one 1280x800 screenshot, the 128px
+3. Listing: name "Save to ReWork", category Productivity, the screenshot
+   `store/screenshot-1280x800.png`, the 128px
    icon (`icons/icon-128.png`).
 4. Privacy tab:
    - single purpose: "Save the job posting on the current tab into ReWork"
