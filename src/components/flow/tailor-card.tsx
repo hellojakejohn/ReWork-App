@@ -74,7 +74,7 @@ export function TailorCard({
       <CardBody className="space-y-5">
         {checking && master && fit ? (
           <SkillCheck
-            master={master}
+            resumeId={master.id}
             fit={fit}
             onClose={() => setChecking(false)}
             onSaved={(m, coverage, applied) => {
