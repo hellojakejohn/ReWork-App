@@ -50,6 +50,8 @@ async function failure(res: Response, fallback: string): Promise<Failure> {
 
 const SESSION_EXPIRED = "You've been signed out. Sign in again to keep going; nothing you saved is lost."
 
+const CUT_OFF = "That didn't finish on our side. Please try again."
+
 const NETWORK: Failure = { ok: false, status: 0, error: "Can't reach rework. Check your connection and try again." }
 
 export async function loadDashboard(): Promise<
@@ -71,7 +73,9 @@ async function streamed<T>(res: Response, onStage: (stage: string) => void, fall
     if (res.ok) return { ok: false, status: 500, error: fallback }
     return failure(res, fallback)
   }
-  let outcome: { ok: true; result: T } | Failure = { ok: false, status: 500, error: fallback }
+  // No done/error event: the function was killed (maxDuration) or the connection dropped.
+  // That's not the user's file or job, so don't say it is.
+  let outcome: { ok: true; result: T } | Failure = { ok: false, status: 504, error: CUT_OFF }
   await readNdjson(res, (event) => {
     if (event.type === "stage") onStage(event.stage)
     else if (event.type === "done") outcome = { ok: true, result: event.result as T }

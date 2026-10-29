@@ -29,10 +29,10 @@ describe('parseResumeInput', () => {
     expect(result).toMatchObject({ ok: false, error: "We couldn't read that file, try again or paste your resume text." })
   })
 
-  it('a stream that ends without "done" (function killed at maxDuration) -> fallback copy', async () => {
+  it('a stream that ends without "done" (function killed at maxDuration) -> "didn\'t finish", not a bad-file message', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ndjson('{"type":"stage","stage":"extracting"}\n{"type":"stage","stage":"reading"}\n')))
     const result = await parseResumeInput('x'.repeat(100), () => {})
-    expect(result).toMatchObject({ ok: false, error: "We couldn't read that file, try again or paste your resume text." })
+    expect(result).toMatchObject({ ok: false, status: 504, error: "That didn't finish on our side. Please try again." })
   })
 
   it('a stream cut mid-line -> the feature\'s own fallback, not "can\'t reach us"', async () => {
@@ -40,7 +40,7 @@ describe('parseResumeInput', () => {
     const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const result = await parseResumeInput('x'.repeat(100), () => {})
     spy.mockRestore()
-    expect(result).toMatchObject({ ok: false, status: 500, error: "We couldn't read that file, try again or paste your resume text." })
+    expect(result).toMatchObject({ ok: false, status: 504, error: "That didn't finish on our side. Please try again." })
   })
 
   it('a server error event is shown as sent', async () => {
