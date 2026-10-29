@@ -88,10 +88,15 @@ export function looksLikeJobAd(text: string): boolean {
   return found.size >= 2
 }
 
-/** A client-rendered app shell: scripts and an empty mount point, not a short static page. */
+/** A client-rendered app shell or a bot check, not a short static page. */
 export function looksLikeJsShell(html: string): boolean {
   const scripts = (html.match(/<script\b/gi) || []).length
-  return scripts >= 3 || /<noscript\b/i.test(html) || /id=["'](root|app|__next|__nuxt|svelte)["']/i.test(html)
+  return (
+    scripts >= 3 ||
+    /<noscript\b/i.test(html) ||
+    /id=["'](root|app|__next|__nuxt|svelte)["']/i.test(html) ||
+    /enable javascript|checking your browser|just a moment/i.test(html)
+  )
 }
 
 export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<ResolveResult> {
