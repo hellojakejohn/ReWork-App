@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of `main` on 2026-10-29 (PRs #7 to #23 merged and deployed). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-10-29 (PRs #7 to #31 merged). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -33,6 +33,14 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
   deposits, wallet/seed phrase/sending crypto, SSN or bank details up front, personal email
   contact. Shows what matched, never blocks tailoring. 0 hits on 386 real Greenhouse ads
   (Coinbase, Gemini, Consensys, Discord, Stripe...) on 2026-10-29. /save has a "Stay safe" list.
+- Ghost-job signs on the Job card ("About this posting", `ghostSignals` in
+  `src/lib/job-checks.ts`, no AI): closed, posted 30+ days ago, reposted, "future openings"
+  wording, recruiting agency, 100+ applicants, no pay listed. Facts with a short why, never
+  a verdict. Dates and structured pay come from the ATS APIs (Greenhouse with
+  `pay_transparency=true`, Lever, Ashby, Workday, SmartRecruiters, Workable) and JSON-LD;
+  LinkedIn/Indeed age, reposts and applicant count from Save to ReWork in the browser. Not
+  saved with the application. On 469 real Greenhouse ads: no_pay 35% (mostly non-US roles),
+  one future-openings hit (a real GitLab pipeline ad), no agency hits.
 
 ## Tech stack
 Next.js 15.5 (App Router), TypeScript, Tailwind, Radix UI, Prisma 6.8.2 on Supabase Postgres
