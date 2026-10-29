@@ -192,6 +192,12 @@ Tuning ideas not done yet:
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
   openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
 - Out of scope for launch: job feed, post-a-job, crypto payments, interview prep.
+- Reverting a bullet on the Changes tab doesn't rescore the Job match (it shows the match
+  as tailored).
+- Not yet verified live: Save to ReWork on signed-in LinkedIn, the extension in real Chrome,
+  Indeed's /viewjob page (bot check). `docs/test-run.md` covers them.
+- The read-only Supabase connector in Claude sessions points at another project (TripQuest),
+  so prod numbers come from `/admin`, not that connector.
 
 ## Next session: Stripe live setup (with Jake at the computer, ~20 min)
 Follow `docs/launch-audit.md` "What Jake must do" items 4 to 6:
