@@ -6,7 +6,7 @@
 // The cover letter and Word export live inside the Result card, the evidence interview
 // inside the Resume card; the tracker is its own view at /dashboard/tracker.
 import { Button } from "@/components/ui/button"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Sparkles } from "lucide-react"
@@ -149,6 +149,31 @@ export function OneFlow() {
 
   const completed = [resumeConfirmed && !!active, !!job, !!application, !!application]
   const go = useCallback((target: number) => setStep(Math.max(0, Math.min(3, target))), [])
+
+  // Each card is a browser history entry, so Back (or a phone's back swipe) goes back a
+  // card instead of leaving the app (after sign-in that replayed Google's callback).
+  // Next's own history state is kept; only reworkStep is added.
+  const fromHistory = useRef(false)
+  useEffect(() => {
+    if (!loaded) return
+    const state = window.history.state ?? {}
+    if (fromHistory.current) {
+      fromHistory.current = false
+      return
+    }
+    if (typeof state.reworkStep !== "number") window.history.replaceState({ ...state, reworkStep: step }, "")
+    else if (state.reworkStep !== step) window.history.pushState({ ...state, reworkStep: step }, "")
+  }, [step, loaded])
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const target = e.state?.reworkStep
+      if (typeof target !== "number") return
+      fromHistory.current = true
+      setStep(target)
+    }
+    window.addEventListener("popstate", onPop)
+    return () => window.removeEventListener("popstate", onPop)
+  }, [])
 
   // Esc goes back a card (unless a dialog/drawer handles it first).
   useEffect(() => {
