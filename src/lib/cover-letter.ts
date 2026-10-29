@@ -10,6 +10,7 @@ import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
 import { taskRoute } from '@/lib/ai/routing'
 import { normalizeSpace, tailorInputText } from '@/lib/resume-text'
+import { nameCase } from '@/lib/parse-validate'
 import { describeFacts, dropUnsupportedSentences, hasUnsupported, splitSentences, unsupportedFacts } from '@/lib/text-facts'
 import type { TailorInput } from '@/types/tailor'
 import type { CoverLetterTone, CoverLetterWarning, StoredCoverLetter } from '@/lib/cover-letter-shared'
@@ -270,7 +271,7 @@ function nameIn(text: string, name: string): boolean {
 
 /** The letter as plain text: greeting, three paragraphs, sign-off + name. */
 export function draftToText(draft: CoverLetterDraft, candidateName: string): string {
-  return [draft.greeting, ...PARAGRAPHS.map((p) => draft[p]).filter(Boolean), [draft.signOff, candidateName].filter(Boolean).join('\n')]
+  return [draft.greeting, ...PARAGRAPHS.map((p) => draft[p]).filter(Boolean), [draft.signOff, nameCase(candidateName)].filter(Boolean).join('\n')]
     .map((b) => b.trim())
     .filter(Boolean)
     .join('\n\n')

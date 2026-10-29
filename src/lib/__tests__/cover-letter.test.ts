@@ -163,6 +163,12 @@ describe('cover letter fact guard', () => {
     expect(letter.text.startsWith('Dear Acme team,\n\n')).toBe(true)
     expect(letter.text.split('\n\n')).toHaveLength(5) // greeting, 3 paragraphs, sign-off
   })
+
+  it('signs an all-caps stored name in normal case', async () => {
+    const { client } = mockClient([draft()])
+    const letter = await generateCoverLetter({ ...input, candidateName: 'JAKOB JOHNSON' }, { client })
+    expect(letter.text.endsWith('\nJakob Johnson')).toBe(true)
+  })
 })
 
 describe('prompt', () => {
