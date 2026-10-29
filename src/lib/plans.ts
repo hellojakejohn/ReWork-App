@@ -20,6 +20,7 @@ export const DAILY_CEILINGS = {
   coverLetter: 20,
   parse: 10,
   evidence: 10,
+  skillCheck: 30, // fit checks and answer placements together
 } as const
 export type DailyCeilingKind = keyof typeof DAILY_CEILINGS
 
@@ -28,6 +29,7 @@ const DAILY_NOUN: Record<DailyCeilingKind, string> = {
   coverLetter: 'cover letters',
   parse: 'resume uploads',
   evidence: 'evidence interviews',
+  skillCheck: 'skill checks',
 }
 
 export function dailyCeilingMessage(kind: DailyCeilingKind): string {

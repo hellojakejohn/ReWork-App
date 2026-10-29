@@ -32,7 +32,9 @@ function styles(template: TemplateId) {
   return StyleSheet.create({
     page: { paddingVertical: 40, paddingHorizontal: 46, fontFamily: font, fontSize: 10, lineHeight: 1.35, color: '#111827' },
     header: { marginBottom: 10, alignItems: t.centered ? 'center' : 'flex-start' },
-    name: { fontFamily: bold, fontSize: t.serif ? 20 : 19, letterSpacing: t.serif ? 1 : 0, color: t.serif ? '#111827' : '#0F172A' },
+    // An explicit lineHeight: the page's inherited one is sized for 10pt text, so a 20pt
+    // name overflowed its line and the headline drew over it.
+    name: { fontFamily: bold, fontSize: t.serif ? 20 : 19, lineHeight: 1.2, letterSpacing: t.serif ? 1 : 0, color: t.serif ? '#111827' : '#0F172A' },
     headline: { fontSize: 11, marginTop: 2, color: t.serif ? '#374151' : t.accent },
     contact: { fontSize: 9, marginTop: 4, color: '#374151', textAlign: t.centered ? 'center' : 'left' },
     section: { marginTop: 9 },
@@ -141,7 +143,8 @@ export function ResumePdf({ resume, template }: { resume: ParsedResume; template
                 <View style={s.row} wrap={false}>
                   <Text>
                     <Text style={s.strong}>{p.name}</Text>
-                    {p.url ? <Link src={p.url.includes('://') ? p.url : `https://${p.url}`}>{`  ${p.url}`}</Link> : null}
+                    {p.url ? '  ' : null}
+                    {p.url ? <Link src={p.url.includes('://') ? p.url : `https://${p.url}`}>{p.url}</Link> : null}
                   </Text>
                   <Text style={s.muted}>{p.dates}</Text>
                 </View>

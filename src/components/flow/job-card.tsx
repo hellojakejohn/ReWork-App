@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/ui/button"
 import { useEffect, useRef, useState } from "react"
-import { Link2, Loader2, MapPin, Pencil } from "lucide-react"
+import { ChevronDown, Link2, Loader2, MapPin, Pencil } from "lucide-react"
 import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
+import { otherCompanyNamed } from "@/lib/job-checks"
 
 type Mode = "url" | "fetching" | "fetched" | "paste"
 
@@ -38,6 +39,7 @@ export function JobCard({
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState("")
   const [pasteNote, setPasteNote] = useState("")
+  const [expanded, setExpanded] = useState(false)
   const request = useRef(0)
 
   // Follow the parent: "Tailor for another job" clears the job (start over at the URL
@@ -46,6 +48,7 @@ export function JobCard({
     setEditing(false)
     setError("")
     setPasteNote("")
+    setExpanded(false)
     if (job === null) {
       setDraft(EMPTY)
       setMode("url")
@@ -87,6 +90,18 @@ export function JobCard({
   useAdvance(isActiveStep && (mode === "fetched" || mode === "paste") && valid, () => onConfirm(draft))
 
   const set = (patch: Partial<JobDraft>) => setDraft((d) => ({ ...d, ...patch }))
+  // A job board reposting another company's ad: the cover letter would greet the wrong one.
+  const otherCompany = otherCompanyNamed(draft.description, draft.company)
+  const companyNote = otherCompany && (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary" role="status">
+      <span className="flex-1">
+        This description is about <strong className="text-text">{otherCompany}</strong>, but the company says {draft.company}. Your cover letter is addressed to the company.
+      </span>
+      <Button variant="text" className="-mx-2" onClick={() => set({ company: otherCompany })}>
+        Use {otherCompany}
+      </Button>
+    </div>
+  )
   const fields = (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -163,12 +178,16 @@ export function JobCard({
           <>
             {pasteNote && <p className="rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary">{pasteNote}</p>}
             {fields}
+            {companyNote}
           </>
         )}
 
         {mode === "fetched" &&
           (editing ? (
-            fields
+            <>
+              {fields}
+              {companyNote}
+            </>
           ) : (
             <div className="space-y-3">
               <div>
@@ -180,9 +199,25 @@ export function JobCard({
                   </p>
                 )}
               </div>
-              <div className="relative max-h-56 overflow-hidden rounded-input border border-border bg-surface-raised p-3">
-                <p className="whitespace-pre-line text-sm leading-relaxed text-text-secondary">{draft.description.slice(0, 1200)}</p>
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-surface-raised to-transparent" />
+              {companyNote}
+              <div className="rounded-input border border-border bg-surface-raised">
+                <div
+                  className={`relative p-3 ${expanded ? "max-h-[60vh] overflow-y-auto" : "max-h-56 overflow-hidden"}`}
+                  tabIndex={expanded ? 0 : undefined}
+                  aria-label="Job description"
+                >
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-text-secondary">{draft.description}</p>
+                  {!expanded && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-surface-raised to-transparent" />}
+                </div>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-center gap-1 border-t border-border px-3 py-2 text-xs font-medium text-text-secondary hover:text-text"
+                  aria-expanded={expanded}
+                  onClick={() => setExpanded((v) => !v)}
+                >
+                  {expanded ? "Show less" : "Show the full description"}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                </button>
               </div>
               {!valid && (
                 <ErrorNote>

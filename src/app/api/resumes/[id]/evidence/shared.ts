@@ -1,5 +1,5 @@
-// Shared by the evidence interview routes: auth, ownership, the Pro gate, rate limit,
-// the daily ceiling (new interviews only) and the AI cap.
+// Shared by the evidence interview and skill check routes: auth, ownership, the Pro gate
+// (evidence only; the skill check is free), rate limit, the daily ceiling and the AI cap.
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -11,7 +11,10 @@ import { track } from '@/lib/track'
 import { checkDailyCeiling } from '@/lib/daily-ceiling'
 import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap'
 
-export async function evidenceContext(resumeId: string, { rateLimit = false, dailyCeiling = false, ai: needsAI = false } = {}) {
+export async function evidenceContext(
+  resumeId: string,
+  { rateLimit = false, dailyCeiling = false, ai: needsAI = false, feature = 'evidence' as 'evidence' | 'skillCheck' } = {}
+) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) } as const
@@ -22,7 +25,7 @@ export async function evidenceContext(resumeId: string, { rateLimit = false, dai
     return { error: NextResponse.json({ error: 'Resume not found' }, { status: 404 }) } as const
   }
   const access = await getAccess(userId)
-  if (!canUseEvidenceInterview(access.isPro)) {
+  if (feature === 'evidence' && !canUseEvidenceInterview(access.isPro)) {
     await track('limit_hit', { kind: 'evidence' }, userId)
     return {
       error: NextResponse.json(
@@ -35,7 +38,7 @@ export async function evidenceContext(resumeId: string, { rateLimit = false, dai
     } as const
   }
   if (rateLimit) {
-    const rate = checkRateLimit(`evidence:${userId}`)
+    const rate = checkRateLimit(`${feature}:${userId}`)
     if (!rate.allowed) {
       return {
         error: NextResponse.json(rateLimitResponseBody(rate.retryAfterSeconds), {
@@ -46,16 +49,16 @@ export async function evidenceContext(resumeId: string, { rateLimit = false, dai
     }
   }
   if (dailyCeiling) {
-    const ceiling = await checkDailyCeiling(userId, 'evidence')
+    const ceiling = await checkDailyCeiling(userId, feature)
     if (!ceiling.allowed) {
-      await track('limit_hit', { kind: 'daily_evidence' }, userId)
+      await track('limit_hit', { kind: feature === 'evidence' ? 'daily_evidence' : 'daily_skill_check' }, userId)
       return { error: NextResponse.json({ success: false, error: ceiling.message }, { status: 429 }) } as const
     }
   }
   // Applying accepted rewrites is editing, not AI: it keeps working while AI is paused.
   if (!needsAI) return { userId, resume, ai: null } as const
   const ai = await getAIBudget(userId)
-  const paused = await aiPausedCheck(ai, userId, 'evidence')
+  const paused = await aiPausedCheck(ai, userId, feature)
   if (paused) return { error: NextResponse.json(paused, { status: 429 }) } as const
   return { userId, resume, ai } as const
 }

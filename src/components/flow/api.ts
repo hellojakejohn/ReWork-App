@@ -8,6 +8,7 @@ import type { ParsedResume } from "@/types/parsed-resume"
 import type { BulletChange } from "@/types/tailor"
 import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shared"
 import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
+import type { FitCoverage, SkillAddition, SkillAnswer } from "@/lib/skill-check-shared"
 
 export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO, TrackerCardDTO }
 
@@ -304,6 +305,51 @@ export async function applyEvidence(
     if (!res.ok) return failure(res, "Couldn't save to your resume.")
     const data = await res.json()
     return { ok: true, applied: data.applied, master: data.master }
+  } catch {
+    return NETWORK
+  }
+}
+
+async function postJson(url: string, body: unknown): Promise<Response> {
+  return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+}
+
+export async function checkFit(resumeId: string, job: JobDraft): Promise<{ ok: true; keywords: string[]; coverage: FitCoverage } | Failure> {
+  try {
+    const res = await postJson(`/api/resumes/${resumeId}/skill-check`, { title: job.title, company: job.company, description: job.description })
+    if (!res.ok) return failure(res, "Couldn't check this job's keywords.")
+    const data = await res.json()
+    return { ok: true, keywords: data.keywords ?? [], coverage: data.coverage }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function placeSkillAnswers(
+  resumeId: string,
+  keywords: string[],
+  answers: SkillAnswer[]
+): Promise<{ ok: true; additions: SkillAddition[] } | Failure> {
+  try {
+    const res = await postJson(`/api/resumes/${resumeId}/skill-check/place`, { keywords, answers })
+    if (!res.ok) return failure(res, "Couldn't place your answers. Please try again.")
+    return { ok: true, additions: (await res.json()).additions ?? [] }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function applySkillAnswers(
+  resumeId: string,
+  keywords: string[],
+  answers: SkillAnswer[],
+  additions: SkillAddition[]
+): Promise<{ ok: true; applied: number; master: MasterResumeDTO; coverage: FitCoverage } | Failure> {
+  try {
+    const res = await postJson(`/api/resumes/${resumeId}/skill-check/apply`, { keywords, answers, additions })
+    if (!res.ok) return failure(res, "Couldn't save to your resume.")
+    const data = await res.json()
+    return { ok: true, applied: data.applied, master: data.master, coverage: data.coverage }
   } catch {
     return NETWORK
   }

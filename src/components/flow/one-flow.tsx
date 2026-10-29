@@ -357,6 +357,7 @@ export function OneFlow() {
       onDone={onTailored}
       onUpgrade={(reason) => setUpgrade({ open: true, reason })}
       onReplaceResume={() => openResume("replace")}
+      onMasterSaved={(m) => setMasters((list) => list.map((x) => (x.id === m.id ? m : x)))}
     />,
     <ResultCard
       key="result"
