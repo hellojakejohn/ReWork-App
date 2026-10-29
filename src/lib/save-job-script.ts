@@ -98,10 +98,15 @@ const SOURCE = String.raw`(function () {
   } else if (/(^|\.)indeed\.[a-z.]+$/.test(host)) {
     var jk = new URLSearchParams(location.search).get("jk") || new URLSearchParams(location.search).get("vjk");
     if (jk) job.url = location.origin + "/viewjob?jk=" + encodeURIComponent(jk);
-    job.title = first(['[data-testid="jobsearch-JobInfoHeader-title"]', ".jobsearch-JobInfoHeader-title", 'h2[data-testid="simpler-jobTitle"]']).replace(/\s*-\s*job post$/i, "");
+    job.title = first(['[data-testid="jobsearch-JobInfoHeader-title"]', ".jobsearch-JobInfoHeader-title", '[data-testid="vj-job-title"]', 'h2[data-testid="simpler-jobTitle"]']).replace(/\s*-\s*job post$/i, "");
     job.company = first(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]', ".jobsearch-CompanyInfoContainer a", ".jobsearch-InlineCompanyRating div"]);
     job.location = first(['[data-testid="inlineHeader-companyLocation"]', '[data-testid="job-location"]', '[data-testid="jobsearch-JobInfoHeader-companyLocation"]']);
-    job.description = first(["#jobDescriptionText", ".jobsearch-JobComponent-description"]);
+    job.description = first(["#jobDescriptionText", ".simple-job-description-html", ".jobsearch-JobComponent-description"]);
+    var box = document.querySelector('[data-testid="vj-job-title"]');
+    for (var up = 0; !job.company && box && up < 6; up++) {
+      job.company = textOf(box.querySelector('a[href*="/cmp/"]'));
+      box = box.parentElement;
+    }
   }
 
   var ld = jsonLd();
