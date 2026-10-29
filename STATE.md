@@ -1,13 +1,14 @@
 # ReWork Project State
 
-Current truth as of `main` on 2026-10-28 (PRs #7 to #13 merged and deployed). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-10-29 (PRs #7 to #22 merged and deployed). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
 resume and cover letter. Every rewrite is fact-checked against the original. Operated by
 Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 
-- Free: 3 tailors/month, 1 cover letter/month, tracker up to 10 jobs, PDF downloads.
+- Free: 3 tailors/month, 1 cover letter/month, tracker up to 10 jobs, PDF downloads, fit
+  check + skill check (about $0.008 a call on Sonnet; counts toward the AI cap).
 - Job Hunt Pass $29 one-time for 90 days of Pro, never renews, stacks (the headline offer:
   cheaper than 2 months of Pro). Pro Monthly $15/month.
 - Pro: tailoring and cover letters for a whole search, evidence interview, tracker for every
@@ -66,7 +67,8 @@ UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
 ## Analytics
 - Vercel Analytics for page views (needs Web Analytics enabled in the Vercel project).
 - `events` table + `track()` (`src/lib/track.ts`): signed_up, resume_parsed, job_fetched,
-  tailored, cover_letter_generated, evidence_started, evidence_completed, checkout_started,
+  tailored, cover_letter_generated, evidence_started, evidence_completed, skill_check,
+  skill_check_applied, checkout_started,
   checkout_completed, limit_hit, download, ai_error, ai_usage, ai_call, ai_cap_band,
   account_deleted. Every provider call writes an `ai_call` event (provider, model, task,
   tokens, cached tokens, estimated cost): the source of truth for spend and the AI cap.
@@ -160,7 +162,7 @@ Tuning ideas not done yet:
 
 ## Known gaps / next
 - Rate limiting is an in-memory speed bump per lambda; daily ceilings and the AI cap are the real caps.
-- AI routes (parse, job URL, tailor, cover letter, evidence) run with maxDuration 300 (Vercel
+- AI routes (parse, job URL, tailor, cover letter, evidence, skill check) run with maxDuration 300 (Vercel
   Pro), since Opus 5.5 thinks on every call.
 - Declines: Anthropic accepts no server-side fallback for Opus 5.5 or Sonnet 5.5
   (`allowed_fallback_models` null, prod 2026-10-28), so an Opus decline is retried once by the
