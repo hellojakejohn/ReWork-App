@@ -42,6 +42,9 @@ export interface TailorInput {
   skills: string[] // every skill, flattened in group order
   skillGroups: TailorInputSkillGroup[] // the resume's own grouping, for context
   certifications: string[] // facts: never rewritten, only referenced
+  // The resume's other sections ("Volunteering", "What I can troubleshoot"). Facts like
+  // certifications: printed unchanged, usable in the summary.
+  extraSections?: TailorInputSkillGroup[]
   // Facts the candidate gave in the evidence interview ("about 4,000 (about: <bullet>)").
   // Allowed like resume text, so their numbers pass the fact guard.
   evidence?: string[]

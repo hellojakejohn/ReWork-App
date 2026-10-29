@@ -60,6 +60,10 @@ export function extractNumberTokens(text: string): string[] {
   return extractNumbers(text).map((n) => n.token)
 }
 
+function extraSectionText(input: TailorInput): string[] {
+  return (input.extraSections ?? []).flatMap((s) => [s.group, ...s.items])
+}
+
 /** Every string in the master resume we send to the model, flattened. */
 export function tailorInputText(input: TailorInput): string {
   const parts: string[] = [
@@ -67,6 +71,7 @@ export function tailorInputText(input: TailorInput): string {
     ...input.skills,
     ...(input.skillGroups ?? []).flatMap((g) => [g.group, ...g.items]),
     ...(input.certifications ?? []),
+    ...extraSectionText(input),
     ...(input.evidence ?? []),
   ]
   for (const role of input.roles) {
@@ -83,7 +88,8 @@ export function tailorInputText(input: TailorInput): string {
 
 /** Resume text for a tailored version (what a recruiter/ATS would read). */
 export function tailorOutputText(output: TailorOutput, master: TailorInput): string {
-  const parts: string[] = [output.summary, ...output.skills, ...(master.certifications ?? [])]
+  // Certifications and extra sections are printed unchanged on the tailored resume.
+  const parts: string[] = [output.summary, ...output.skills, ...(master.certifications ?? []), ...extraSectionText(master)]
   for (const role of output.roles) {
     parts.push(role.title, role.company, ...role.bullets.map((b) => b.text))
   }

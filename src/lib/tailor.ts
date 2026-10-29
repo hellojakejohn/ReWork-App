@@ -3,7 +3,7 @@
 // Flow: master Resume row -> buildTailorInput (stable ids, bullets as arrays, no contact
 // info) -> structured output (src/lib/ai/, provider per AI_TAILOR / plan) -> factGuard (src/lib/fact-guard.ts) ->
 // applyTailorOutput (merge back into the master's own shape, contact info copied).
-import type { TailorInput, TailorOutput } from '@/types/tailor'
+import type { TailorInput, TailorInputSkillGroup, TailorOutput } from '@/types/tailor'
 import { readSkillGroups } from '@/lib/master-resume'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
@@ -94,6 +94,12 @@ function certificationList(additionalSections: unknown): string[] {
     .filter(Boolean)
 }
 
+function extraSectionList(additionalSections: unknown): TailorInputSkillGroup[] {
+  return asArray((additionalSections as AnyRecord | null)?.extraSections)
+    .map((s) => ({ group: str(s.heading), items: textList(s.items) }))
+    .filter((s) => s.items.length > 0)
+}
+
 function roleDates(exp: AnyRecord): { startDate: string; endDate: string } {
   const [datesStart, datesEnd] = str(exp.dates).split(/\s+[-–]\s+/)
   const startDate = str(exp.startDate) || str(datesStart)
@@ -150,6 +156,7 @@ export function buildTailorInput(master: MasterResume): TailorInput {
     skills: skillsList(skillGroups),
     skillGroups,
     certifications: certificationList(master.additionalSections),
+    extraSections: extraSectionList(master.additionalSections),
   }
 }
 
@@ -238,7 +245,7 @@ RULES (all mandatory):
 7. For every bullet, give a short "reason" (under 15 words) for the change, e.g. "Moved up: matches CI/CD requirement".
 8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume.
 9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"). You may drop irrelevant ones. The resume's grouping is kept for you.
-10. Certifications are facts: mention them in the summary or bullets only if relevant, word for word, never invent one.
+10. Certifications and extraSections are facts printed unchanged on the resume: draw on them in the summary when relevant, never invent one.
 11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods). Extract them from the job description even if the candidate lacks them.
 12. Punctuation: no em-dashes (recruiters read them as AI writing). Use commas, colons or periods.`
 
