@@ -60,8 +60,8 @@ const MIN_PAGE_TEXT = 300
 
 export function needsPaste(reason: NeedsPasteReason, site?: string): ResolveResult {
   const messages: Record<NeedsPasteReason, string> = {
-    linkedin: "We don't read LinkedIn pages. Open the job on LinkedIn, copy the description, and paste it here.",
-    blocked_site: `${site || 'That site'} doesn't let apps read its job pages. Paste the description instead.`,
+    linkedin: "We don't read LinkedIn pages. If the job has an \"Apply on company website\" button, paste that link instead. Or copy the description from LinkedIn and paste it here.",
+    blocked_site: `${site || 'That site'} doesn't let apps read its job pages. If the job links to the company's own site, paste that link instead. Or paste the description here.`,
     js_rendered: "That page loads the job with JavaScript, so we can't read it. Paste the description instead.",
     blocked: 'That site blocked us. Paste the description instead.',
     unreachable: "We couldn't open that page. Paste the description instead.",
