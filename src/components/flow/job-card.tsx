@@ -1,13 +1,13 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useEffect, useRef, useState } from "react"
-import { ChevronDown, Link2, Loader2, MapPin, Pencil } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ChevronDown, Link2, Loader2, MapPin, Pencil, ShieldAlert } from "lucide-react"
 import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
-import { otherCompanyNamed } from "@/lib/job-checks"
+import { otherCompanyNamed, scamSignals, SCAM_SAFETY_TIP } from "@/lib/job-checks"
 
 type Mode = "url" | "fetching" | "fetched" | "paste"
 
@@ -115,6 +115,25 @@ export function JobCard({
       </Button>
     </div>
   )
+  // Job-scam tells in the ad itself. A warning with what we saw, never a verdict, and it doesn't block tailoring.
+  const scams = useMemo(() => scamSignals(draft.description), [draft.description])
+  const scamNote = scams.length > 0 && (
+    <div role="alert" className="rounded-input border border-accent-strong/40 bg-removed px-3 py-3 text-sm text-text">
+      <p className="flex items-center gap-2 font-bold">
+        <ShieldAlert className="h-4 w-4 flex-shrink-0 text-accent-strong" aria-hidden />
+        {scams.length === 1 ? "This ad has a sign of a job scam" : `This ad has ${scams.length} signs of a job scam`}
+      </p>
+      <ul className="mt-2 space-y-2">
+        {scams.map((s) => (
+          <li key={s.id}>
+            <p>{s.label}</p>
+            <p className="mt-0.5 text-xs text-text-muted">&ldquo;{s.quote}&rdquo;</p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 border-t border-dashed border-input pt-2 font-semibold">{SCAM_SAFETY_TIP}</p>
+    </div>
+  )
   const fields = (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -198,6 +217,7 @@ export function JobCard({
             {pasteNote && <p className="rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary">{pasteNote}</p>}
             {fields}
             {companyNote}
+            {scamNote}
           </>
         )}
 
@@ -206,6 +226,7 @@ export function JobCard({
             <>
               {fields}
               {companyNote}
+              {scamNote}
             </>
           ) : (
             <div className="space-y-3">
@@ -219,6 +240,7 @@ export function JobCard({
                 )}
               </div>
               {companyNote}
+              {scamNote}
               <div className="rounded-input border border-border bg-surface-raised">
                 <div
                   ref={descriptionBox}

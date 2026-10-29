@@ -28,6 +28,11 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 - Input caps: resume file 4 MB (Vercel rejects bodies over 4.5 MB), pasted resume 30k chars,
   job description 20k chars.
 - All numbers live in `src/lib/plans.ts`.
+- Job-scam warnings on the Job card, free and with no AI call (`scamSignals` in
+  `src/lib/job-checks.ts`): run-our-repo "tests", chat-app contact, pay-to-start or check
+  deposits, wallet/seed phrase/sending crypto, SSN or bank details up front, personal email
+  contact. Shows what matched, never blocks tailoring. 0 hits on 386 real Greenhouse ads
+  (Coinbase, Gemini, Consensys, Discord, Stripe...) on 2026-10-29. /save has a "Stay safe" list.
 
 ## Tech stack
 Next.js 15.5 (App Router), TypeScript, Tailwind, Radix UI, Prisma 6.8.2 on Supabase Postgres

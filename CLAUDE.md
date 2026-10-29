@@ -28,7 +28,7 @@
 - `src/lib/cover-letter.ts` + `src/lib/text-facts.ts` - cover letters and the prose fact guard
 - `src/lib/evidence.ts` - evidence interview (questions, answer-only rewrites, apply to master)
 - `src/lib/skill-check.ts` + `src/components/flow/skill-check.tsx` - free fit check and skill check (job keywords, answers placed from the user's note only, `guardAddition`, apply to master)
-- `src/lib/job-checks.ts` - job title cleanup and "this ad is about another company"
+- `src/lib/job-checks.ts` - job title cleanup, "this ad is about another company" and job-scam warnings (`scamSignals`, no AI)
 - `src/lib/tracker.ts` + `src/components/tracker/` - application tracker at `/dashboard/tracker`
 - `src/lib/plans.ts` - every plan limit and all pricing copy; `src/lib/tailor-quota.ts` meters tailors and cover letters
 - `src/lib/storage.ts` - Supabase Storage (was S3)
