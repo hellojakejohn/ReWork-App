@@ -233,6 +233,19 @@ describe('JSON-LD extraction', () => {
     expect(job.description).toBe('Design the product end to end.\n• Figma\n• User research\nWe work async across time zones and ship weekly.')
   })
 
+  it('shows repeated address parts once (RemoteOK sends "Anywhere" three times)', () => {
+    const posting = {
+      '@type': 'JobPosting',
+      title: 'Account Executive',
+      hiringOrganization: { name: 'Huzzle' },
+      description: 'Sell the product to companies that hire remotely, and keep them happy.',
+      jobLocationType: 'TELECOMMUTE',
+      jobLocation: { address: { addressLocality: 'Anywhere', addressRegion: 'Anywhere', addressCountry: 'Anywhere' } },
+    }
+    const html = `<script type="application/ld+json">${JSON.stringify(posting)}</script>`
+    expect(extractJsonLdJob(html, 'https://remoteok.com/x')?.location).toBe('Remote (Anywhere)')
+  })
+
   it('returns null when there is no JobPosting', () => {
     expect(extractJsonLdJob(fixture('plain-page.html'), 'u')).toBeNull()
   })

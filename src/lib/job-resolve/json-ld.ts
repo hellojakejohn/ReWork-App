@@ -45,7 +45,9 @@ function placeName(place: Json): string {
   const address = place?.address ?? place
   if (typeof address === 'string') return address.trim()
   const country = typeof address?.addressCountry === 'object' ? s(address.addressCountry?.name) : s(address?.addressCountry)
-  return [s(address?.addressLocality), s(address?.addressRegion), country].filter(Boolean).join(', ') || s(place?.name)
+  // "Anywhere, Anywhere, Anywhere" (RemoteOK) or "NY, NY": show each part once.
+  const parts = [s(address?.addressLocality), s(address?.addressRegion), country].filter(Boolean)
+  return [...new Set(parts.map((p) => p.toLowerCase()))].map((p) => parts.find((x) => x.toLowerCase() === p)!).join(', ') || s(place?.name)
 }
 
 function locationOf(posting: Json): string {
