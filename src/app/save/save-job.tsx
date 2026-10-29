@@ -82,6 +82,21 @@ export function SaveJob() {
         <p>If it can&apos;t find the description, select the description text on the page and click the button again.</p>
         <p>It only runs when you click it, and it only reads the job on that page. Works in Chrome, Edge, Firefox and Safari on a computer. On a phone, copy the description and paste it into ReWork instead.</p>
       </div>
+
+      <section aria-labelledby="stay-safe" className="rounded-card border border-border bg-surface p-5 text-sm leading-relaxed">
+        <h2 id="stay-safe" className="font-bold text-text">
+          Stay safe from job scams
+        </h2>
+        <p className="mt-1 text-text-muted">ReWork warns you when an ad shows these signs, but no check catches everything. A real employer never asks you to:</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>Run code or install an app they send you as a test. Scam &ldquo;take-home tests&rdquo; hide malware in the repo.</li>
+          <li>Move the interview to Telegram, WhatsApp or Signal.</li>
+          <li>Connect your crypto wallet, share a seed phrase or send crypto.</li>
+          <li>Pay a fee, buy equipment, or deposit a check they send you.</li>
+          <li>Send your SSN, bank details or ID before an offer.</li>
+        </ul>
+        <p className="mt-2 text-text">When in doubt, find the job on the company&apos;s own careers page and apply there.</p>
+      </section>
     </div>
   )
 }
