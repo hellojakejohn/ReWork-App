@@ -10,6 +10,7 @@
 import { matchAtsUrl, parseAtsResponse } from './ats'
 import { extractJsonLdJob } from './json-ld'
 import { extractPageMeta, type PageMeta } from './html-text'
+import { cleanJobTitle } from '@/lib/job-checks'
 import type { NeedsPasteReason, ResolveResult, ResolvedJob } from './types'
 
 export type { ResolvedJob, ResolveResult } from './types'
@@ -88,6 +89,12 @@ export function looksLikeJobAd(text: string): boolean {
 }
 
 export async function resolveJob(rawUrl: string, deps: ResolveDeps): Promise<ResolveResult> {
+  const result = await resolveRaw(rawUrl, deps)
+  // Pages often title the job "Designer - Acme"; the company already has its own field.
+  return result.ok ? { ok: true, job: { ...result.job, title: cleanJobTitle(result.job.title, result.job.company) } } : result
+}
+
+async function resolveRaw(rawUrl: string, deps: ResolveDeps): Promise<ResolveResult> {
   const url = new URL(rawUrl)
 
   if (isLinkedInHost(url.hostname)) return needsPaste('linkedin')

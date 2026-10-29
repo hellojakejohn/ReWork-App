@@ -379,3 +379,17 @@ describe('resolveJob chain', () => {
     expect(result).toMatchObject({ ok: true, job: { title: 'Operations Coordinator', company: 'Riverbend Foods', source: 'page' } })
   })
 })
+
+describe('resolveJob title cleanup', () => {
+  it('drops a trailing company name from the title', async () => {
+    const url = 'https://jobs.example.com/designer'
+    const html = `<html><head><script type="application/ld+json">${JSON.stringify({
+      '@type': 'JobPosting',
+      title: 'Senior Product Designer - CoinMarketCap',
+      hiringOrganization: { name: 'CoinMarketCap' },
+      description: 'Responsibilities: design. Requirements: Figma. '.repeat(20),
+    })}</script></head><body></body></html>`
+    const result = await resolveJob(url, { fetchPage: async () => ({ status: 200, url, text: html }) })
+    expect(result.ok && result.job.title).toBe('Senior Product Designer')
+  })
+})
