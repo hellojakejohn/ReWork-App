@@ -5,7 +5,8 @@
 // before users report "busy". `models` shows the routing in effect. `checks.stripePrices`
 // fetches both configured Stripe prices and fails if either doesn't match plans.ts (or the
 // key's mode); `checks.stripeWebhook` finds this deployment's endpoint and checks its events
-// and API version.
+// and API version. `checks.files` reads a tiny PDF and DOCX with the real extractors, so a
+// library file missing from the bundle shows here instead of as failed uploads.
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -17,6 +18,7 @@ import { allRoutes, formatRoute, proAlwaysTopModel } from '@/lib/ai/routing'
 import { aiCapRatio } from '@/lib/ai-cap-rules'
 import { checkStripePrices, checkStripeWebhook, getStripe } from '@/lib/stripe'
 import { OFFER_IDS, PRICING } from '@/lib/plans'
+import { checkFileReading } from '@/lib/health-files'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -61,25 +63,27 @@ export async function GET(request: Request) {
 
   const stripe = getStripe()
   const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin
-  const [database, ai, stripePrices, stripeWebhook] = await Promise.all([
+  const [database, ai, stripePrices, stripeWebhook, files] = await Promise.all([
     timed(async () => {
       await prisma.$queryRaw`SELECT 1`
     }),
     checkProviders(),
     stripe ? checkStripePrices(stripe, OFFER_IDS.map((id) => PRICING[id])) : Promise.resolve(null),
     stripe ? checkStripeWebhook(stripe, baseUrl) : Promise.resolve(null),
+    checkFileReading(),
   ])
   // A provider nothing routes to (an old key left set) can't break the app, so it can't fail health.
   const aiOk = Object.values(ai).every((c) => c.ok || !c.used)
   const pricesOk = !!stripePrices && Object.values(stripePrices).every((c) => c.ok)
   const routes = allRoutes()
 
-  const ok = database.ok && aiOk && keys.storage && keys.stripe && keys.stripeWebhook && keys.cron && pricesOk && !!stripeWebhook?.ok
+  const filesOk = files.pdf.ok && files.docx.ok
+  const ok = database.ok && filesOk && aiOk && keys.storage && keys.stripe && keys.stripeWebhook && keys.cron && pricesOk && !!stripeWebhook?.ok
   return NextResponse.json(
     {
       ok,
       keys,
-      checks: { database, ai, stripePrices, stripeWebhook },
+      checks: { database, files, ai, stripePrices, stripeWebhook },
       models: Object.fromEntries(Object.entries(routes).map(([task, r]) => [task, r ? formatRoute(r) : null])),
       aiCap: { ratio: aiCapRatio(), proAlwaysTopModel: proAlwaysTopModel() },
       time: new Date().toISOString(),
