@@ -13,19 +13,19 @@ describe('matchAtsUrl', () => {
     [
       'https://boards.greenhouse.io/stripe/jobs/6012345',
       'greenhouse',
-      'https://boards-api.greenhouse.io/v1/boards/stripe/jobs/6012345',
+      'https://boards-api.greenhouse.io/v1/boards/stripe/jobs/6012345?pay_transparency=true',
       'Stripe',
     ],
     [
       'https://job-boards.greenhouse.io/anthropic/jobs/4020305008?gh_src=x',
       'greenhouse',
-      'https://boards-api.greenhouse.io/v1/boards/anthropic/jobs/4020305008',
+      'https://boards-api.greenhouse.io/v1/boards/anthropic/jobs/4020305008?pay_transparency=true',
       'Anthropic',
     ],
     [
       'https://boards.greenhouse.io/embed/job_app?for=figma&token=5098123',
       'greenhouse',
-      'https://boards-api.greenhouse.io/v1/boards/figma/jobs/5098123',
+      'https://boards-api.greenhouse.io/v1/boards/figma/jobs/5098123?pay_transparency=true',
       'Figma',
     ],
     [
@@ -113,6 +113,24 @@ describe('parseAtsResponse', () => {
       url: 'https://boards.greenhouse.io/northwind/jobs/123',
       source: 'greenhouse',
     })
+  })
+
+  it('keeps the posting facts each ATS sends (date, deadline, structured pay)', () => {
+    const content = '&lt;p&gt;' + 'Build freight software with Node.js and PostgreSQL. '.repeat(3) + '&lt;/p&gt;'
+    const gh = parseAtsResponse(
+      matchAtsUrl('https://boards.greenhouse.io/northwind/jobs/123')!,
+      { title: 'Engineer', content, first_published: '2026-09-08T18:53:27-04:00', application_deadline: null, pay_input_ranges: [{ min_cents: 4000 }] },
+      'https://boards.greenhouse.io/northwind/jobs/123'
+    )
+    expect(gh?.facts).toEqual({ posted: '2026-09-08T22:53:27.000Z', pay: true })
+    const lever = parseAtsResponse(
+      matchAtsUrl('https://jobs.lever.co/acme/6ed76ce8-4156-4b60-b120-403538bd66cd')!,
+      { text: 'Engineer', descriptionPlain: 'Build freight software with Node.js and PostgreSQL. '.repeat(3), createdAt: 1786469891368 },
+      'https://jobs.lever.co/acme/6ed76ce8-4156-4b60-b120-403538bd66cd'
+    )
+    expect(lever?.facts).toEqual({ posted: new Date(1786469891368).toISOString() })
+    const bare = parseAtsResponse(matchAtsUrl('https://boards.greenhouse.io/northwind/jobs/123')!, { title: 'Engineer', content }, 'x')
+    expect(bare && 'facts' in bare).toBe(false)
   })
 
   it('reads a Lever posting with lists', () => {
@@ -227,6 +245,23 @@ describe('JSON-LD extraction', () => {
     expect(job.description).not.toMatch(/equal opportunity/i)
   })
 
+  it('keeps datePosted, validThrough and baseSalary as facts', () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({
+      '@type': 'JobPosting',
+      title: 'Analyst',
+      hiringOrganization: { name: 'Acme' },
+      description: 'Analyze freight data and build weekly reports for the ops team. '.repeat(2),
+      datePosted: '2026-07-01',
+      validThrough: '2026-09-30T00:00',
+      baseSalary: { '@type': 'MonetaryAmount', currency: 'USD' },
+    })}</script>`
+    expect(extractJsonLdJob(html, 'https://acme.example/jobs/1')?.facts).toEqual({
+      posted: '2026-07-01T00:00:00.000Z',
+      closes: new Date('2026-09-30T00:00').toISOString(),
+      pay: true,
+    })
+  })
+
   it('finds a JobPosting inside @graph with an array @type and remote location', () => {
     const job = extractJsonLdJob(fixture('jsonld-graph.html'), 'https://acme.example/careers/designer')!
     expect(job).toMatchObject({ title: 'Product Designer', company: 'Acme Studio', location: 'Remote' })
@@ -277,7 +312,7 @@ describe('resolveJob chain', () => {
 
   it('uses the ATS API first', async () => {
     const fetchPage = pages({
-      'https://boards-api.greenhouse.io/v1/boards/acme/jobs/1': {
+      'https://boards-api.greenhouse.io/v1/boards/acme/jobs/1?pay_transparency=true': {
         status: 200,
         url: '',
         text: JSON.stringify({ title: 'Engineer', location: { name: 'Remote' }, content: '<p>Build things that matter for our customers every day.</p>' }),
@@ -291,7 +326,7 @@ describe('resolveJob chain', () => {
   it('falls back to the page when the ATS API fails', async () => {
     const url = 'https://boards.greenhouse.io/northwind/jobs/2'
     const fetchPage = pages({
-      'https://boards-api.greenhouse.io/v1/boards/northwind/jobs/2': { status: 404, url: '', text: '{}' },
+      'https://boards-api.greenhouse.io/v1/boards/northwind/jobs/2?pay_transparency=true': { status: 404, url: '', text: '{}' },
       [url]: { status: 200, url, text: fixture('jsonld-careers.html') },
     })
     const result = await resolveJob(url, { fetchPage })

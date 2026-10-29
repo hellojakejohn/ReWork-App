@@ -1,6 +1,7 @@
 // schema.org JobPosting from <script type="application/ld+json">. Most career sites embed
 // it for Google Jobs, so it's the best source after a known ATS API.
 import * as cheerio from 'cheerio'
+import { compactFacts, isoDate } from './ats'
 import { htmlToText } from './html-text'
 import type { ResolvedJob } from './types'
 
@@ -74,6 +75,11 @@ export function extractJsonLdJob(html: string, pageUrl: string): ResolvedJob | n
   const title = s(posting.title) || s(posting.name)
   if (!title || description.length < 50) return null
 
+  const facts = compactFacts({
+    posted: isoDate(posting.datePosted),
+    closes: isoDate(posting.validThrough),
+    pay: !!posting.baseSalary || !!posting.estimatedSalary,
+  })
   return {
     title,
     company: typeof org === 'string' ? org.trim() : s(org?.name),
@@ -81,5 +87,6 @@ export function extractJsonLdJob(html: string, pageUrl: string): ResolvedJob | n
     description,
     url: pageUrl,
     source: 'json-ld',
+    ...(facts ? { facts } : {}),
   }
 }

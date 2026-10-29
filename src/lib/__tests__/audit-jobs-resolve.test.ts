@@ -71,9 +71,9 @@ describe('bot-blocked sites', () => {
 
 describe('ATS URL matching', () => {
   it.each([
-    ['https://boards.greenhouse.io/acme/jobs/4012345', 'https://boards-api.greenhouse.io/v1/boards/acme/jobs/4012345'],
-    ['https://job-boards.greenhouse.io/acme/jobs/4012345', 'https://boards-api.greenhouse.io/v1/boards/acme/jobs/4012345'],
-    ['https://boards.greenhouse.io/embed/job_app?for=acme&token=4012345', 'https://boards-api.greenhouse.io/v1/boards/acme/jobs/4012345'],
+    ['https://boards.greenhouse.io/acme/jobs/4012345', 'https://boards-api.greenhouse.io/v1/boards/acme/jobs/4012345?pay_transparency=true'],
+    ['https://job-boards.greenhouse.io/acme/jobs/4012345', 'https://boards-api.greenhouse.io/v1/boards/acme/jobs/4012345?pay_transparency=true'],
+    ['https://boards.greenhouse.io/embed/job_app?for=acme&token=4012345', 'https://boards-api.greenhouse.io/v1/boards/acme/jobs/4012345?pay_transparency=true'],
     ['https://jobs.lever.co/acme/0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0/apply', 'https://api.lever.co/v0/postings/acme/0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'],
     ['https://jobs.eu.lever.co/acme/0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0', 'https://api.eu.lever.co/v0/postings/acme/0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0'],
     ['https://jobs.ashbyhq.com/acme/0b1c2d3e-4f50-6172-8394-a5b6c7d8e9f0', 'https://api.ashbyhq.com/posting-api/job-board/acme?includeCompensation=true'],
@@ -97,7 +97,7 @@ describe('ATS URL matching', () => {
       url.includes('boards-api.greenhouse.io') ? page(JSON.stringify({ title: 'Engineer', company_name: 'Acme', content: `&lt;ul&gt;${LONG_JOB}&lt;/ul&gt;` })) : page(html)
     )
     const result = await resolveJob('https://www.acme.com/careers?gh_jid=4012345', d)
-    expect(fetchPage.mock.calls.some(([u]) => String(u).includes('boards-api.greenhouse.io/v1/boards/acme/jobs/4012345'))).toBe(true)
+    expect(fetchPage.mock.calls.some(([u]) => String(u).includes('boards-api.greenhouse.io/v1/boards/acme/jobs/4012345?pay_transparency=true'))).toBe(true)
     expect(result).toMatchObject({ ok: true, job: { source: 'greenhouse' } })
   })
 
