@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanJobTitle, ghostSignals, mentionsPay, otherCompanyNamed, postedDaysAgo, sameCompany, scamSignals } from '@/lib/job-checks'
+import { cleanJobTitle, ghostSignals, mentionsPay, otherCompanyNamed, postedDaysAgo, readPastedJob, sameCompany, scamSignals } from '@/lib/job-checks'
 
 describe('cleanJobTitle', () => {
   it('drops a trailing company name', () => {
@@ -155,5 +155,34 @@ describe('postedDaysAgo', () => {
     expect(postedDaysAgo('30+ days ago', now)).toEqual({ days: 30, plus: true })
     expect(postedDaysAgo('Saint Paul, MN', now)).toBeNull()
     expect(postedDaysAgo(undefined, now)).toBeNull()
+  })
+})
+
+describe('readPastedJob', () => {
+  const body = 'You will schedule carriers, track shipments and keep customers updated every day. '.repeat(3)
+  it('finds a lone link, or the one link in a short message', () => {
+    expect(readPastedJob('  https://boards.greenhouse.io/acme/jobs/123  ')).toEqual({ kind: 'link', url: 'https://boards.greenhouse.io/acme/jobs/123' })
+    expect(readPastedJob('check this one out https://jobs.lever.co/acme/abc.')).toEqual({ kind: 'link', url: 'https://jobs.lever.co/acme/abc' })
+    expect(readPastedJob('boards.greenhouse.io/acme/jobs/123')).toEqual({ kind: 'link', url: 'boards.greenhouse.io/acme/jobs/123' })
+    expect(readPastedJob('ops coordinator')).toEqual({ kind: 'unclear' })
+  })
+  it('treats a long paste as the post and guesses title and company', () => {
+    expect(readPastedJob(`Operations Coordinator\nAbout Northwind\nNorthwind moves freight across the Midwest.\n${body}`)).toMatchObject({
+      kind: 'post',
+      title: 'Operations Coordinator',
+      company: 'Northwind',
+    })
+    expect(readPastedJob(`Job Title: Data Analyst\nCompany: Acme Health\n${body}`)).toMatchObject({ title: 'Data Analyst', company: 'Acme Health' })
+  })
+  it('skips headings and leaves blanks rather than guessing wrong', () => {
+    const post = readPastedJob(`About the job\nWe are hiring.\n${body}`)
+    expect(post).toMatchObject({ kind: 'post', title: '', company: '' })
+  })
+  it('keeps a long post with a link in it as the post', () => {
+    expect(readPastedJob(`Product Designer\n${body}\nApply at https://acme.com/jobs/1`).kind).toBe('post')
+  })
+  it('reads LinkedIn top-card facts when they were copied too', () => {
+    const post = readPastedJob(`Product Designer\nAcme\nSaint Paul, MN · Reposted 2 weeks ago · Over 100 applicants\n${body}`)
+    expect(post).toMatchObject({ kind: 'post', facts: { posted: 'Reposted 2 weeks ago', applicants: 'Over 100 applicants' } })
   })
 })

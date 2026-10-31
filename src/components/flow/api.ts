@@ -152,7 +152,7 @@ export async function deleteMaster(id: string): Promise<{ ok: true } | Failure> 
 
 export async function fetchJobFromUrl(
   url: string
-): Promise<{ ok: true; job: JobDraft } | { ok: false; needsPaste: true; message: string } | Failure> {
+): Promise<{ ok: true; job: JobDraft } | { ok: false; needsPaste: true; reason?: string; message: string } | Failure> {
   try {
     const res = await fetch("/api/job-url/parse", {
       method: "POST",
@@ -160,7 +160,7 @@ export async function fetchJobFromUrl(
       body: JSON.stringify({ url }),
     })
     const data = await res.json().catch(() => ({}))
-    if (data.needsPaste) return { ok: false, needsPaste: true, message: data.message }
+    if (data.needsPaste) return { ok: false, needsPaste: true, reason: data.reason, message: data.message }
     if (!res.ok || !data.success) return { ok: false, status: res.status, error: data.error || "Couldn't read that link." }
     const job = data.job
     return { ok: true, job: { url, title: job.title, company: job.company, location: job.location, description: job.description, facts: job.facts } }

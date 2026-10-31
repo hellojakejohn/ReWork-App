@@ -266,3 +266,61 @@ export function ghostSignals(description: string, facts: JobFacts = {}, now = ne
   }
   return found
 }
+
+// What someone pasted into the job box: a link to fetch, or the job post itself. People
+// copy whole posts (or a "check this out https://..." message), not just URLs.
+export type PastedJob =
+  | { kind: 'link'; url: string }
+  | { kind: 'post'; title: string; company: string; description: string; facts?: JobFacts }
+  | { kind: 'unclear' }
+
+const URL_IN_TEXT = /\bhttps?:\/\/[^\s<>"']+|\b(?:[\w-]+\.)+[a-z]{2,}\/[^\s<>"']*/gi
+const HEADING_LINE = /^(about the (job|role|company|position)|job (description|details|summary)|full job description|description|overview|responsibilities|requirements|qualifications|apply|save|share|easy apply)$/i
+const MIN_POST_CHARS = 200
+
+function labeled(text: string, labels: string): string {
+  const m = text.match(new RegExp(String.raw`^\s*(?:${labels})\s*[:\-–]\s*(.{2,100})$`, 'im'))
+  return m ? m[1].trim() : ''
+}
+
+/** The company a post names itself as most often ("About Acme", "At Acme, we", "Join Acme"). */
+function selfNamedCompany(text: string): string {
+  const counts = new Map<string, { name: string; n: number }>()
+  for (const re of SELF_NAMING) {
+    for (const m of text.matchAll(re)) {
+      // A heading line ("About Northwind") ends at the line break, not at the next capital.
+      const name = m[1].split('\n')[0].trim().replace(/[.']+$/, '')
+      if (NOT_A_NAME.test(name.split(/\s+/)[0])) continue
+      const c = counts.get(norm(name)) || { name, n: 0 }
+      c.n += 1
+      counts.set(norm(name), c)
+    }
+  }
+  const best = [...counts.values()].sort((a, b) => b.n - a.n)[0]
+  const aboutHeading = best && new RegExp(String.raw`^\s*About ${best.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\s*$`, 'm').test(text)
+  return best && (best.n >= 2 || aboutHeading) ? best.name : ''
+}
+
+/** Sorts out a paste: a lone link (or a short message with one), a whole post, or neither. */
+export function readPastedJob(raw: string): PastedJob {
+  const text = raw.replace(/\r\n?/g, '\n').trim()
+  const urls = text.match(URL_IN_TEXT) || []
+  if (text.length < MIN_POST_CHARS) {
+    if (urls.length === 1) return { kind: 'link', url: urls[0].replace(/[.,;)\]]+$/, '') }
+    return { kind: 'unclear' }
+  }
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+  const company = labeled(text, 'company|employer|organi[sz]ation|company name') || selfNamedCompany(text)
+  let title = labeled(text, 'job title|title|position|role')
+  if (!title) {
+    // The first short line that reads like a title, not a heading or a sentence.
+    const first = lines.slice(0, 4).find((l) => l.length >= 3 && l.length <= 80 && l.split(/\s+/).length <= 10 && !/[.!?:]$/.test(l) && !HEADING_LINE.test(l) && !(company && sameCompany(l, company)) && !postedDaysAgo(l))
+    title = first || ''
+  }
+  // LinkedIn's top card, when it's copied too: "Saint Paul, MN · Reposted 2 weeks ago · Over 100 applicants".
+  const head = text.slice(0, 800)
+  const posted = head.match(/\b(Reposted\s+)?(Posted\s+)?(\d+\+?|an?)\s+(minute|hour|day|week|month|year)s?\s+ago\b/i)?.[0]
+  const applicants = head.match(/\b(Over\s+)?\d[\d,]*\+?\s+(applicants|people clicked apply)\b/i)?.[0]
+  const facts = compactFacts({ posted, applicants })
+  return { kind: 'post', title: cleanJobTitle(title, company), company, description: text, ...(facts ? { facts } : {}) }
+}
