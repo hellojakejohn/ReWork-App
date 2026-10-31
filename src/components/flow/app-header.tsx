@@ -57,7 +57,7 @@ export function AppHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface/90 px-4 backdrop-blur sm:px-6">
+      <header className="sticky top-0 z-40 flex shrink-0 items-center gap-3 py-1.5 border-b border-border bg-surface/90 px-4 backdrop-blur sm:px-6">
         <Link
           href="/dashboard"
           onClick={(e) => {
@@ -70,7 +70,8 @@ export function AppHeader({
           aria-label="rework home"
           className="-ml-1 flex items-center rounded-input"
         >
-          <Logo height={44} priority />
+          <Logo height={52} priority className="sm:hidden" />
+          <Logo height={88} priority className="hidden sm:inline-flex" />
         </Link>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">

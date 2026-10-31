@@ -7,7 +7,7 @@ import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
-import { ghostSignals, otherCompanyNamed, scamSignals, SCAM_SAFETY_TIP } from "@/lib/job-checks"
+import { ghostSignals, otherCompanyNamed, readPastedJob, scamSignals, SCAM_SAFETY_TIP, type PastedJob } from "@/lib/job-checks"
 
 type Mode = "url" | "fetching" | "fetched" | "paste"
 
@@ -39,6 +39,8 @@ export function JobCard({
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState("")
   const [pasteNote, setPasteNote] = useState("")
+  // LinkedIn and Indeed can't be read by link: point at Save to ReWork next to the paste box.
+  const [offerSaveButton, setOfferSaveButton] = useState(false)
   const [expanded, setExpanded] = useState(false)
   // Only offer "Show the full description" when the collapsed box actually cuts it off.
   const [overflows, setOverflows] = useState(false)
@@ -51,6 +53,7 @@ export function JobCard({
     setEditing(false)
     setError("")
     setPasteNote("")
+    setOfferSaveButton(false)
     setExpanded(false)
     if (job === null) {
       setDraft(EMPTY)
@@ -72,6 +75,7 @@ export function JobCard({
     const id = ++request.current
     setError("")
     setPasteNote("")
+    setOfferSaveButton(false)
     setMode("fetching")
     const result = await fetchJobFromUrl(full)
     if (id !== request.current) return
@@ -82,10 +86,39 @@ export function JobCard({
     } else if ("needsPaste" in result) {
       setDraft({ ...EMPTY, url: full })
       setPasteNote(result.message)
+      setOfferSaveButton(result.reason === "linkedin" || result.reason === "blocked_site")
       setMode("paste")
-    } else {
+    } else if (result.status === 429) {
       setError(result.error)
       setMode("url")
+    } else {
+      // Never a dead end: whatever went wrong with the link, the paste box still works.
+      setDraft({ ...EMPTY, url: full })
+      setPasteNote("We couldn't read that link. Copy the job post from the page and paste it below.")
+      setMode("paste")
+    }
+  }
+
+  const takePost = (post: Extract<PastedJob, { kind: "post" }>, url = "") => {
+    request.current++
+    setError("")
+    setOfferSaveButton(false)
+    setDraft({ ...EMPTY, url, title: post.title, company: post.company, description: post.description, facts: post.facts })
+    setPasteNote(post.title && post.company ? "" : "Got the post. Add the job title and company if they're missing.")
+    setMode("paste")
+  }
+
+  // The box takes a link or the whole post, typed or pasted.
+  const takeInput = (raw: string) => {
+    const read = readPastedJob(raw)
+    if (read.kind === "link") {
+      set({ url: read.url })
+      void fetchUrl(read.url)
+    } else if (read.kind === "post") {
+      takePost(read)
+    } else if (raw.trim()) {
+      set({ url: raw.trim() })
+      setError("Paste the job's link (it starts with https://) or the whole job post.")
     }
   }
 
@@ -170,8 +203,16 @@ export function JobCard({
         <textarea
           className={`${inputClass} min-h-[180px]`}
           value={draft.description}
+          autoFocus={mode === "paste" && !draft.description}
           placeholder="Paste the full posting: responsibilities, requirements, nice-to-haves."
           onChange={(e) => set({ description: e.target.value })}
+          onPaste={(e) => {
+            // A whole post pasted into an empty box: fill in a missing title and company too.
+            if (draft.description.trim()) return
+            const read = readPastedJob(e.clipboardData.getData("text"))
+            if (read.kind !== "post") return
+            setDraft((d) => ({ ...d, title: d.title || read.title, company: d.company || read.company, facts: d.facts ?? read.facts }))
+          }}
         />
       </label>
       {draft.description.length > INPUT_LIMITS.jobDescriptionChars && <ErrorNote>{INPUT_LIMIT_MESSAGES.jobDescription}</ErrorNote>}
@@ -180,17 +221,18 @@ export function JobCard({
 
   return (
     <Card>
-      <CardHeader title="The job" subtitle="Paste a link to the posting." onBack={onBack} />
+      <CardHeader title="The job" subtitle="Paste the job's link, or the whole post." onBack={onBack} />
       <CardBody className="space-y-4">
         {(mode === "url" || mode === "fetching") && (
           <>
             <div className="relative">
               <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
-                type="url"
+                type="text"
                 inputMode="url"
                 autoFocus={isActiveStep}
-                placeholder="https://boards.greenhouse.io/company/jobs/123"
+                aria-label="Job link or job post"
+                placeholder="Paste a job link, or the whole job post"
                 className={`${inputClass} py-3 pl-9 text-base`}
                 value={draft.url}
                 disabled={mode === "fetching"}
@@ -199,14 +241,13 @@ export function JobCard({
                   const pasted = e.clipboardData.getData("text")
                   if (pasted) {
                     e.preventDefault()
-                    set({ url: pasted.trim() })
-                    void fetchUrl(pasted)
+                    takeInput(pasted)
                   }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault()
-                    void fetchUrl(draft.url)
+                    takeInput(draft.url)
                   }
                 }}
               />
@@ -218,7 +259,7 @@ export function JobCard({
             )}
             {error && <ErrorNote>{error}</ErrorNote>}
             <p className="text-xs text-text-muted">
-              Works best with Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages. On LinkedIn or Indeed?{" "}
+              Works best with Greenhouse, Lever, Ashby, Workday, Oracle, BambooHR, SmartRecruiters, Workable and most company career pages. On LinkedIn or Indeed?{" "}
               <a href="/save" target="_blank" rel="noopener" className="font-medium text-text-secondary underline underline-offset-2 hover:text-text">
                 Get the Save to ReWork button
               </a>
@@ -229,7 +270,20 @@ export function JobCard({
 
         {mode === "paste" && (
           <>
-            {pasteNote && <p className="rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary">{pasteNote}</p>}
+            {(pasteNote || offerSaveButton) && (
+              <div className="rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary">
+                {pasteNote && <p>{pasteNote}</p>}
+                {offerSaveButton && (
+                  <p className="mt-1">
+                    Faster next time:{" "}
+                    <a href="/save" target="_blank" rel="noopener" className="font-medium text-text underline underline-offset-2">
+                      get the Save to ReWork button
+                    </a>{" "}
+                    and bring LinkedIn and Indeed jobs over in one click.
+                  </p>
+                )}
+              </div>
+            )}
             {fields}
             {companyNote}
             {scamNote}
@@ -315,7 +369,7 @@ export function JobCard({
           </Button>
         )}
         {mode === "url" || mode === "fetching" ? (
-          <Button loading={mode === "fetching"} disabled={!draft.url.trim()} onClick={() => void fetchUrl(draft.url)}>
+          <Button loading={mode === "fetching"} disabled={!draft.url.trim()} onClick={() => takeInput(draft.url)}>
             Fetch
           </Button>
         ) : (

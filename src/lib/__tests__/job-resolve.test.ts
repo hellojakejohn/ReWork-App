@@ -133,6 +133,24 @@ describe('parseAtsResponse', () => {
     expect(bare && 'facts' in bare).toBe(false)
   })
 
+  it('reads Oracle Recruiting Cloud and BambooHR jobs from their JSON', () => {
+    const oracle = matchAtsUrl('https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210597507?utm=x')!
+    expect(oracle).toMatchObject({ ats: 'oracle', jobId: '210597507' })
+    expect(oracle.apiUrl).toBe('https://jpmc.fa.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22210597507%22,siteNumber=CX_1001')
+    expect(matchAtsUrl('https://abc.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX/requisitions/preview/42')?.jobId).toBe('42')
+    const body = '<p>Lead payments sales for corporate clients across the region and grow the book.</p>'
+    expect(
+      parseAtsResponse(oracle, { items: [{ Title: 'Sales Manager', PrimaryLocation: 'Tokyo, Japan', ExternalDescriptionStr: body, ExternalQualificationsStr: '<ul><li>5 years in sales</li></ul>', ExternalPostedStartDate: '2026-10-28T08:04:14+00:00' }] }, 'u')
+    ).toMatchObject({ title: 'Sales Manager', company: 'Jpmc', location: 'Tokyo, Japan', description: expect.stringContaining('Qualifications\n• 5 years in sales'), facts: { posted: '2026-10-28T08:04:14.000Z' } })
+
+    const bamboo = matchAtsUrl('https://hubstaff.bamboohr.com/careers/21')!
+    expect(bamboo).toMatchObject({ ats: 'bamboohr', apiUrl: 'https://hubstaff.bamboohr.com/careers/21/detail', company: 'Hubstaff' })
+    expect(matchAtsUrl('https://www.bamboohr.com/careers/21')).toBeNull()
+    expect(
+      parseAtsResponse(bamboo, { result: { jobOpening: { jobOpeningName: 'Marketing Manager', location: { city: 'Austin', state: 'TX' }, locationType: '1', description: body, datePosted: '2026-08-24', compensation: '$130,000' } } }, 'u')
+    ).toMatchObject({ title: 'Marketing Manager', location: 'Austin, TX, Remote', facts: { posted: '2026-08-24T00:00:00.000Z', pay: true } })
+  })
+
   it('reads a Lever posting with lists', () => {
     const match = matchAtsUrl('https://jobs.lever.co/acme-labs/0a1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d')!
     const job = parseAtsResponse(

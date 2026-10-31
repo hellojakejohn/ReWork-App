@@ -7,6 +7,8 @@ export type JobSource =
   | 'workday'
   | 'smartrecruiters'
   | 'workable'
+  | 'oracle'
+  | 'bamboohr'
   | 'json-ld'
   | 'page'
 
