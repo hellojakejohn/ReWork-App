@@ -23,7 +23,7 @@ export function StepRail({
           const clickable = i === 0 || (i !== current && (done || i < current))
           return (
             <li key={label} className="flex items-center gap-1">
-              {i > 0 && <span aria-hidden className="mx-1 text-text-faint">·</span>}
+              {i > 0 && <Stitch sewn={!!completed[i - 1]} />}
               <button
                 type="button"
                 disabled={!clickable}
@@ -43,5 +43,21 @@ export function StepRail({
         })}
       </ol>
     </nav>
+  )
+}
+
+// The thread between two steps: faint stitches, sewn in coral once the step before is done.
+const stitches = (color: string) => `repeating-linear-gradient(90deg, rgb(var(${color})) 0 5px, transparent 5px 9px)`
+
+function Stitch({ sewn }: { sewn: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className="mx-0.5 h-[3px] w-4 rounded-full bg-no-repeat transition-[background-size] duration-700 ease-out motion-reduce:transition-none sm:mx-1 sm:w-8"
+      style={{
+        backgroundImage: `${stitches("--accent")}, ${stitches("--text-faint")}`,
+        backgroundSize: `${sewn ? 100 : 0}% 100%, 100% 100%`,
+      }}
+    />
   )
 }
