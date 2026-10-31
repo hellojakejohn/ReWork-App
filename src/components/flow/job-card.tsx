@@ -218,7 +218,7 @@ export function JobCard({
             )}
             {error && <ErrorNote>{error}</ErrorNote>}
             <p className="text-xs text-text-muted">
-              Works best with Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages. On LinkedIn or Indeed?{" "}
+              Works best with Greenhouse, Lever, Ashby, Workday, Oracle, BambooHR, SmartRecruiters, Workable and most company career pages. On LinkedIn or Indeed?{" "}
               <a href="/save" target="_blank" rel="noopener" className="font-medium text-text-secondary underline underline-offset-2 hover:text-text">
                 Get the Save to ReWork button
               </a>

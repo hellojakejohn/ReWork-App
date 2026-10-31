@@ -129,6 +129,33 @@ export function matchAtsUrl(input: string | URL): AtsMatch | null {
     return null
   }
 
+  // Oracle Recruiting Cloud: {pod}.fa[.{region}].oraclecloud.com/hcmUI/CandidateExperience/{locale}/sites/{site}/job/{id}
+  // (also .../requisitions/preview/{id}). The page is a JavaScript app; its own REST API has the job.
+  if (/^[a-z0-9-]+\.fa(\.[a-z0-9-]+)*\.oraclecloud\.com$/.test(host)) {
+    const i = parts.indexOf('sites')
+    const site = i >= 0 ? parts[i + 1] : ''
+    const id = parts.slice(i + 2).find((p) => /^\d+$/.test(p))
+    if (site && id && parts.includes('CandidateExperience')) {
+      return {
+        ats: 'oracle',
+        apiUrl: `https://${host}/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails?expand=all&onlyData=true&finder=ById;Id=%22${id}%22,siteNumber=${encodeURIComponent(site)}`,
+        company: companyFromSlug(host.split('.')[0]),
+        jobId: id,
+      }
+    }
+    return null
+  }
+
+  // BambooHR: {company}.bamboohr.com/careers/{id} (a JavaScript page; /detail is its JSON)
+  const bamboo = host.match(/^([a-z0-9-]+)\.bamboohr\.com$/)
+  if (bamboo && bamboo[1] !== 'www') {
+    const id = parts[0] === 'careers' && /^\d+$/.test(parts[1] || '') ? parts[1] : parts[0] === 'jobs' ? url.searchParams.get('id') || '' : ''
+    if (/^\d+$/.test(id)) {
+      return { ats: 'bamboohr', apiUrl: `https://${host}/careers/${id}/detail`, company: companyFromSlug(bamboo[1]), jobId: id }
+    }
+    return null
+  }
+
   return null
 }
 
@@ -231,6 +258,41 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         location: joinLoc(loc.city, loc.region, loc.country, data?.remote ? 'Remote' : ''),
         description,
         facts: { posted: isoDate(data?.published) },
+      })
+    }
+
+    case 'oracle': {
+      const item = Array.isArray(data?.items) ? data.items[0] : null
+      if (!item) return null
+      const description = [
+        section('', s(item.ExternalDescriptionStr)),
+        section('Responsibilities', s(item.ExternalResponsibilitiesStr)),
+        section('Qualifications', s(item.ExternalQualificationsStr)),
+      ]
+        .filter(Boolean)
+        .join('\n\n')
+      const remote = /remote/i.test(s(item.WorkplaceType))
+      return job({
+        title: s(item.Title),
+        company: s(item.LegalEmployer) || match.company,
+        location: remote && !/remote/i.test(s(item.PrimaryLocation)) ? joinLoc(item.PrimaryLocation, 'Remote') : s(item.PrimaryLocation),
+        description,
+        facts: { posted: isoDate(item.ExternalPostedStartDate), closes: isoDate(item.ExternalPostedEndDate) },
+      })
+    }
+
+    case 'bamboohr': {
+      const opening = data?.result?.jobOpening
+      if (!opening) return null
+      const loc = opening.location ?? {}
+      // locationType: 0 on site, 1 remote, 2 hybrid
+      const where = s(opening.locationType) === '1' ? 'Remote' : s(opening.locationType) === '2' ? 'Hybrid' : ''
+      return job({
+        title: s(opening.jobOpeningName),
+        company: match.company,
+        location: joinLoc(loc.city, loc.state, where),
+        description: htmlToText(s(opening.description), { strip: false }),
+        facts: { posted: isoDate(opening.datePosted), pay: !!s(opening.compensation) },
       })
     }
   }
