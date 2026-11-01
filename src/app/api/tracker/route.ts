@@ -3,6 +3,7 @@
 //   tailoring it (the tracker's "Add a job"). FREE can't add past the limit.
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { cleanJobUrl } from '@/lib/job-url'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAccess } from '@/lib/entitlements'
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       jobTitle: title,
       company,
       jobDescription: clip(body?.description, INPUT_LIMITS.jobDescriptionChars),
-      jobUrl: httpUrlOrNull(body?.url),
+      jobUrl: httpUrlOrNull(typeof body?.url === 'string' ? cleanJobUrl(body.url) : body?.url),
       keywords: [],
       status: 'DRAFT',
       statusUpdatedAt: now,

@@ -1,6 +1,7 @@
 // Small, pure checks on a job: tidy its title and spot a description written for a
 // different company (a job board reposting someone else's ad). Shared by the resolver and
 // the Job card, so pasted jobs get the same checks as links.
+import { cleanJobUrl } from '@/lib/job-url'
 
 function norm(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '')
@@ -305,8 +306,9 @@ function selfNamedCompany(text: string): string {
 export function readPastedJob(raw: string): PastedJob {
   const text = raw.replace(/\r\n?/g, '\n').trim()
   const urls = text.match(URL_IN_TEXT) || []
-  if (text.length < MIN_POST_CHARS) {
-    if (urls.length === 1) return { kind: 'link', url: urls[0].replace(/[.,;)\]]+$/, '') }
+  // Judge length without the links: a 700-character tracking link alone is still a link.
+  if (text.replace(URL_IN_TEXT, ' ').trim().length < MIN_POST_CHARS) {
+    if (urls.length === 1) return { kind: 'link', url: cleanJobUrl(urls[0].replace(/[.,;)\]]+$/, '')) }
     return { kind: 'unclear' }
   }
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
