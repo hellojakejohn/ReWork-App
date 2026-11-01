@@ -122,8 +122,8 @@ NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY (and
 OPENAI_API_KEY / OPENROUTER_API_KEY only if a task routes there), NEXT_PUBLIC_SUPABASE_URL,
 SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; no fallback name),
-CRON_SECRET (crons refuse every request without it). ADMIN_EMAILS (Jake's email; `/admin`
-404s without it).
+CRON_SECRET (crons refuse every request without it). ADMIN_EMAILS is optional: unset, both of Jake's emails are
+admins (`src/lib/admin.ts`); setting it replaces that list.
 
 Database URL: Vercel uses Supabase's **transaction pooler** (port 6543,
 `?pgbouncer=true&connection_limit=1`, saved as Secret, all environments) since Nov 1. The
