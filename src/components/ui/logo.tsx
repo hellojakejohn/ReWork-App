@@ -1,14 +1,15 @@
 import { cn } from "@/lib/utils"
 
-// The rework wordmark (brand-kit/BRAND.md). Primary = solid letters, for anything under
-// ~80px tall. Hero = engraved letters, never under ~80px tall. The light and dark files
-// paint the thread-crossing gaps in their page color, so the swap follows the theme class
-// on <html> (CSS only: works in server components and before hydration).
-const RATIO = 1608 / 575
+// The rework wordmark (brand-kit/BRAND.md, built by scripts/brand/build-logo.mjs).
+// Primary = solid letters, for anything under ~80px tall. Hero = engraved letters, never
+// under ~80px tall; its cream rim reads on both themes, so it has one file. The swap
+// follows the theme class on <html> (CSS only: works in server components and before
+// hydration).
+const RATIO = 2000 / 714
 
 const FILES = {
-  primary: { light: "/brand/rework-logo.svg", dark: "/brand/rework-logo-dark.svg" },
-  hero: { light: "/brand/rework-logo-engraved.svg", dark: "/brand/rework-logo-engraved-dark.svg" },
+  primary: { light: "/brand/rework-logo.webp", dark: "/brand/rework-logo-dark.webp" },
+  hero: { light: "/brand/rework-logo-engraved.webp", dark: "/brand/rework-logo-engraved.webp" },
 }
 
 export function Logo({
@@ -34,7 +35,7 @@ export function Logo({
   }
   return (
     <span className={cn("inline-flex shrink-0", className)} style={{ width, height }}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, nothing for next/image to optimize */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- static WebP sized for 3x screens, nothing for next/image to add */}
       <img {...common} alt="rework" src={files.light} className="block h-full w-full dark:hidden" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img {...common} alt="rework" src={files.dark} className="hidden h-full w-full dark:block" />
