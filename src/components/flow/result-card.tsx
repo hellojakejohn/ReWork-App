@@ -167,6 +167,19 @@ function Result({
             </div>
           </div>
         )}
+        {keywords.related.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-semibold text-text-muted">In other words</p>
+            <div className="flex flex-wrap gap-1.5">
+              {keywords.related.map((k) => (
+                <span key={k} className="rounded-full bg-surface-raised px-2.5 py-0.5 text-xs text-text-secondary">
+                  {k}
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-text-muted">Your resume shows these, worded differently. Some job sites only match the job&apos;s exact words.</p>
+          </div>
+        )}
         {keywords.missing.length > 0 && (
           <div>
             <p className="mb-2 text-xs font-semibold text-text-muted">Missing</p>
@@ -192,7 +205,7 @@ function Result({
             resumeId={application.resumeId}
             fit={{
               keywords: keywords.target,
-              coverage: { score: application.coverageBefore ?? 0, present: keywords.presentBefore, missing: keywords.missing },
+              coverage: { score: application.coverageBefore ?? 0, present: keywords.presentBefore, related: keywords.related, missing: keywords.missing },
             }}
             onClose={() => setChecking(false)}
             onSaved={(m, coverage, applied) => {

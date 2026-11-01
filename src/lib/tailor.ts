@@ -8,7 +8,7 @@ import { readSkillGroups } from '@/lib/master-resume'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
 import { taskRoute } from '@/lib/ai/routing'
-import { hasKeyword, masterKeywordText } from '@/lib/keyword-coverage'
+import { keywordCoverage, masterKeywordText } from '@/lib/keyword-coverage'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyRecord = Record<string, any>
@@ -267,13 +267,13 @@ export interface TailorOptions extends AICallOptions {
 
 /** The chosen keywords, split by what the resume shows, so the model knows which to use. */
 function keywordBrief(input: TailorInput, keywords: string[]): string {
-  const printed = masterKeywordText(input)
-  const shown = keywords.filter((k) => hasKeyword(printed, k))
-  const notShown = keywords.filter((k) => !shown.includes(k))
+  const { present, related, missing } = keywordCoverage(keywords, masterKeywordText(input))
+  const list = (k: string[]) => k.join(', ') || '(none)'
   return `
 TARGET KEYWORDS (already chosen; return exactly these as targetKeywords): ${keywords.join(', ')}
-The resume shows these, in these or other words: ${shown.join(', ') || '(none)'}. Use the job's exact wording for each at least once where it is true and reads naturally (a bullet, the summary or the skills list), and never lose one.
-The resume doesn't show these: ${notShown.join(', ') || '(none)'}. Never claim them.
+The resume already uses the job's words for: ${list(present)}. Keep each one, spelled the same.
+The resume shows these in other words: ${list(related)}. Use the job's exact wording for each at least once where it is true and reads naturally (a bullet, the summary or the skills list); ATS scanners match exact words.
+The resume doesn't show these: ${list(missing)}. Never claim them.
 `
 }
 

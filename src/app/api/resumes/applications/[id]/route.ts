@@ -70,6 +70,7 @@ export async function PATCH(
   if (cleaned?.targetKeywords?.length && original) {
     const coverage = coverageReport(buildTailorInput(original), outputWithDecisions(cleaned, changes))
     nextReport.presentAfter = coverage.tailored.present
+    nextReport.relatedAfter = coverage.tailored.related
     nextReport.missingKeywords = coverage.tailored.missing
     const categoryScores: TailorCategoryScores = {
       ...((application.categoryScores ?? {}) as unknown as TailorCategoryScores),

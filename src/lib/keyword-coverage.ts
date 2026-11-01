@@ -1,10 +1,13 @@
-// Keyword coverage: share of the JD's target keywords that appear in a resume's text.
-// Plain string matching, no AI. A little looser than the fact guard's containsTerm:
-// - a plural counts ("knowledge bases"), "ERC-20/721/1155" counts as each standard, and
-//   "Postman / curl" counts if either is there
-// - word forms: "Front-End" = "front end" = "frontends", "Unit Testing" = "unit tests"
-// - "web and mobile applications" shows "Web Applications"
-// - a short list of honest implications: PostgreSQL shows SQL, TypeScript shows JavaScript
+// Keyword coverage: how a resume's text covers the JD's target keywords. Plain string
+// matching, no AI. Each keyword is one of:
+// - present: the job's own words, as an ATS would search for them. A plural counts
+//   ("knowledge bases"), "ERC-20/721/1155" counts as each standard, and "Postman / curl"
+//   counts if either is there. The score is the share of these.
+// - related: shown in other words. Word forms ("Front-End" = "front end" = "frontends",
+//   "Unit Testing" = "unit tests", "web and mobile applications" for "Web Applications")
+//   and a short list of honest implications (PostgreSQL shows SQL). True, so the tailor
+//   may use the job's wording for them, which moves them to present.
+// - missing: not shown at all. Only the user's own answers can add these.
 import type { KeywordCoverage, TailorInput, TailorOutput } from '@/types/tailor'
 import { containsTerm, tailorInputText, tailorOutputText } from '@/lib/resume-text'
 
@@ -104,23 +107,32 @@ export function impliedBy(text: string, keyword: string): string[] {
   return (IMPLIED[squash(wordsOf(keyword))] ?? []).filter((term) => containsTerm(text, term))
 }
 
+const options = (keyword: string) => keyword.split(/\s+\/\s+/).filter(Boolean)
+
+/** The job's own words (or a plural, family member or either-or option) are in `text`. */
+export function hasExactKeyword(text: string, keyword: string): boolean {
+  const expanded = expandFamilies(text)
+  return options(keyword).some((option) => variants(option).some((v) => containsTerm(expanded, v)))
+}
+
+/** `text` shows `keyword`, in the job's words or in other words. */
 export function hasKeyword(text: string, keyword: string): boolean {
-  const options = keyword.split(/\s+\/\s+/).filter(Boolean)
-  if (options.some((option) => variants(option).some((v) => containsTerm(text, v)))) return true
+  if (hasExactKeyword(text, keyword)) return true
   const words = wordsOf(text)
-  return options.some((option) => formMatch(words, option) || impliedBy(text, option).length > 0)
+  return options(keyword).some((option) => formMatch(words, option) || impliedBy(text, option).length > 0)
 }
 
 export function keywordCoverage(keywords: string[], text: string): KeywordCoverage {
   const present: string[] = []
+  const related: string[] = []
   const missing: string[] = []
-  const expanded = expandFamilies(text)
   for (const keyword of keywords) {
-    if (hasKeyword(expanded, keyword)) present.push(keyword)
+    if (hasExactKeyword(text, keyword)) present.push(keyword)
+    else if (hasKeyword(text, keyword)) related.push(keyword)
     else missing.push(keyword)
   }
   const score = keywords.length === 0 ? 0 : Math.round((present.length / keywords.length) * 100)
-  return { score, present, missing }
+  return { score, present, related, missing }
 }
 
 /** The master as printed: what the fit check scores, without evidence notes (never printed). */

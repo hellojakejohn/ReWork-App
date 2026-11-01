@@ -28,7 +28,7 @@ import type {
   TailorOutputRole,
 } from '@/types/tailor'
 import { containsTerm, extractNumbers, extractNumberTokens, normalizeSpace, tailorInputText, tailorOutputText } from '@/lib/resume-text'
-import { hasKeyword, masterKeywordText } from '@/lib/keyword-coverage'
+import { hasExactKeyword, hasKeyword, masterKeywordText } from '@/lib/keyword-coverage'
 
 const MAX_KEYWORDS = 20
 
@@ -416,15 +416,22 @@ function cleanKeywords(keywords: string[]): string[] {
 }
 
 /**
- * A job keyword the master showed and the rewrite lost: put back the master skill that
- * shows it, else the master bullet that does (added, or in place of its rewrite), else the master
- * summary when that shows more of the job than the rewrite. Unchanged facts, so no warning.
+ * A job keyword the master showed and the rewrite lost (or reworded away from the job's
+ * exact words): put back the master skill that shows it, else the master bullet that does
+ * (added, or in place of its rewrite), else the master summary when that shows more of the
+ * job than the rewrite. Unchanged facts, so no warning.
  */
 function keepShownKeywords(master: TailorInput, cleaned: TailorOutput, shown: string[]) {
-  const showing = () => shown.filter((k) => hasKeyword(tailorOutputText(cleaned, master), k)).length
+  const exactBefore = new Set(shown.filter((k) => hasExactKeyword(masterKeywordText(master), k)))
+  const holds = (keyword: string, text: string) => (exactBefore.has(keyword) ? hasExactKeyword(text, keyword) : hasKeyword(text, keyword))
+  // Kept keywords, plus a point for each in the job's exact words.
+  const showing = () => {
+    const text = tailorOutputText(cleaned, master)
+    return shown.filter((k) => holds(k, text)).length + shown.filter((k) => hasExactKeyword(text, k)).length
+  }
   for (const keyword of shown) {
-    if (hasKeyword(tailorOutputText(cleaned, master), keyword)) continue
-    const skill = master.skills.find((s) => hasKeyword(s, keyword))
+    if (holds(keyword, tailorOutputText(cleaned, master))) continue
+    const skill = master.skills.find((s) => holds(keyword, s))
     if (skill) {
       if (!cleaned.skills.some((s) => sameText(s, skill))) cleaned.skills.push(skill)
       continue
@@ -434,7 +441,7 @@ function keepShownKeywords(master: TailorInput, cleaned: TailorOutput, shown: st
       ...master.projects.map((m) => ({ m, out: cleaned.projects.find((p) => p.id === m.id) })),
     ]
     for (const { m, out } of entries) {
-      const bullet = m.bullets.find((b) => hasKeyword(b, keyword))
+      const bullet = m.bullets.find((b) => holds(keyword, b))
       if (!bullet || !out || out.bullets.some((b) => sameText(b.text, bullet))) continue
       const kept = { text: bullet, reason: `Kept: shows ${keyword}, which the job asks for` }
       if (out.bullets.length < m.bullets.length) {

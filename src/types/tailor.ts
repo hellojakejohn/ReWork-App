@@ -113,6 +113,8 @@ export interface FactGuardResult {
 export interface KeywordCoverage {
   score: number // 0-100
   present: string[]
+  /** Shown in other words ("frontends" for "Front-End"): true, but not the job's wording. */
+  related: string[]
   missing: string[]
 }
 
@@ -148,5 +150,7 @@ export interface TailorReport {
   targetKeywords?: string[]
   presentBefore?: string[]
   presentAfter?: string[]
+  /** Shown in other words after tailoring (Nov 2026+). */
+  relatedAfter?: string[]
   jobLocation?: string
 }

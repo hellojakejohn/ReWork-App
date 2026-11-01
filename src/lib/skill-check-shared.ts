@@ -23,6 +23,7 @@ export interface SkillAddition {
 export interface FitCoverage {
   score: number
   present: string[]
+  related: string[]
   missing: string[]
 }
 

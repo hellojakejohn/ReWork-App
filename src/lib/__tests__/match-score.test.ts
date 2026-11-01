@@ -77,9 +77,21 @@ function output(over: Partial<TailorOutput> = {}): TailorOutput {
 }
 
 describe('match score', () => {
-  it('scores the Trane misses as present', () => {
-    const { master: before } = coverageReport(master, output())
+  it('scores word for word, and keeps "in other words" out of missing', () => {
+    const { master: before, tailored: after } = coverageReport(master, factGuard(master, output()).cleaned)
+    expect(before.present).toEqual(['TypeScript', 'React', 'Code Review'])
+    expect(before.related).toEqual(['Full Stack', 'Front-End', 'Back-End', 'SQL', 'Testing'])
     expect(before.missing).toEqual(['Kubernetes'])
+    // The rewrite uses the job's words for Front-End, Back-End and SQL: real points.
+    expect(after.present).toEqual(expect.arrayContaining(['Front-End', 'Back-End', 'SQL']))
+    expect(after.score).toBeGreaterThan(before.score)
+  })
+
+  it("keeps a keyword in the job's words when the master had it that way", () => {
+    const out = output()
+    out.roles[0].bullets[1] = { text: 'Set up the spec and code-reviewing pipeline before the first client meeting', reason: 'x' }
+    const { cleaned } = factGuard(master, out)
+    expect(cleaned.roles[0].bullets[1].text).toBe(master.roles[0].bullets[1])
   })
 
   it("accepts the job's spelling of a skill the resume shows", () => {
@@ -118,7 +130,8 @@ describe('match score', () => {
 
   it('tells the model which keywords the resume shows', () => {
     const prompt = buildTailorPrompt(master, { title: 'Sr. Applications Developer', company: 'Trane', description: 'x' }, { targetKeywords: keywords })
-    expect(prompt).toContain('The resume shows these, in these or other words: Full Stack, Front-End, Back-End, TypeScript, React, SQL, Code Review, Testing.')
+    expect(prompt).toContain("The resume already uses the job's words for: TypeScript, React, Code Review.")
+    expect(prompt).toContain('The resume shows these in other words: Full Stack, Front-End, Back-End, SQL, Testing.')
     expect(prompt).toContain("The resume doesn't show these: Kubernetes. Never claim them.")
   })
 })

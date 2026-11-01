@@ -209,6 +209,7 @@ export async function POST(
       targetKeywords: cleaned.targetKeywords,
       presentBefore: coverage.master.present,
       presentAfter: coverage.tailored.present,
+      relatedAfter: coverage.tailored.related,
       jobLocation: location
     };
 
