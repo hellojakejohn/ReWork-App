@@ -8,6 +8,7 @@ import { readSkillGroups } from '@/lib/master-resume'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
 import { taskRoute } from '@/lib/ai/routing'
+import { keywordCoverage, masterKeywordText } from '@/lib/keyword-coverage'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyRecord = Record<string, any>
@@ -239,15 +240,15 @@ RULES (all mandatory):
 1. Never fabricate. No new employers, titles, dates, schools, degrees, tools, technologies, certifications, responsibilities, or achievements.
 2. Only keep numbers that already exist in the resume. Never introduce new metrics, percentages, dollar amounts, team sizes, or counts. If a bullet has no number, do not add one.
 3. Never add a tool, technology, or employer the resume doesn't already mention.
-4. Do not copy phrases verbatim from the job description. Use natural, adjacent language.
+4. Do not copy sentences from the job description. Do use its exact term for a skill, tool or method the resume really shows ("front-end" for "frontends", "SQL" for "PostgreSQL"): ATS scanners match exact words.
 5. Return every role, education entry, and project with the same "id" as the input. Copy title, company, startDate, endDate, degree, institution, graduationYear, and project name exactly as given.
 6. Bullets: rewrite each role's bullets to emphasize what matters for this job. Start with a strong action verb, keep each to 1-2 lines. You may reorder bullets by relevance and merge or drop weak ones, but every bullet must be supported by the original bullets for that same role. Keep 3-5 bullets per role when the source has that many.
 6b. Keep the proof. When you rewrite, shorten or merge a bullet, keep its concrete evidence: named tools and standards, numbers and dates, scope, how it was verified (tests, coverage, deployed, audited, monitored) and the reasoning behind a decision ("chose testnet over funding a live paymaster"). Cut filler words, never the evidence. Emphasis for this job comes from order and framing, not from deleting what makes a bullet believable. Stay under about 200 characters per bullet, and don't copy a project's tech list into its bullets.
 7. For every bullet, give a short "reason" (under 15 words) for the change, e.g. "Moved up: matches CI/CD requirement".
-8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume.
-9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"). You may drop irrelevant ones. The resume's grouping is kept for you.
+8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume. Don't name the target company.
+9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"), or a target keyword the resume shows. Keep every skill that matches a target keyword; you may drop irrelevant ones. The resume's grouping is kept for you.
 10. Certifications and extraSections are facts printed unchanged on the resume: draw on them in the summary when relevant, never invent one.
-11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods), even if the candidate lacks them. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "knowledge base"), never a phrase joining two ("gas and nonces", "Postman / curl").
+11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods), most important first (required before nice-to-have, what the posting stresses most first), even if the candidate lacks them. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "knowledge base"), never a phrase joining two ("gas and nonces", "Postman / curl").
 12. Punctuation: no em-dashes (recruiters read them as AI writing). Use commas, colons or periods.`
 
 export interface TailorJob {
@@ -264,6 +265,18 @@ export interface TailorOptions extends AICallOptions {
   targetKeywords?: string[]
 }
 
+/** The chosen keywords, split by what the resume shows, so the model knows which to use. */
+function keywordBrief(input: TailorInput, keywords: string[]): string {
+  const { present, related, missing } = keywordCoverage(keywords, masterKeywordText(input))
+  const list = (k: string[]) => k.join(', ') || '(none)'
+  return `
+TARGET KEYWORDS (already chosen; return exactly these as targetKeywords): ${keywords.join(', ')}
+The resume already uses the job's words for: ${list(present)}. Keep each one, spelled the same.
+The resume shows these in other words: ${list(related)}. Use the job's exact wording for each at least once where it is true and reads naturally (a bullet, the summary or the skills list); ATS scanners match exact words.
+The resume doesn't show these: ${list(missing)}. Never claim them.
+`
+}
+
 export function buildTailorPrompt(input: TailorInput, job: TailorJob, options: TailorOptions = {}): string {
   const context =
     options.extraContext || options.contextTags?.length
@@ -278,7 +291,7 @@ Use this to decide emphasis (e.g. career changer: lead with transferable skills)
   return `Tailor this resume to the target job.
 
 CANDIDATE RESUME (JSON, the only source of facts):
-${JSON.stringify(input, null, 2)}
+${JSON.stringify(input)}
 
 TARGET JOB:
 Title: ${job.title}
@@ -286,12 +299,7 @@ Company: ${job.company}
 ${job.location ? `Location: ${job.location}\n` : ''}Description:
 ${job.description}
 ${context}${
-    options.targetKeywords?.length
-      ? `
-TARGET KEYWORDS (already chosen; return exactly these as targetKeywords, and work in the ones the resume supports):
-${options.targetKeywords.join(', ')}
-`
-      : ''
+    options.targetKeywords?.length ? keywordBrief(input, options.targetKeywords) : ''
   }${
     input.evidence?.length
       ? `

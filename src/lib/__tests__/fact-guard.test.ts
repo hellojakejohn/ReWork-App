@@ -189,8 +189,9 @@ describe('keyword coverage', () => {
     const { cleaned } = factGuard(master, cleanOutput())
     const report = coverageReport(master, cleaned)
     // React, TypeScript, Jest present in both; GraphQL and accessibility missing
-    expect(report.master.score).toBe(60)
-    expect(report.tailored.score).toBe(60)
+    // Weighted by order: React 1 + TypeScript 0.875 + Jest 0.5 of 3.75.
+    expect(report.master.score).toBe(63)
+    expect(report.tailored.score).toBe(63)
     expect(report.tailored.missing).toEqual(['GraphQL', 'accessibility'])
   })
 })

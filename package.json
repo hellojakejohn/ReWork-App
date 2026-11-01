@@ -10,7 +10,8 @@
     "vercel-build": "prisma generate && next build",
     "test": "vitest run",
     "eval:tailor": "vitest run --config scripts/vitest.eval.config.mts",
-    "eval:models": "tsx --tsconfig tsconfig.json scripts/eval-models.ts"
+    "eval:models": "tsx --tsconfig tsconfig.json scripts/eval-models.ts",
+    "eval:match": "tsx --tsconfig tsconfig.json scripts/eval-match.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

@@ -45,8 +45,9 @@ export function TailorCard({
   const [added, setAdded] = useState(0)
   const running = stage !== null
   const outOfTailors = limitHit || (quota?.remaining === 0 && quota.limit !== null)
-  const ready = !!master && !!job && !running && !outOfTailors && !checking
   const { fit, loading: fitLoading, failed: fitFailed, update: updateFit } = useFit(master, job, isActiveStep && !outOfTailors)
+  // Wait for the fit check (a few seconds): the tailor aims at and scores the same list it shows.
+  const ready = !!master && !!job && !running && !outOfTailors && !checking && !fitLoading
 
   const tailor = async () => {
     if (!master || !job) return

@@ -18,6 +18,7 @@ import { msSince, track } from '@/lib/track';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
 import { evidenceFacts } from '@/lib/evidence-shared';
+import { savedJobKeywords } from '@/lib/job-keywords';
 import { cleanKeywords } from '@/lib/skill-check';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
@@ -62,7 +63,7 @@ export async function POST(
   const fitKeywords = Array.isArray(requestData.targetKeywords)
     ? cleanKeywords((requestData.targetKeywords as unknown[]).filter((k): k is string => typeof k === 'string'))
     : [];
-  const targetKeywords = fitKeywords.length >= 5 ? fitKeywords : undefined;
+  let targetKeywords = fitKeywords.length >= 5 ? fitKeywords : undefined;
   const jobUrl = httpUrlOrNull(requestData.jobUrl, L.jobUrl);
   const actualJobDescription = description || jobDescription;
 
@@ -85,6 +86,8 @@ export async function POST(
   }
 
   const userId = resume.userId;
+  // No fit list (it hadn't finished, or failed): reuse this job's list from a past tailor.
+  targetKeywords ??= (await savedJobKeywords(userId, actualJobDescription)) ?? undefined;
 
   const rate = checkRateLimit(`tailor:${userId}`);
   if (!rate.allowed) {
@@ -206,6 +209,7 @@ export async function POST(
       targetKeywords: cleaned.targetKeywords,
       presentBefore: coverage.master.present,
       presentAfter: coverage.tailored.present,
+      relatedAfter: coverage.tailored.related,
       jobLocation: location
     };
 

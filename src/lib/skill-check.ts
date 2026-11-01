@@ -74,7 +74,7 @@ const KEYWORDS_SCHEMA = {
 } as const
 
 export function buildKeywordsPrompt(job: { title: string; company: string; description: string }): string {
-  return `List the 10-20 concrete skills and terms this job asks for (tools, technologies, domains, methods), most important first. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "user research"), never a phrase joining two ("gas and nonces", "Figma / Sketch"). No soft skills ("communication", "team player") and no job titles.
+  return `List the 10-20 concrete skills and terms this job asks for (tools, technologies, domains, methods), most important first: required before nice-to-have, and what the posting stresses most (title, repeated, listed first) before the rest. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "user research"), never a phrase joining two ("gas and nonces", "Figma / Sketch"). No soft skills ("communication", "team player") and no job titles.
 
 JOB: ${job.title} at ${job.company}
 ${job.description}`

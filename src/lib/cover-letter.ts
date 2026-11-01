@@ -121,7 +121,7 @@ export function buildCoverLetterPrompt(input: CoverLetterInput, feedback: string
   return `Write a cover letter for this job.
 
 RESUME (JSON, the only source of facts about the candidate):
-${JSON.stringify(input.master, null, 2)}
+${JSON.stringify(input.master)}
 ${facts}
 TAILORED RESUME FOR THIS JOB (what to emphasize; same facts):
 ${input.tailoredText}

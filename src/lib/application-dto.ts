@@ -32,7 +32,7 @@ export interface ApplicationDetailDTO extends ApplicationSummaryDTO {
   jobLocation: string
   tailored: ParsedResume
   changes: BulletChange[]
-  keywords: { target: string[]; presentBefore: string[]; presentAfter: string[]; missing: string[] }
+  keywords: { target: string[]; presentBefore: string[]; presentAfter: string[]; related: string[]; missing: string[] }
   warnings: FactGuardWarning[]
   coverLetter: StoredCoverLetter | null
   coverLetterUpdatedAt: string | null
@@ -83,6 +83,7 @@ export function toApplicationDetail(row: ApplicationRowLike): ApplicationDetailD
       target,
       presentBefore: report.presentBefore ?? [],
       presentAfter: report.presentAfter ?? target.filter((k) => !missing.includes(k)),
+      related: report.relatedAfter ?? [],
       missing,
     },
     warnings: Array.isArray(report.warnings) ? report.warnings : [],

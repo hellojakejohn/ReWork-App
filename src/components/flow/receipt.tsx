@@ -78,7 +78,7 @@ function MatchMeter({ before, after }: { before: number; after: number }) {
       </div>
       <p className="mt-2 text-xs text-text-muted">
         {gain > 0 ? `+${gain} points. ` : ""}
-        The job&apos;s keywords your resume shows, counting only what you really have.
+        The job&apos;s keywords your resume uses word for word, top skills counting most. Only what you really have counts.
       </p>
     </div>
   )

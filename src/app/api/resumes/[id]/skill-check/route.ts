@@ -1,5 +1,6 @@
 // POST { title, company, description } -> the job's keywords and how many the master
-// shows: { keywords, coverage }. Free for everyone; one small model call.
+// shows: { keywords, coverage }. Free for everyone; one small model call, none when this
+// user already tailored the same job post (its saved list is reused).
 import { NextRequest, NextResponse } from 'next/server'
 import { masterToParsed } from '@/lib/master-resume'
 import { extractJobKeywords, fitCoverage, SkillCheckError } from '@/lib/skill-check'
@@ -7,6 +8,7 @@ import { INPUT_LIMITS } from '@/lib/plans'
 import { evidenceContext } from '../evidence/shared'
 import { collectUsage, usageProps } from '@/lib/ai-usage'
 import { track } from '@/lib/track'
+import { savedJobKeywords } from '@/lib/job-keywords'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -26,6 +28,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const ctx = await evidenceContext(id, { rateLimit: true, dailyCeiling: true, ai: true, feature: 'skillCheck' })
   if ('error' in ctx) return ctx.error
   const ai = ctx.ai!
+
+  // A job already tailored keeps its list: same keywords, no model call.
+  const saved = await savedJobKeywords(ctx.userId, job.description)
+  if (saved) {
+    const coverage = fitCoverage(saved, masterToParsed(ctx.resume))
+    await track('skill_check', { step: 'keywords', ok: true, keywords: saved.length, score: coverage.score, reused: true }, ctx.userId)
+    return NextResponse.json({ success: true, keywords: saved, coverage })
+  }
 
   const { run, usage } = collectUsage(() => extractJobKeywords(job), ai.scope)
   try {
