@@ -10,6 +10,10 @@
 //   source doesn't have, and any bullet naming something (an employer, tool, title or
 //   certification) that appears nowhere in the resume
 // - drop skills that don't appear anywhere in the master
+// - accept the job's spelling of a target keyword the master already shows ("Front-End"
+//   for "frontends", "SQL" for "PostgreSQL"): that's wording, not a new claim
+// - put back a skill or bullet when the rewrite lost a job keyword the master showed, so
+//   the match score never drops
 //
 // A false positive only reverts to the user's own bullet, so these lean strict.
 import type {
@@ -23,7 +27,8 @@ import type {
   TailorOutputProject,
   TailorOutputRole,
 } from '@/types/tailor'
-import { containsTerm, extractNumbers, extractNumberTokens, normalizeSpace, tailorInputText } from '@/lib/resume-text'
+import { containsTerm, extractNumbers, extractNumberTokens, normalizeSpace, tailorInputText, tailorOutputText } from '@/lib/resume-text'
+import { hasKeyword, masterKeywordText } from '@/lib/keyword-coverage'
 
 const MAX_KEYWORDS = 20
 
@@ -102,16 +107,21 @@ function words(text: string): Set<string> {
   return new Set(text.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2))
 }
 
+/** Word overlap of two bullets, 0 to 1. */
+function similarity(a: string, b: string): number {
+  const target = words(a)
+  const other = words(b)
+  let overlap = 0
+  for (const w of target) if (other.has(w)) overlap++
+  return overlap / Math.max(1, target.size + other.size - overlap)
+}
+
 /** Master bullet that the tailored bullet most likely rewrote (by word overlap). */
 export function closestMasterBullet(text: string, candidates: string[]): string | undefined {
-  const target = words(text)
   let best: string | undefined
   let bestScore = -1
   for (const candidate of candidates) {
-    const other = words(candidate)
-    let overlap = 0
-    for (const w of target) if (other.has(w)) overlap++
-    const score = overlap / Math.max(1, target.size + other.size - overlap)
+    const score = similarity(text, candidate)
     if (score > bestScore) {
       bestScore = score
       best = candidate
@@ -342,22 +352,33 @@ function guardProjects(master: TailorInput, output: TailorOutput, masterText: st
   })
 }
 
-function guardSummary(master: TailorInput, output: TailorOutput, masterText: string, warnings: FactGuardWarning[]) {
+function guardSummary(master: TailorInput, output: TailorOutput, masterText: string, namesText: string, warnings: FactGuardWarning[]) {
   const summary = normalizeSpace(output.summary || '')
   if (!summary) return master.summary
   const introduced = introducedClaims(summary, scopeOf([masterText]))
-  if (introduced.length === 0) return summary
-  warnings.push({
-    type: 'new_number',
-    section: 'summary',
-    message: `Summary introduced numbers not in your resume (${introduced.join(', ')}); reverted to your original summary.`,
-    attempted: summary,
-    restored: master.summary,
-  })
+  const names = introduced.length ? [] : newNames(summary, namesText)
+  if (introduced.length === 0 && names.length === 0) return summary
+  warnings.push(
+    introduced.length
+      ? {
+          type: 'new_number',
+          section: 'summary',
+          message: `Summary introduced numbers not in your resume (${introduced.join(', ')}); reverted to your original summary.`,
+          attempted: summary,
+          restored: master.summary,
+        }
+      : {
+          type: 'new_claim',
+          section: 'summary',
+          message: `Summary named something not in your resume (${names.join(', ')}); reverted to your original summary.`,
+          attempted: summary,
+          restored: master.summary,
+        }
+  )
   return master.summary
 }
 
-function guardSkills(master: TailorInput, output: TailorOutput, masterText: string, warnings: FactGuardWarning[]) {
+function guardSkills(master: TailorInput, output: TailorOutput, masterText: string, shown: string[], warnings: FactGuardWarning[]) {
   const kept: string[] = []
   const dropped: string[] = []
   const seen = new Set<string>()
@@ -366,7 +387,7 @@ function guardSkills(master: TailorInput, output: TailorOutput, masterText: stri
     const key = skill.toLowerCase()
     if (!skill || seen.has(key)) continue
     seen.add(key)
-    const inMaster = master.skills.some((s) => sameText(s, skill)) || containsTerm(masterText, skill)
+    const inMaster = master.skills.some((s) => sameText(s, skill)) || containsTerm(masterText, skill) || shown.some((k) => sameText(k, skill))
     if (inMaster) kept.push(skill)
     else dropped.push(skill)
   }
@@ -394,18 +415,70 @@ function cleanKeywords(keywords: string[]): string[] {
   return cleaned.slice(0, MAX_KEYWORDS)
 }
 
+/**
+ * A job keyword the master showed and the rewrite lost: put back the master skill that
+ * shows it, else the master bullet that does (added, or in place of its rewrite), else the master
+ * summary when that shows more of the job than the rewrite. Unchanged facts, so no warning.
+ */
+function keepShownKeywords(master: TailorInput, cleaned: TailorOutput, shown: string[]) {
+  const showing = () => shown.filter((k) => hasKeyword(tailorOutputText(cleaned, master), k)).length
+  for (const keyword of shown) {
+    if (hasKeyword(tailorOutputText(cleaned, master), keyword)) continue
+    const skill = master.skills.find((s) => hasKeyword(s, keyword))
+    if (skill) {
+      if (!cleaned.skills.some((s) => sameText(s, skill))) cleaned.skills.push(skill)
+      continue
+    }
+    const entries = [
+      ...master.roles.map((m) => ({ m, out: cleaned.roles.find((r) => r.id === m.id) })),
+      ...master.projects.map((m) => ({ m, out: cleaned.projects.find((p) => p.id === m.id) })),
+    ]
+    for (const { m, out } of entries) {
+      const bullet = m.bullets.find((b) => hasKeyword(b, keyword))
+      if (!bullet || !out || out.bullets.some((b) => sameText(b.text, bullet))) continue
+      const kept = { text: bullet, reason: `Kept: shows ${keyword}, which the job asks for` }
+      if (out.bullets.length < m.bullets.length) {
+        out.bullets.push(kept)
+        break
+      }
+      // No room: put it in place of the most similar rewrite, if that shows more of the job.
+      const before = showing()
+      const order = out.bullets.map((b, i) => ({ i, score: similarity(b.text, bullet) })).sort((a, b) => b.score - a.score)
+      const swapped = order.some(({ i }) => {
+        const previous = out.bullets[i]
+        out.bullets[i] = kept
+        if (showing() > before) return true
+        out.bullets[i] = previous
+        return false
+      })
+      if (swapped) break
+    }
+  }
+  if (cleaned.summary === master.summary) return
+  const rewritten = cleaned.summary
+  const withRewrite = showing()
+  cleaned.summary = master.summary
+  if (showing() <= withRewrite) cleaned.summary = rewritten
+}
+
 export function factGuard(master: TailorInput, output: TailorOutput): FactGuardResult {
   const warnings: FactGuardWarning[] = []
   const masterText = tailorInputText(master)
+  const targetKeywords = cleanKeywords(output.targetKeywords)
+  // Job keywords the printed master already shows, in any form: their job spelling is fine.
+  const printed = masterKeywordText(master)
+  const shown = targetKeywords.filter((k) => hasKeyword(printed, k))
+  const namesText = [masterText, ...shown].join('\n')
 
   const cleaned: TailorOutput = {
-    targetKeywords: cleanKeywords(output.targetKeywords),
-    summary: guardSummary(master, output, masterText, warnings),
-    roles: guardRoles(master, output, masterText, warnings),
+    targetKeywords,
+    summary: guardSummary(master, output, masterText, namesText, warnings),
+    roles: guardRoles(master, output, namesText, warnings),
     education: guardEducation(master, output, warnings),
-    projects: guardProjects(master, output, masterText, warnings),
-    skills: guardSkills(master, output, masterText, warnings),
+    projects: guardProjects(master, output, namesText, warnings),
+    skills: guardSkills(master, output, masterText, shown, warnings),
   }
+  keepShownKeywords(master, cleaned, shown)
 
   return { cleaned, warnings }
 }
