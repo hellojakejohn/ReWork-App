@@ -68,9 +68,15 @@ The $REWORK token (Solana, Bags launchpad, zero dev allocation, Jake earns creat
 only) is a side channel, never in the product flow. The one token feature is burn for Pro.
 No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-plan.md`.
 
-## Where it stands (2026-11-01)
+## Where it stands (2026-11-01 evening)
 
-- PRs #7 to #35 merged. Prod health is green except Stripe.
+- PRs #7 to #38 merged. Prod health is green except Stripe.
+- Nov 1: the Job match was audited and rebuilt (#36): exact words, "in other words",
+  weighted by importance, one keyword list per job, never drops. Real-model eval: rewording
+  adds honest points (Jake's SWE job 43% -> 48% weighted), nothing invented or lost. #37/#38:
+  long tracking links, "You tailored this job", missing-skills nudge, old results re-scored.
+- Nov 1: prod lost its database for ~20 minutes after a deploy (session pooler, 15 clients).
+  Vercel now uses the transaction pooler; smoke test passed after.
 - Since Oct 29: ghost-job signs (#31), job box takes a link or the whole post and reads
   Oracle and BambooHR (#32), new thread wordmark (#33), `/proof` "Invented: 0" page and an
   Admin link in the account menu (#34), app icon and favicon from the wordmark (#35).
@@ -79,7 +85,7 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
 - Launch blocker: Stripe live setup (prod key is an invalid test key). Domain:
   rework.careers picked, not bought yet; not a blocker (the site runs on
   rework.hellojakejohn.com until the move).
-- Launch plan and Jake's checklist: `docs/handoff-2026-11-01.md`.
+- Launch plan and Jake's checklist: `docs/handoff-2026-11-02.md`.
 
 ## What job hunters hate, and our answer (research 2026-10-29)
 
@@ -105,7 +111,8 @@ Survey sources: Resume Genius, iHire, Greenhouse, TopResume (see `docs/handoff-2
 3. Chrome Web Store: Jake pays the $5 developer fee and uploads `extension-dist.zip`
    (`extension/README.md`); review usually takes a few days.
 4. Sentry (or accept `/admin`) and an uptime monitor on `/api/health/live`.
-5. Isolate the Preview env (own DB and Stripe test keys, or Deployment Protection).
+5. Isolate the Preview env: Deployment Protection is on (previews need Vercel login), so
+   only the shared DB is left; fine for launch.
 6. More quality tuning with real resumes (`STATE.md` "Quality eval" ideas), fresh-account
    smoke test on prod, phone check, Word/Google Docs/ATS export check.
 7. Go/no-go list at the bottom of `docs/launch-audit.md`.
