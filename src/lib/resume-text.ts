@@ -89,7 +89,10 @@ export function tailorInputText(input: TailorInput): string {
 /** Resume text for a tailored version (what a recruiter/ATS would read). */
 export function tailorOutputText(output: TailorOutput, master: TailorInput): string {
   // Certifications and extra sections are printed unchanged on the tailored resume.
-  const parts: string[] = [output.summary, ...output.skills, ...(master.certifications ?? []), ...extraSectionText(master)]
+  // A skills group's name prints when any of its skills is kept.
+  const kept = new Set(output.skills.map((s) => s.toLowerCase()))
+  const groups = (master.skillGroups ?? []).filter((g) => g.items.some((i) => kept.has(i.toLowerCase()))).map((g) => g.group)
+  const parts: string[] = [output.summary, ...output.skills, ...groups, ...(master.certifications ?? []), ...extraSectionText(master)]
   for (const role of output.roles) {
     parts.push(role.title, role.company, ...role.bullets.map((b) => b.text))
   }
