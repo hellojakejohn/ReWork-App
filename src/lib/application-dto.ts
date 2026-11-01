@@ -3,7 +3,10 @@ import { masterToParsed } from '@/lib/master-resume'
 import type { ApplicationStatus } from '@prisma/client'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { readStoredCoverLetter, type StoredCoverLetter } from '@/lib/cover-letter-shared'
-import type { BulletChange, FactGuardWarning, TailorCategoryScores, TailorReport } from '@/types/tailor'
+import type { BulletChange, FactGuardWarning, KeywordCoverage, TailorCategoryScores, TailorOutput, TailorReport } from '@/types/tailor'
+import { buildTailorInput, type MasterResume } from '@/lib/tailor'
+import { coverageReport } from '@/lib/keyword-coverage'
+import { outputWithDecisions } from '@/lib/tailor-changes'
 
 export interface ApplicationSummaryDTO {
   id: string
@@ -51,6 +54,8 @@ interface ApplicationRowLike {
   keywords?: string[]
   suggestions?: unknown
   optimizedStructured?: unknown
+  originalContent?: unknown
+  optimizedContent?: unknown
   coverLetter?: unknown
   coverLetterUpdatedAt?: Date | null
 }
@@ -69,23 +74,64 @@ export function toApplicationSummary(row: ApplicationRowLike): ApplicationSummar
   }
 }
 
+/**
+ * Coverage re-scored with today's matcher from what the row stores (the master snapshot and
+ * the tailored output with the user's Accept/Revert choices), so results saved before a
+ * matcher change don't show stale lists ("Front-End missing" for "frontends"). Null when
+ * the row doesn't carry its contents.
+ */
+function freshCoverage(row: ApplicationRowLike, report: Partial<TailorReport>, target: string[]): { master: KeywordCoverage; tailored: KeywordCoverage } | null {
+  const cleaned = row.optimizedContent as TailorOutput | null | undefined
+  if (!target.length || !row.originalContent || !cleaned?.roles) return null
+  try {
+    const output = outputWithDecisions({ ...cleaned, targetKeywords: target }, report.changes ?? [])
+    return coverageReport(buildTailorInput(row.originalContent as MasterResume), output)
+  } catch {
+    return null
+  }
+}
+
 export function toApplicationDetail(row: ApplicationRowLike): ApplicationDetailDTO {
   const report = (row.suggestions ?? {}) as Partial<TailorReport>
   const target = report.targetKeywords ?? row.keywords ?? []
+  const fresh = freshCoverage(row, report, target)
+  if (fresh) {
+    return withKeywords(row, report, target, {
+      coverageBefore: fresh.master.score,
+      coverageAfter: fresh.tailored.score,
+      presentBefore: fresh.master.present,
+      presentAfter: fresh.tailored.present,
+      related: fresh.tailored.related,
+      missing: fresh.tailored.missing,
+    })
+  }
   const missing = report.missingKeywords ?? []
+  const summary = toApplicationSummary(row)
+  return withKeywords(row, report, target, {
+    coverageBefore: summary.coverageBefore,
+    coverageAfter: summary.coverageAfter,
+    presentBefore: report.presentBefore ?? [],
+    presentAfter: report.presentAfter ?? target.filter((k) => !missing.includes(k)),
+    related: report.relatedAfter ?? [],
+    missing,
+  })
+}
+
+function withKeywords(
+  row: ApplicationRowLike,
+  report: Partial<TailorReport>,
+  target: string[],
+  k: { coverageBefore: number | null; coverageAfter: number | null; presentBefore: string[]; presentAfter: string[]; related: string[]; missing: string[] }
+): ApplicationDetailDTO {
   return {
     ...toApplicationSummary(row),
+    coverageBefore: k.coverageBefore,
+    coverageAfter: k.coverageAfter,
     jobDescription: row.jobDescription ?? '',
     jobLocation: report.jobLocation ?? '',
     tailored: masterToParsed((row.optimizedStructured ?? {}) as Record<string, unknown>),
     changes: report.changes ?? [],
-    keywords: {
-      target,
-      presentBefore: report.presentBefore ?? [],
-      presentAfter: report.presentAfter ?? target.filter((k) => !missing.includes(k)),
-      related: report.relatedAfter ?? [],
-      missing,
-    },
+    keywords: { target, presentBefore: k.presentBefore, presentAfter: k.presentAfter, related: k.related, missing: k.missing },
     warnings: Array.isArray(report.warnings) ? report.warnings : [],
     coverLetter: readStoredCoverLetter(row.coverLetter),
     coverLetterUpdatedAt: row.coverLetterUpdatedAt ? row.coverLetterUpdatedAt.toISOString() : null,
