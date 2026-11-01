@@ -27,6 +27,8 @@ export function TailorCard({
   onUpgrade,
   onReplaceResume,
   onMasterSaved,
+  previous,
+  onOpenPrevious,
 }: {
   master: MasterResumeDTO | null
   job: JobDraft | null
@@ -36,6 +38,9 @@ export function TailorCard({
   onDone: (application: ApplicationDetailDTO, tailorsRemaining: number | null) => void
   onUpgrade: (reason?: string) => void
   onReplaceResume: () => void
+  /** The user's last tailor of this job with this resume, if any. */
+  previous?: { id: string; createdAt: string } | null
+  onOpenPrevious?: (id: string) => void
   onMasterSaved: (master: MasterResumeDTO) => void
 }) {
   const [stage, setStage] = useState<string | null>(null)
@@ -66,7 +71,8 @@ export function TailorCard({
     onDone(result.result.application, result.result.tailorsRemaining)
   }
 
-  useAdvance(isActiveStep && ready, () => void tailor())
+  // Enter doesn't re-tailor a job already tailored: that takes the button, on purpose.
+  useAdvance(isActiveStep && ready && !previous, () => void tailor())
 
   const s = master ? summarizeResume(master.resume) : null
   return (
@@ -138,6 +144,17 @@ export function TailorCard({
                   <p className="rounded-input bg-success-tint px-3 py-2 text-sm text-text" role="status">
                     Added {added} to your resume. The tailor will use {added === 1 ? "it" : "them"}.
                   </p>
+                )}
+                {previous && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface-raised p-4 text-sm" role="status">
+                    <p className="flex-1 text-text">
+                      You tailored this job on {new Date(previous.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}.
+                      {quota?.limit === null ? " Open it, or tailor again." : " Open it, or tailor again (uses 1 tailor)."}
+                    </p>
+                    <Button variant="secondary" size="sm" onClick={() => onOpenPrevious?.(previous.id)}>
+                      Open it
+                    </Button>
+                  </div>
                 )}
                 <FitSummary fit={fit} loading={fitLoading} failed={fitFailed} onCheck={() => setChecking(true)} />
               </>
