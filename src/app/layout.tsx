@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: { ...OG_DEFAULTS, title: TITLE, description: DESCRIPTION },
   twitter: { ...TWITTER_DEFAULTS, title: TITLE, description: DESCRIPTION },
   robots: { index: true, follow: true },
-  // Icons come from the file conventions: app/favicon.ico, app/icon.svg, app/apple-icon.png.
+  // Icons come from the file conventions: app/favicon.ico, app/icon.png, app/apple-icon.png (scripts/brand/build-icon.mjs).
 }
 
 export default function RootLayout({
