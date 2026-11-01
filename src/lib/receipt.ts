@@ -2,6 +2,7 @@
 // from the saved tailor report (changes, keyword coverage, fact-guard warnings). Pure and
 // client-safe. Nothing here is estimated: a count the report doesn't support is null.
 import type { BulletChange, FactGuardWarning } from '@/types/tailor'
+import { weightedScore } from '@/lib/keyword-coverage'
 
 export interface ReceiptInput {
   changes: Pick<BulletChange, 'status'>[]
@@ -101,4 +102,14 @@ export function buildReceipt(input: ReceiptInput): Receipt {
     restored: input.warnings.filter((w) => w.type === 'entry_restored').length,
     invented: 0,
   }
+}
+
+/**
+ * When much of the job (40%+ by weight, 3+ keywords) isn't in the resume, tailoring can't
+ * close the gap: only the user's own answers can. Returns the top missing keywords to name
+ * in that nudge, most important first, or null.
+ */
+export function missingNudge(target: string[], missing: string[]): string[] | null {
+  if (missing.length < 3 || weightedScore(target, missing) < 40) return null
+  return target.filter((k) => missing.includes(k)).slice(0, 3)
 }

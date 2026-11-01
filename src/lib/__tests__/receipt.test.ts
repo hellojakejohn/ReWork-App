@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildReceipt, REAL_NUMBER_QUESTION } from '@/lib/receipt'
+import { buildReceipt, missingNudge, REAL_NUMBER_QUESTION } from '@/lib/receipt'
 import type { FactGuardWarning } from '@/types/tailor'
 
 const base = {
@@ -79,5 +79,16 @@ describe('buildReceipt', () => {
   it('ignores warnings with no attempted text', () => {
     const r = buildReceipt({ ...base, warnings: [{ type: 'new_number', section: 'roles', id: 'r', message: '' }] })
     expect(r.leftOut).toHaveLength(0)
+  })
+})
+
+describe('missingNudge', () => {
+  const target = ['Java', 'Spring Boot', 'Azure', 'React', 'TypeScript', 'Docker']
+  it('names the top missing skills when much of the job is missing', () => {
+    expect(missingNudge(target, ['Docker', 'Java', 'Azure', 'Spring Boot'])).toEqual(['Java', 'Spring Boot', 'Azure'])
+  })
+  it('stays quiet when little is missing or the gaps are minor', () => {
+    expect(missingNudge(target, ['Java', 'Azure'])).toBeNull()
+    expect(missingNudge([...target, 'a', 'b', 'c', 'd', 'e', 'f'], ['d', 'e', 'f'])).toBeNull()
   })
 })
