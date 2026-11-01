@@ -61,3 +61,11 @@ describe('stem', () => {
     expect(stem('running')).toBe('run')
   })
 })
+
+describe('REST naming', () => {
+  it('reads RESTful and REST APIs as the same skill', () => {
+    expect(keywordCoverage(['RESTful', 'RESTful APIs'], 'Built REST APIs for partners.').missing).toEqual([])
+    expect(keywordCoverage(['REST APIs'], 'Designed RESTful APIs.').missing).toEqual([])
+    expect(keywordCoverage(['RESTful'], 'Rested on weekends.').missing).toEqual(['RESTful'])
+  })
+})

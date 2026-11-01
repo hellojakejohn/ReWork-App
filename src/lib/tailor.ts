@@ -291,7 +291,7 @@ Use this to decide emphasis (e.g. career changer: lead with transferable skills)
   return `Tailor this resume to the target job.
 
 CANDIDATE RESUME (JSON, the only source of facts):
-${JSON.stringify(input, null, 2)}
+${JSON.stringify(input)}
 
 TARGET JOB:
 Title: ${job.title}

@@ -100,6 +100,9 @@ const IMPLIED: Record<string, string[]> = {
   javascript: ['TypeScript', 'Node.js'],
   cloud: ['AWS', 'Amazon Web Services', 'GCP', 'Google Cloud', 'Azure'],
   cicd: ['GitHub Actions', 'GitLab CI', 'CircleCI', 'Jenkins'],
+  restful: ['REST', 'REST API', 'REST APIs'],
+  restfulapi: ['REST API', 'REST APIs'],
+  restapi: ['RESTful API', 'RESTful APIs'],
 }
 
 /** The more specific names in `text` that show `keyword` ("PostgreSQL" for "SQL"). */

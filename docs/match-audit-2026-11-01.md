@@ -42,3 +42,20 @@ and tests.
 - 6: before and after read the same kind of text (printed resume, no evidence notes,
   skill group names in both).
 - 7: the summary gets the same new-name check as bullets.
+
+## Eval (real model, ~$0.80)
+
+`npm run eval:match` (fit keywords -> tailor -> fact guard -> coverage). First run showed the
+loose matcher hid the tailor's real gain: before and after both counted "frontends" as
+Front-End, so every case read +0. Re-scored by exact wording, the tailor had converted
+every keyword shown in other words (CI/CD, weekly reports, relational databases) and lost
+none. So the score is now the job's exact words, and "in other words" is its own group
+on the Keywords tab (never sent to the skill check).
+
+Rerun (Jake's support resume): Full Stack SWE 35% -> 40% (relational databases now word for
+word), Web3 support 65% -> 65% (nothing left to reword), Trane 15% -> 15% (the job wants
+Java, Azure and Kubernetes; the resume doesn't have them, honestly). No keyword lost, no
+fact-guard reverts.
+
+Also: RESTful = REST APIs; the resume JSON in the tailor and cover letter prompts is sent
+compact (30% fewer characters for the resume part).
