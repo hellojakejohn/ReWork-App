@@ -68,16 +68,18 @@ The $REWORK token (Solana, Bags launchpad, zero dev allocation, Jake earns creat
 only) is a side channel, never in the product flow. The one token feature is burn for Pro.
 No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-plan.md`.
 
-## Where it stands (2026-10-29)
+## Where it stands (2026-11-01)
 
-- PRs #7 to #29 merged. Prod health is green except Stripe.
-- New on Oct 29: free skill check and fit check (#22, #23), tailor keeps the proof in
-  bullets (#24), Save to ReWork for LinkedIn and Indeed (bookmarklet + Chrome extension,
-  #25, #26), Job match before -> after on the receipt (#27), test run and demo files (#28),
-  job-scam warnings on the Job card (#29), ghost-job signs (#31).
+- PRs #7 to #35 merged. Prod health is green except Stripe.
+- Since Oct 29: ghost-job signs (#31), job box takes a link or the whole post and reads
+  Oracle and BambooHR (#32), new thread wordmark (#33), `/proof` "Invented: 0" page and an
+  Admin link in the account menu (#34), app icon and favicon from the wordmark (#35).
 - AI: Anthropic only. Opus 5.5 everywhere, Sonnet 5.5 for the free tier and as a one-time
   retry when Opus declines.
-- Launch blocker: Stripe live setup (prod key is an invalid test key).
+- Launch blocker: Stripe live setup (prod key is an invalid test key). Domain:
+  rework.careers picked, not bought yet; not a blocker (the site runs on
+  rework.hellojakejohn.com until the move).
+- Launch plan and Jake's checklist: `docs/handoff-2026-11-01.md`.
 
 ## What job hunters hate, and our answer (research 2026-10-29)
 
@@ -108,8 +110,9 @@ Survey sources: Resume Genius, iHire, Greenhouse, TopResume (see `docs/handoff-2
    smoke test on prod, phone check, Word/Google Docs/ATS export check.
 7. Go/no-go list at the bottom of `docs/launch-audit.md`.
 
-**Launch day**: product live and a real Stripe sale verified first; token at midday CT
-(`docs/token-plan.md` section 5).
+**Launch day (both)**: the website first, with a real Stripe sale verified; then `$REWORK` on
+Bags at midday CT, `REWORK_MINT` set in Vercel so `/token` and burn-for-Pro go live
+(`docs/token-plan.md` section 5). If Stripe isn't live by then, the token waits too.
 
 **Week 1**: watch `/admin` daily (funnel, `ai_error`, `limit_hit`, spend by model); raise
 the $2 daily ceilings if free users hit them; feedback email to Jake; fix what users hit.

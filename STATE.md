@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of `main` on 2026-10-29 (PRs #7 to #31 merged). History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-11-01 (PRs #7 to #35 merged). Launch handoff: `docs/handoff-2026-11-01.md`. History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -59,13 +59,17 @@ Spec: brand-kit/BRAND.md (gitignored; shipped assets in `public/brand/`). PDF ex
 Tinos/Arimo (`src/lib/fonts/`, OFL), metric twins of Times/Helvetica with Latin Extended. Light first, dark
 follows the system with a Light/Dark/System toggle in the account menu. Headings Newsreader,
 UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
-`node scripts/generate-og-image.js`.
+`node scripts/generate-og-image.js`. Wordmark: `node scripts/brand/build-logo.mjs` (thread drawn
+through every letter of `scripts/brand/rework-logo-source.webp`). App icon, favicon, manifest
+and extension icons: `node scripts/brand/build-icon.mjs` (the wordmark's needle and loop).
 
 ## Pages
 - `/` landing (server component), `/terms`, `/privacy`: public, no auth JS.
 - `src/app/(app)/`: `/dashboard` (the one-page flow), `/dashboard/tracker`, `/pricing`,
   `/auth/signin`, `/admin`. The route group's layout holds the session/feedback providers
   and the toaster.
+- `/proof` (public): "Invented: 0" plus totals of every tailor's receipt (`src/lib/proof-stats.ts`,
+  recounted hourly; average job match only after 10 results). In the footer and sitemap.
 - `/sitemap.xml`, `/robots.txt`, `public/og-image.png` (1200x630).
 - `/token` (public) and `/dashboard/token` (burn $REWORK for 30 days of Pro): both 404
   until `REWORK_MINT` is set. Not in the sitemap or footer; linked from X only.
@@ -85,9 +89,10 @@ UI Plus Jakarta Sans; PDF/DOCX exports keep their ATS-neutral fonts. OG image:
   checkout_completed, limit_hit, download, ai_error, ai_usage, ai_call, ai_cap_band,
   account_deleted. Every provider call writes an `ai_call` event (provider, model, task,
   tokens, cached tokens, estimated cost): the source of truth for spend and the AI cap.
-- `/admin`: 7/30-day event counts, signup cohort funnel with conversion, errors by kind,
+- `/admin` (account menu > Admin, for emails in `ADMIN_EMAILS`): 7/30-day event counts, signup cohort funnel with conversion, errors by kind,
   recent errors, AI spend by day and by model, active Pro, MRR and pass revenue estimates.
-  Users table: month-to-date AI spend, period cap, and a per-user cap override.
+  Users table: month-to-date AI spend, period cap, a per-user cap override, and "Comp Pro
+  for N days" (how Jake gives himself Pro to test).
 
 ## Migrations
 Applied by hand in the Supabase SQL editor (never `prisma migrate deploy`: the folder is out
@@ -207,16 +212,16 @@ Tuning ideas not done yet:
 - The read-only Supabase connector in Claude sessions points at another project (TripQuest),
   so prod numbers come from `/admin`, not that connector.
 
-## Next session: Stripe live setup (with Jake at the computer, ~20 min)
-Follow `docs/launch-audit.md` "What Jake must do" items 4 to 6:
+## Next session: launch week
+`docs/handoff-2026-11-01.md` has the day-by-day plan to Fri Nov 6 (website first, token at
+midday CT). Stripe live setup (with Jake at the computer, ~20 min) is `docs/launch-audit.md`
+"What Jake must do" items 4 to 6:
 1. Stripe live mode: products/prices $15/month and $29 one-time; put `sk_live_` key and
    both price ids in Vercel Production (Jake pastes secrets himself, never in chat).
-2. Webhook `https://rework.hellojakejohn.com/api/stripe/webhook` on API version
-   2026-02-25.clover with the 10 listed events; `whsec_` into Vercel.
+2. Webhook `https://<live domain>/api/stripe/webhook` on API version 2026-02-25.clover with
+   the 10 listed events; `whsec_` into Vercel. Stripe doesn't follow redirects, so if the
+   domain moves to rework.careers later, change the endpoint URL the same day.
 3. Portal (only the $15 price, cancel at period end), checkout one-subscription setting.
 4. Clear test billing data in the prod DB (SQL in the audit, counts first).
 5. Redeploy, `/api/health` as admin must be `ok: true`.
 6. One real $29 pass and one $15 subscription, then refund/cancel.
-After that: Sentry + uptime monitor on `/api/health/live`, isolate the Preview env, then more
-quality tuning (ideas above) until launch.
-
