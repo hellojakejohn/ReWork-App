@@ -11,6 +11,7 @@ import { ResumeDocument } from "./resume-document"
 import { CoverLetterPanel } from "./cover-letter-panel"
 import { DownloadMenu } from "./download-menu"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
+import { missingNudge } from "@/lib/receipt"
 import { Card, CardHeader, ErrorNote } from "./ui"
 import { rememberCoverage, SkillCheck } from "./skill-check"
 
@@ -83,6 +84,7 @@ function Result({
 
   const { keywords, changes } = application
   const newlyCovered = receipt.keywordsAddedList
+  const nudge = missingNudge(keywords.target, keywords.missing)
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: "preview", label: "Resume" },
@@ -251,6 +253,23 @@ function Result({
           </div>
           <h2 className="font-serif text-3xl font-medium leading-tight tracking-tight text-text">Nice. Here&apos;s what changed.</h2>
           <ReceiptCard receipt={receipt} />
+          {nudge && added === 0 && (
+            <div className="space-y-2 rounded-card border border-border bg-surface-raised p-4 text-sm">
+              <p className="text-text">
+                Tailoring only rewords what you have. {keywords.missing.length} of this job&apos;s skills aren&apos;t in your resume yet, like {nudge.join(", ")}.
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setTab("keywords")
+                  setChecking(true)
+                }}
+              >
+                <ListChecks className="h-4 w-4" /> Have you done any of these?
+              </Button>
+            </div>
+          )}
           <LeftOutList
             application={application}
             receipt={receipt}

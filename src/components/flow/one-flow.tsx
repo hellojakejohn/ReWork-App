@@ -30,6 +30,7 @@ import { ResumeCard, type ResumeCardRequest } from "./resume-card"
 import { ManageResumesDialog } from "./manage-resumes"
 import { JobCard, jobIsValid } from "./job-card"
 import { TailorCard } from "./tailor-card"
+import { previousTailor } from "@/lib/previous-tailor"
 import { ResultCard } from "./result-card"
 import { RecentDrawer } from "./recent-drawer"
 import { ErrorNote } from "./ui"
@@ -366,6 +367,8 @@ export function OneFlow() {
       onUpgrade={(reason) => setUpgrade({ open: true, reason })}
       onReplaceResume={() => openResume("replace")}
       onMasterSaved={(m) => setMasters((list) => list.map((x) => (x.id === m.id ? m : x)))}
+      previous={active && job ? previousTailor(applications, active.id, job) : null}
+      onOpenPrevious={(id) => void openApplication(id)}
     />,
     <ResultCard
       key="result"

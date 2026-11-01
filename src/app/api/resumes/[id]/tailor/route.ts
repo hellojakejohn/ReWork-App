@@ -19,6 +19,7 @@ import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
 import { evidenceFacts } from '@/lib/evidence-shared';
 import { savedJobKeywords } from '@/lib/job-keywords';
+import { cleanJobUrl } from '@/lib/job-url';
 import { cleanKeywords } from '@/lib/skill-check';
 import type { TailorCategoryScores, TailorReport } from '@/types/tailor';
 
@@ -64,7 +65,7 @@ export async function POST(
     ? cleanKeywords((requestData.targetKeywords as unknown[]).filter((k): k is string => typeof k === 'string'))
     : [];
   let targetKeywords = fitKeywords.length >= 5 ? fitKeywords : undefined;
-  const jobUrl = httpUrlOrNull(requestData.jobUrl, L.jobUrl);
+  const jobUrl = httpUrlOrNull(typeof requestData.jobUrl === 'string' ? cleanJobUrl(requestData.jobUrl) : requestData.jobUrl, L.jobUrl);
   const actualJobDescription = description || jobDescription;
 
   if (!jobTitle || !actualCompanyName || !actualJobDescription) {
