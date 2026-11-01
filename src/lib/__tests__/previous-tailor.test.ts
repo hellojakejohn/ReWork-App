@@ -26,3 +26,15 @@ describe('previousTailor', () => {
     expect(previousTailor([app('a')], 'r1', { url: '', title: '', company: '' })).toBeNull()
   })
 })
+
+describe('previousTailor, loose title and company', () => {
+  it('matches the Trane post read from its link against the pasted one', () => {
+    const job = { url: 'https://careers.tranetechnologies.com/global/en/job/92600058/Sr-Applications-Developer-Full-Stack', title: 'Sr. Applications Developer (Full Stack)', company: 'trane technologies' }
+    expect(previousTailor([app('a', { jobUrl: null })], 'r1', job)?.id).toBe('a')
+    expect(previousTailor([app('a', { jobUrl: null, jobTitle: 'Sr. Applications Developer - Remote', company: 'Trane Technologies plc' })], 'r1', { url: '', title: 'Sr. Applications Developer', company: 'Trane' })?.id).toBe('a')
+  })
+  it('keeps different roles and companies apart', () => {
+    expect(previousTailor([app('a', { jobUrl: null })], 'r1', { url: '', title: 'Applications Developer', company: 'Trane' })).toBeNull()
+    expect(previousTailor([app('a', { jobUrl: null })], 'r1', { url: '', title: 'Sr. Applications Developer', company: 'Carrier' })).toBeNull()
+  })
+})
