@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { Check, ListChecks, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { weightedScore } from "@/lib/keyword-coverage"
 import { LOW_FIT_SCORE, MAX_SKILL_NOTE, MAX_SKILL_QUESTIONS, type FitCoverage, type SkillAddition, type SkillAnswer, type SkillLevel } from "@/lib/skill-check-shared"
 import { applySkillAnswers, checkFit, placeSkillAnswers, type JobDraft, type MasterResumeDTO } from "./api"
 import { ErrorNote, inputClass } from "./ui"
@@ -99,7 +100,7 @@ export function FitSummary({ fit, loading, failed, onCheck }: { fit: Fit | null;
   const { score, present, missing } = fit.coverage
   const related = fit.coverage.related ?? []
   // A stretch is judged on what the resume shows in any words, not just the job's wording.
-  const low = ((present.length + related.length) / fit.keywords.length) * 100 < LOW_FIT_SCORE
+  const low = weightedScore(fit.keywords, [...present, ...related]) < LOW_FIT_SCORE
   return (
     <div className="space-y-3 rounded-card border border-border bg-surface-raised p-4" aria-live="polite">
       <div className="flex items-baseline justify-between gap-3">
@@ -111,7 +112,7 @@ export function FitSummary({ fit, loading, failed, onCheck }: { fit: Fit | null;
       </div>
       <p className="text-sm text-text-secondary">
         Your resume uses the job&apos;s words for {present.length} of the {fit.keywords.length} things it asks for
-        {related.length > 0 ? ` and shows ${related.length} more in other words, which tailoring rewords.` : "."}
+        {related.length > 0 ? ` and shows ${related.length} more in other words, which tailoring rewords.` : "."} The job&apos;s top skills count most.
         {low && missing.length > 0 && " As it stands, this job is a stretch."}
       </p>
       {missing.length > 0 && (

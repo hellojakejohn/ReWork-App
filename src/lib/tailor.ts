@@ -248,7 +248,7 @@ RULES (all mandatory):
 8. Summary: 2-3 sentences positioning the candidate for this role, using only facts from the resume. Don't name the target company.
 9. Skills: return a flat list, most relevant first. Only include skills that appear in the resume ("skills" and "skillGroups"), or a target keyword the resume shows. Keep every skill that matches a target keyword; you may drop irrelevant ones. The resume's grouping is kept for you.
 10. Certifications and extraSections are facts printed unchanged on the resume: draw on them in the summary when relevant, never invent one.
-11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods), even if the candidate lacks them. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "knowledge base"), never a phrase joining two ("gas and nonces", "Postman / curl").
+11. targetKeywords: extract 10-20 concrete skills/terms from the job description (tools, technologies, domains, methods), most important first (required before nice-to-have, what the posting stresses most first), even if the candidate lacks them. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "knowledge base"), never a phrase joining two ("gas and nonces", "Postman / curl").
 12. Punctuation: no em-dashes (recruiters read them as AI writing). Use commas, colons or periods.`
 
 export interface TailorJob {

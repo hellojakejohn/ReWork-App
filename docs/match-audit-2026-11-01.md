@@ -59,3 +59,12 @@ fact-guard reverts.
 
 Also: RESTful = REST APIs; the resume JSON in the tailor and cover letter prompts is sent
 compact (30% fewer characters for the resume part).
+
+## Weighting
+
+The keyword list comes most important first (required before nice-to-have; both prompts now
+say so). The score weights by that order: the first keyword counts 1, the last 0.5. On the
+saved eval results: Full Stack SWE 35% flat -> 43% weighted before tailoring (the resume has
+the job's top five), Trane 15% -> 18% (its top three are Java, Spring Boot, Azure). The
+"this job is a stretch" check uses the same weights, over everything the resume shows.
+Old saved results keep the flat score they were saved with.

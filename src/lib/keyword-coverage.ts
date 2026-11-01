@@ -2,7 +2,8 @@
 // matching, no AI. Each keyword is one of:
 // - present: the job's own words, as an ATS would search for them. A plural counts
 //   ("knowledge bases"), "ERC-20/721/1155" counts as each standard, and "Postman / curl"
-//   counts if either is there. The score is the share of these.
+//   counts if either is there. The score is the weighted share of these: keywords come
+//   most important first, the first counts 1 and the last 0.5 (keywordWeight).
 // - related: shown in other words. Word forms ("Front-End" = "front end" = "frontends",
 //   "Unit Testing" = "unit tests", "web and mobile applications" for "Web Applications")
 //   and a short list of honest implications (PostgreSQL shows SQL). True, so the tailor
@@ -125,6 +126,24 @@ export function hasKeyword(text: string, keyword: string): boolean {
   return options(keyword).some((option) => formMatch(words, option) || impliedBy(text, option).length > 0)
 }
 
+/** Weight of the keyword at `index` of `count`: 1 for the first, down to 0.5 for the last. */
+export function keywordWeight(index: number, count: number): number {
+  return count <= 1 ? 1 : 1 - (0.5 * index) / (count - 1)
+}
+
+/** Weighted share (0-100) of `keywords` that are in `hits`. */
+export function weightedScore(keywords: string[], hits: string[]): number {
+  if (keywords.length === 0) return 0
+  let total = 0
+  let got = 0
+  keywords.forEach((k, i) => {
+    const w = keywordWeight(i, keywords.length)
+    total += w
+    if (hits.includes(k)) got += w
+  })
+  return Math.round((got / total) * 100)
+}
+
 export function keywordCoverage(keywords: string[], text: string): KeywordCoverage {
   const present: string[] = []
   const related: string[] = []
@@ -134,8 +153,7 @@ export function keywordCoverage(keywords: string[], text: string): KeywordCovera
     else if (hasKeyword(text, keyword)) related.push(keyword)
     else missing.push(keyword)
   }
-  const score = keywords.length === 0 ? 0 : Math.round((present.length / keywords.length) * 100)
-  return { score, present, related, missing }
+  return { score: weightedScore(keywords, present), present, related, missing }
 }
 
 /** The master as printed: what the fit check scores, without evidence notes (never printed). */

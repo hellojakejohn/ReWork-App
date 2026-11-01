@@ -36,7 +36,8 @@ describe('keywords and fit', () => {
     const fit = fitCoverage(['React', 'Figma', 'TypeScript', 'user research'], resume)
     expect(fit.present).toEqual(['React', 'TypeScript'])
     expect(fit.missing).toEqual(['Figma', 'user research'])
-    expect(fit.score).toBe(50)
+    // Weighted by order: React 1 + TypeScript 0.67 of 3.
+    expect(fit.score).toBe(56)
   })
 })
 

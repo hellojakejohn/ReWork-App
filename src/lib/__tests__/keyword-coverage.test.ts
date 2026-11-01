@@ -1,6 +1,6 @@
 // Keyword coverage matching: plurals, slash families and either-or terms count.
 import { describe, expect, it } from 'vitest'
-import { keywordCoverage, stem } from '@/lib/keyword-coverage'
+import { keywordCoverage, keywordWeight, stem } from '@/lib/keyword-coverage'
 
 describe('keywordCoverage', () => {
   const text = 'Skills: ERC-20/721/1155, Permit2. Wrote knowledge bases and reproducible bug reports. Used curl daily.'
@@ -67,5 +67,14 @@ describe('REST naming', () => {
     expect(keywordCoverage(['RESTful', 'RESTful APIs'], 'Built REST APIs for partners.').missing).toEqual([])
     expect(keywordCoverage(['REST APIs'], 'Designed RESTful APIs.').missing).toEqual([])
     expect(keywordCoverage(['RESTful'], 'Rested on weekends.').missing).toEqual(['RESTful'])
+  })
+})
+
+describe('weighted score', () => {
+  it('counts the first keyword double the last', () => {
+    expect([0, 1, 2].map((i) => keywordWeight(i, 3))).toEqual([1, 0.75, 0.5])
+    expect(keywordCoverage(['TypeScript', 'Kubernetes'], 'TypeScript').score).toBe(67)
+    expect(keywordCoverage(['Kubernetes', 'TypeScript'], 'TypeScript').score).toBe(33)
+    expect(keywordCoverage(['TypeScript'], 'TypeScript').score).toBe(100)
   })
 })
