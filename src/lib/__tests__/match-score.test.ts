@@ -146,3 +146,19 @@ describe('match score never drops', () => {
     }
   })
 })
+
+describe('Accept/Revert re-scores', () => {
+  it('drops a keyword when the change that added it is reverted, and restores it on accept', async () => {
+    const { buildChanges, outputWithDecisions } = await import('@/lib/tailor-changes')
+    const plain = { ...master, summary: 'Engineer shipping products in TypeScript.', skills: ['TypeScript'], skillGroups: [{ group: '', items: ['TypeScript'] }] }
+    const out = output({ summary: 'Engineer shipping products in TypeScript.', skills: ['TypeScript'] })
+    out.roles[0].bullets[0] = { text: 'Own the full-stack architecture and code review as first and only engineer on a funded travel platform', reason: 'x' }
+    const { cleaned } = factGuard(plain, out)
+    const changes = buildChanges(plain, cleaned)
+    const accepted = coverageReport(plain, outputWithDecisions(cleaned, changes)).tailored
+    const reverted = coverageReport(plain, outputWithDecisions(cleaned, changes.map((c) => ({ ...c, status: 'reverted' as const })))).tailored
+    expect(changes.length).toBeGreaterThan(0)
+    expect(reverted.score).toBe(coverageReport(plain, cleaned).master.score)
+    expect(accepted.score).toBeGreaterThanOrEqual(reverted.score)
+  })
+})

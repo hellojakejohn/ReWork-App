@@ -4,8 +4,10 @@ import type { Prisma } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { toApplicationDetail } from '@/lib/application-dto'
-import { applyChangeDecision } from '@/lib/tailor-changes'
-import type { TailorReport } from '@/types/tailor'
+import { applyChangeDecision, outputWithDecisions } from '@/lib/tailor-changes'
+import { coverageReport } from '@/lib/keyword-coverage'
+import { buildTailorInput, type MasterResume } from '@/lib/tailor'
+import type { BulletChange, TailorCategoryScores, TailorOutput, TailorReport } from '@/types/tailor'
 
 // GET: one tailored resume for the Result card.
 export async function GET(
@@ -25,7 +27,8 @@ export async function GET(
 }
 
 // PATCH { changeId, status: 'accepted' | 'reverted' }: Accept/Revert one bullet change.
-// Updates the saved tailored resume so the PDF download matches what the user chose.
+// Updates the saved tailored resume so the PDF download matches what the user chose, and
+// re-scores keyword coverage for it.
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -58,15 +61,28 @@ export async function PATCH(
   }
 
   const structured = applyChangeDecision((application.optimizedStructured ?? {}) as Record<string, unknown>, change, status)
-  const nextReport: TailorReport = {
-    ...report,
-    changes: report.changes!.map((c) => (c.id === change.id ? { ...c, status } : c)),
+  const changes: BulletChange[] = report.changes!.map((c) => (c.id === change.id ? { ...c, status } : c))
+  const nextReport: TailorReport = { ...report, changes }
+  // Re-score what the user now has, so the match number follows Accept/Revert.
+  const cleaned = application.optimizedContent as unknown as TailorOutput | null
+  const original = application.originalContent as unknown as MasterResume | null
+  let scores: { matchScore: number; categoryScores: Prisma.InputJsonValue } | null = null
+  if (cleaned?.targetKeywords?.length && original) {
+    const coverage = coverageReport(buildTailorInput(original), outputWithDecisions(cleaned, changes))
+    nextReport.presentAfter = coverage.tailored.present
+    nextReport.missingKeywords = coverage.tailored.missing
+    const categoryScores: TailorCategoryScores = {
+      ...((application.categoryScores ?? {}) as unknown as TailorCategoryScores),
+      keywordCoverageTailored: coverage.tailored.score,
+    }
+    scores = { matchScore: coverage.tailored.score, categoryScores: categoryScores as unknown as Prisma.InputJsonValue }
   }
   const updated = await prisma.jobApplication.update({
     where: { id: application.id },
     data: {
       optimizedStructured: structured as Prisma.InputJsonValue,
       suggestions: nextReport as unknown as Prisma.InputJsonValue,
+      ...(scores ?? {}),
     },
   })
   return NextResponse.json({ success: true, application: toApplicationDetail(updated) })

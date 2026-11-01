@@ -89,3 +89,24 @@ export function applyChangeDecision(structured: AnyRecord, change: BulletChange,
   entry.achievements = bullets
   return next
 }
+
+/**
+ * The tailored output as the user has it after Accept/Revert: reverted changes go back to
+ * their master text (a reverted bullet with no master counterpart is dropped). Used to
+ * re-score keyword coverage so the match number follows the user's choices.
+ */
+export function outputWithDecisions(cleaned: TailorOutput, changes: BulletChange[]): TailorOutput {
+  const next: TailorOutput = JSON.parse(JSON.stringify(cleaned))
+  const reverted = changes.filter((c) => c.status === 'reverted')
+  for (const change of reverted) {
+    if (change.section === 'summary') {
+      next.summary = change.before
+      continue
+    }
+    const entries: { id: string; bullets: { text: string }[] }[] = change.section === 'roles' ? next.roles : next.projects
+    const bullet = entries.find((e) => e.id === change.entryId)?.bullets[change.index]
+    if (bullet) bullet.text = change.before
+  }
+  for (const entry of [...next.roles, ...next.projects]) entry.bullets = entry.bullets.filter((b) => b.text.trim())
+  return next
+}
