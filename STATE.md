@@ -171,8 +171,10 @@ catches). Jake's resume vs the Web3 support job: 65% (Opus) / 75% (Sonnet) keywo
 
 Tuning ideas not done yet:
 - Tailoring itself adds only ~+3 coverage points (it never adds skills the resume lacks).
-  The visible win could be surfacing keywords the resume proves in bullets but doesn't list
-  as skills (e.g. "developer support", "RPC errors"), still fact-guarded.
+  Nov 1 (`docs/match-audit-2026-11-01.md`): the prompt now lists which job keywords the
+  resume shows and asks for the job's wording; the matcher reads word forms and honest
+  implications; the score can't drop; one keyword list per job post. Not yet re-run on the
+  eval.
 - Bullets can't draw on extra sections (the guard scopes each bullet to its own role).
 - Parse kept "live on Robinhood Chain mainnet" as its own project bullet; a project
   tagline/status line could be merged into the first bullet.
