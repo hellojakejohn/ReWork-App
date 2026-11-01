@@ -5,24 +5,26 @@
 // directly, so the result doesn't depend on fonts installed on the machine.
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 const { ImageResponse } = require('next/dist/compiled/@vercel/og/index.node.js');
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 const PAPER = '#FBFAF7';
 const FOREST = '#17301F';
-const LOGO = path.join(__dirname, '../public/brand/rework-logo-engraved-on-paper.svg');
+const LOGO = path.join(__dirname, '../public/brand/rework-logo-engraved.webp');
 const FONT = require.resolve('@fontsource/newsreader/files/newsreader-latin-500-normal.woff');
 const OUT = path.join(__dirname, '../public/og-image.png');
 
-// The logo's own proportions (1608x575); shown 820px wide.
-const LOGO_RATIO = 575 / 1608;
+// The logo's own proportions (2000x714); shown 820px wide.
+const LOGO_RATIO = 714 / 2000;
 const LOGO_WIDTH = 820;
 
 const h = (type, style, children) => ({ type, props: { style, children } });
 
 async function generateOGImage() {
-  const logo = `data:image/svg+xml;base64,${fs.readFileSync(LOGO).toString('base64')}`;
+  // satori reads PNG, not WebP
+  const logo = `data:image/png;base64,${(await sharp(LOGO).png().toBuffer()).toString('base64')}`;
   const card = h(
     'div',
     {
