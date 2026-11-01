@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of `main` on 2026-11-01 (PRs #7 to #35 merged). Launch handoff: `docs/handoff-2026-11-01.md`. History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-11-01 evening (PRs #7 to #38 merged). Launch handoff: `docs/handoff-2026-11-02.md`. History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -28,6 +28,16 @@ Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 - Input caps: resume file 4 MB (Vercel rejects bodies over 4.5 MB), pasted resume 30k chars,
   job description 20k chars.
 - All numbers live in `src/lib/plans.ts`.
+- Job match (`src/lib/keyword-coverage.ts`, audit in `docs/match-audit-2026-11-01.md`): the
+  job's 10-20 keywords, most important first, picked once per job post and reused
+  (`src/lib/job-keywords.ts`). Score = the job's exact words, weighted 1 (first) to 0.5
+  (last). "In other words" (frontends for Front-End, PostgreSQL for SQL) is its own group;
+  the tailor rewords those into the job's words. Missing = only the skill check can add
+  it. The fact guard puts back any keyword the rewrite lost, so the score never drops.
+  Saved results are re-scored when opened; Accept/Revert re-scores.
+- Tailor card: "You tailored this job on <date>. Open it" (`src/lib/previous-tailor.ts`);
+  Enter won't re-tailor it. Result card nudges to the skill check when 40%+ of the job is
+  missing. Job links lose their tracking params (`src/lib/job-url.ts`).
 - Job-scam warnings on the Job card, free and with no AI call (`scamSignals` in
   `src/lib/job-checks.ts`): run-our-repo "tests", chat-app contact, pay-to-start or check
   deposits, wallet/seed phrase/sending crypto, SSN or bank details up front, personal email
@@ -112,7 +122,14 @@ NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY (and
 OPENAI_API_KEY / OPENROUTER_API_KEY only if a task routes there), NEXT_PUBLIC_SUPABASE_URL,
 SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; no fallback name),
-CRON_SECRET (crons refuse every request without it). AI_FREE_TIER defaults to
+CRON_SECRET (crons refuse every request without it). ADMIN_EMAILS (Jake's email; `/admin`
+404s without it).
+
+Database URL: Vercel uses Supabase's **transaction pooler** (port 6543,
+`?pgbouncer=true&connection_limit=1`, saved as Secret, all environments) since Nov 1. The
+session pooler (5432) caps at 15 clients and ran out right after a deploy
+(EMAXCONNSESSION, about 20 minutes of 503s). The local env file stays on the session pooler
+for scripts. Preview deployments sit behind Vercel login (Deployment Protection is on). AI_FREE_TIER defaults to
 anthropic:claude-sonnet-5-5 when ANTHROPIC_API_KEY is set. Token burn (optional, after
 launch): REWORK_MINT, SOLANA_RPC_URL, AI_BURN_DAILY_USD (default 12).
 
@@ -207,15 +224,13 @@ Tuning ideas not done yet:
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
   openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
 - Out of scope for launch: job feed, post-a-job, crypto payments, interview prep.
-- Reverting a bullet on the Changes tab doesn't rescore the Job match (it shows the match
-  as tailored).
 - Not yet verified live: Save to ReWork on signed-in LinkedIn, the extension in real Chrome,
   Indeed's /viewjob page (bot check). `docs/test-run.md` covers them.
 - The read-only Supabase connector in Claude sessions points at another project (TripQuest),
   so prod numbers come from `/admin`, not that connector.
 
 ## Next session: launch week
-`docs/handoff-2026-11-01.md` has the day-by-day plan to Fri Nov 6 (website first, token at
+`docs/handoff-2026-11-02.md` has the day-by-day plan to Fri Nov 6 (website first, token at
 midday CT). Stripe live setup (with Jake at the computer, ~20 min) is `docs/launch-audit.md`
 "What Jake must do" items 4 to 6:
 1. Stripe live mode: products/prices $15/month and $29 one-time; put `sk_live_` key and
