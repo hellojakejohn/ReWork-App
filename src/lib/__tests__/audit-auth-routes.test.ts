@@ -243,6 +243,7 @@ const ROUTES: Case[] = [
   ['evidence questions', '@/app/api/resumes/[id]/evidence/route', 'POST', '/api/resumes/resB/evidence', {}, 'resB'],
   ['resume GET', '@/app/api/resumes/[id]/route', 'GET', '/api/resumes/resB', undefined, 'resB'],
   ['resume PATCH', '@/app/api/resumes/[id]/route', 'PATCH', '/api/resumes/resB', { hidden: true }, 'resB'],
+  ['resume PATCH rename', '@/app/api/resumes/[id]/route', 'PATCH', '/api/resumes/resB', { title: 'pwned' }, 'resB'],
   ['resume PATCH content', '@/app/api/resumes/[id]/route', 'PATCH', '/api/resumes/resB', { resume: { contact: { fullName: 'pwned' } } }, 'resB'],
   ['resume DELETE', '@/app/api/resumes/[id]/route', 'DELETE', '/api/resumes/resB', undefined, 'resB'],
   ['tailor', '@/app/api/resumes/[id]/tailor/route', 'POST', '/api/resumes/resB/tailor', { jobTitle: 't', company: 'c', description: 'd' }, 'resB'],

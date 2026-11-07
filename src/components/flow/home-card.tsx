@@ -6,11 +6,12 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { ArrowRight, Check, FileText, KanbanSquare } from "lucide-react"
+import { ArrowRight, Check, KanbanSquare, Pencil, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { TRACKER_COLUMNS, columnOf, trackerStats, type TrackerColumn } from "@/lib/tracker"
-import { loadTracker, updateTracked, type ApplicationSummaryDTO, type MasterResumeDTO, type Quota, type TrackerCardDTO } from "./api"
+import { summarizeResume } from "@/lib/master-resume"
+import { loadTracker, renameMaster, updateTracked, type ApplicationSummaryDTO, type MasterResumeDTO, type Quota, type TrackerCardDTO } from "./api"
 import { Card } from "./ui"
 
 const RECENT = 5
@@ -22,15 +23,21 @@ export function HomeCard({
   isActiveStep,
   onNewJob,
   onOpenResume,
+  onAddResume,
+  onRenamed,
+  masters,
   onOpenApplication,
   onOpenRecent,
 }: {
   active: MasterResumeDTO | null
+  masters: MasterResumeDTO[]
   applications: ApplicationSummaryDTO[]
   quota: Quota | null
   isActiveStep: boolean
   onNewJob: () => void
-  onOpenResume: () => void
+  onOpenResume: (id: string) => void
+  onAddResume: () => void
+  onRenamed: (master: MasterResumeDTO) => void
   onOpenApplication: (id: string) => void
   onOpenRecent: () => void
 }) {
@@ -54,6 +61,7 @@ export function HomeCard({
   const stats = useMemo(() => (tracked ? trackerStats(tracked) : null), [tracked])
   const statusOf = useMemo(() => new Map((tracked ?? []).map((t) => [t.id, columnOf(t.status)])), [tracked])
   const recent = applications.slice(0, RECENT)
+  const shown = masters.filter((m) => !m.hidden || m.id === active?.id)
 
   const markApplied = async (id: string) => {
     setMarking(id)
@@ -91,18 +99,22 @@ export function HomeCard({
           <Stat label="Interviews" value={stats?.interviews} />
         </div>
 
-        {active && (
-          <section className="flex items-center gap-3 rounded-card border border-border p-4">
-            <FileText className="h-5 w-5 shrink-0 text-text-muted" />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-text-muted">Your resume</p>
-              <p className="truncate text-sm font-medium text-text">{active.resume.contact?.fullName || active.title}</p>
-            </div>
-            <Button variant="secondary" size="sm" onClick={onOpenResume}>
-              View
-            </Button>
-          </section>
-        )}
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold text-text">{shown.length > 1 ? "Your resumes" : "Your resume"}</h3>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {shown.map((m) => (
+              <ResumeTile key={m.id} master={m} active={m.id === active?.id} onOpen={() => onOpenResume(m.id)} onRenamed={onRenamed} />
+            ))}
+            <button
+              onClick={onAddResume}
+              className="flex min-h-[8.5rem] flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-border p-4 text-sm text-text-muted hover:bg-surface-raised hover:text-text"
+            >
+              <Plus className="h-5 w-5" />
+              Add a resume
+              <span className="text-xs">e.g. one per kind of job</span>
+            </button>
+          </div>
+        </section>
 
         <section className="space-y-2">
           <div className="flex items-center justify-between">
@@ -174,5 +186,87 @@ function StatusChip({ column }: { column: TrackerColumn }) {
     >
       {label}
     </span>
+  )
+}
+
+/** One resume as a square-ish card: its label (renamable), headline, top skills. */
+function ResumeTile({
+  master,
+  active,
+  onOpen,
+  onRenamed,
+}: {
+  master: MasterResumeDTO
+  active: boolean
+  onOpen: () => void
+  onRenamed: (master: MasterResumeDTO) => void
+}) {
+  const s = summarizeResume(master.resume)
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(master.title)
+  const [saving, setSaving] = useState(false)
+
+  const save = async () => {
+    const title = name.trim()
+    if (!title || title === master.title) {
+      setName(master.title)
+      setEditing(false)
+      return
+    }
+    setSaving(true)
+    const r = await renameMaster(master.id, title)
+    setSaving(false)
+    if (!r.ok) {
+      toast.error(r.error)
+      return
+    }
+    onRenamed(r.master)
+    setEditing(false)
+  }
+
+  return (
+    <div className={cn("relative flex min-h-[8.5rem] flex-col rounded-card border p-4", active ? "border-accent" : "border-border")}>
+      <div className="relative z-10 flex items-start gap-1">
+        {editing ? (
+          <input
+            autoFocus
+            value={name}
+            maxLength={60}
+            disabled={saving}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => void save()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void save()
+              if (e.key === "Escape") {
+                e.preventDefault()
+                setName(master.title)
+                setEditing(false)
+              }
+            }}
+            aria-label="Resume name"
+            className="w-full min-w-0 rounded-input border border-input bg-surface px-2 py-0.5 text-sm font-semibold text-text"
+          />
+        ) : (
+          <>
+            <span className="min-w-0 flex-1 truncate rounded-full bg-surface-raised px-2.5 py-0.5 text-xs font-semibold text-text" title={master.title}>
+              {master.title}
+            </span>
+            <button
+              onClick={() => setEditing(true)}
+              className="shrink-0 rounded-full p-1 text-text-muted hover:bg-surface-raised hover:text-text"
+              aria-label={`Rename ${master.title}`}
+              title="Rename"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          </>
+        )}
+      </div>
+      <button onClick={onOpen} className="mt-3 flex flex-1 flex-col items-start text-left after:absolute after:inset-0 after:rounded-card after:content-['']">
+        <span className="line-clamp-2 text-sm font-medium text-text">{s.headline || s.name || "Resume"}</span>
+        {s.topSkills.length > 0 && <span className="mt-1 line-clamp-2 text-xs text-text-muted">{s.topSkills.slice(0, 3).join(" · ")}</span>}
+        <span className="mt-auto pt-2 text-xs text-text-faint">{active ? "In use" : `Updated ${new Date(master.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}</span>
+      </button>
+    </div>
   )
 }

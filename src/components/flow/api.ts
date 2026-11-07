@@ -127,6 +127,20 @@ export async function saveMaster(id: string, resume: ParsedResume): Promise<{ ok
   }
 }
 
+export async function renameMaster(id: string, title: string): Promise<{ ok: true; master: MasterResumeDTO } | Failure> {
+  try {
+    const res = await fetch(`/api/resumes/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    })
+    if (!res.ok) return failure(res, "Couldn't rename that resume.")
+    return { ok: true, master: (await res.json()).master }
+  } catch {
+    return NETWORK
+  }
+}
+
 export async function setMasterHidden(id: string, hidden: boolean): Promise<{ ok: true; master: MasterResumeDTO } | Failure> {
   try {
     const res = await fetch(`/api/resumes/${id}`, {
