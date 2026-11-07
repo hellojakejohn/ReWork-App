@@ -11,8 +11,8 @@ export function SiteFooter() {
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <Link href="/pricing" className="underline-offset-4 hover:text-text hover:underline">Pricing</Link>
             <Link href="/proof" className="underline-offset-4 hover:text-text hover:underline">Proof</Link>
-            <Link href="/privacy" className="underline underline-offset-4 hover:text-text">Privacy</Link>
-            <Link href="/terms" className="underline underline-offset-4 hover:text-text">Terms</Link>
+            <Link href="/privacy" className="underline-offset-4 hover:text-text hover:underline">Privacy</Link>
+            <Link href="/terms" className="underline-offset-4 hover:text-text hover:underline">Terms</Link>
             <a href={`mailto:${CONTACT_EMAIL}`} className="underline-offset-4 hover:text-text hover:underline">Contact</a>
           </nav>
         </div>

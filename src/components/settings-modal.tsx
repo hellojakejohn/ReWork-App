@@ -36,16 +36,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-surface border border-border max-w-[900px] w-[calc(100vw-2rem)] h-[min(600px,calc(100vh-2rem))] p-0 overflow-hidden">
-        <div className="flex h-full flex-col sm:flex-row">
-          <div className="sm:w-48 bg-surface-raised border-b sm:border-b-0 sm:border-r border-border p-4">
+      <DialogContent className="bg-surface border border-border flex flex-col gap-0 sm:max-w-[900px] max-w-[900px] w-[calc(100vw-2rem)] h-[min(640px,calc(100dvh-2rem))] p-0 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+          <div className="shrink-0 sm:w-52 bg-surface-raised border-b sm:border-b-0 sm:border-r border-border p-4">
             <DialogHeader className="mb-4 sm:mb-6">
               <DialogTitle className="text-text flex items-center gap-2">
                 <Settings className="w-4 h-4 text-text-secondary" />
                 Settings
               </DialogTitle>
             </DialogHeader>
-            <nav className="flex gap-1 sm:flex-col">
+            <nav className="flex gap-1 overflow-x-auto sm:flex-col">
               {TABS.map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -66,7 +66,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </nav>
           </div>
 
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto p-6">
             {activeTab === "account" && (
               <div className="space-y-6">
                 <div>
