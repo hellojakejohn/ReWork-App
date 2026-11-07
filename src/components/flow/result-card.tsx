@@ -24,6 +24,8 @@ export function ResultCard(props: {
   onChange: (application: ApplicationDetailDTO) => void
   onBack: () => void
   onAnotherJob: () => void
+  /** Finished with this job: back to Home. */
+  onDone: () => void
   coverLetterQuota: Quota | null
   onCoverLetterQuota: (quota: Quota) => void
   onUpgrade: (reason?: string) => void
@@ -50,6 +52,7 @@ function Result({
   onChange,
   onBack,
   onAnotherJob,
+  onDone,
   coverLetterQuota,
   onCoverLetterQuota,
   onUpgrade,
@@ -279,9 +282,14 @@ function Result({
           />
           <div className="space-y-2 pt-1">
             <DownloadMenu application={application} template={template} isPro={isPro} onUpgrade={onUpgrade} className="h-12 w-full text-base" />
-            <Button variant="secondary" className="w-full" onClick={onAnotherJob}>
-              Tailor for another job <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="secondary" onClick={onAnotherJob}>
+                Another job <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="secondary" onClick={onDone}>
+                <Check className="h-3.5 w-3.5" /> Done
+              </Button>
+            </div>
           </div>
         </aside>
 

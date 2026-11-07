@@ -1,7 +1,7 @@
 "use client"
 
 // The whole app on one screen: Resume -> Job -> Tailor -> Result, one card at a time,
-// sliding horizontally. Everything fits the viewport; long content scrolls inside its card.
+// sliding horizontally. Returning users land on Home (step -1), and "Done" goes back there. Everything fits the viewport; long content scrolls inside its card.
 //
 // The cover letter and Word export live inside the Result card, the evidence interview
 // inside the Resume card; the tracker is its own view at /dashboard/tracker.
@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Sparkles } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { CheckoutSuccess } from "@/components/billing/checkout-success"
 import { hasContent } from "@/lib/master-dto"
@@ -32,6 +33,7 @@ import { JobCard, jobIsValid } from "./job-card"
 import { TailorCard } from "./tailor-card"
 import { previousTailor } from "@/lib/previous-tailor"
 import { ResultCard } from "./result-card"
+import { HomeCard } from "./home-card"
 import { RecentDrawer } from "./recent-drawer"
 import { ErrorNote } from "./ui"
 
@@ -95,10 +97,10 @@ export function OneFlow() {
     setCoverLetterQuota(result.coverLetterQuota)
     const initial = pickInitial(result.masters)
     setActiveId(initial?.id ?? null)
-    // Returning users with a usable master start on the Job card.
+    // Returning users with a usable master start on Home.
     if (initial && hasContent(initial.resume)) {
       setResumeConfirmed(true)
-      setStep(1)
+      setStep(-1)
     }
     const stored = readStored(TEMPLATE_KEY)
     if (stored === "classic" || stored === "modern") setTemplate(stored)
@@ -158,6 +160,8 @@ export function OneFlow() {
 
   const completed = [resumeConfirmed && !!active, !!job, !!application, !!application]
   const go = useCallback((target: number) => setStep(Math.max(0, Math.min(3, target))), [])
+  const goHome = useCallback(() => setStep(-1), [])
+  const isHome = step === -1
 
   // Each card is a browser history entry, so Back (or a phone's back swipe) goes back a
   // card instead of leaving the app (after sign-in that replayed Google's callback).
@@ -189,7 +193,7 @@ export function OneFlow() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return
       if (document.querySelector('[role="dialog"]')) return
-      setStep((s) => Math.max(0, s - 1))
+      setStep((s) => (s < 0 ? s : Math.max(0, s - 1)))
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
@@ -216,7 +220,7 @@ export function OneFlow() {
     openResume("new")
   }
 
-  // Header logo: back to the card a fresh load would open.
+  // Header logo and "Done": back to what a fresh load would open (Home for returning users).
   const resetFlow = () => {
     setJob(null)
     setApplication(null)
@@ -224,7 +228,7 @@ export function OneFlow() {
     if (active && hasContent(active.resume)) {
       setResumeConfirmed(true)
       setResumeRequest({ mode: "summary", nonce: Date.now() })
-      go(1)
+      goHome()
     } else {
       setResumeConfirmed(false)
       openResume(active ? "summary" : "new")
@@ -382,6 +386,10 @@ export function OneFlow() {
         setApplication(null)
         go(1)
       }}
+      onDone={() => {
+        resetFlow()
+        toast.success("Saved. It's in Recent and your tracker.")
+      }}
       isPro={!!quota?.isPro}
       coverLetterQuota={coverLetterQuota}
       onCoverLetterQuota={setCoverLetterQuota}
@@ -413,11 +421,29 @@ export function OneFlow() {
         onUpgrade={() => setUpgrade({ open: true })}
         flow={{ onLogo: resetFlow, onManageResumes: () => setManageOpen(true), onStartOver: startOver }}
       />
-      <StepRail current={step} completed={completed} onSelect={(i) => (i === 0 ? openResume("summary") : go(i))} />
+      {!isHome && <StepRail current={step} completed={completed} onSelect={(i) => (i === 0 ? openResume("summary") : go(i))} />}
       <main className="relative min-h-0 flex-1 overflow-clip">
+        {isHome && (
+          <section className="absolute inset-0 flex justify-center px-3 py-3 sm:px-6 sm:pb-6 sm:pt-6">
+            <HomeCard
+              active={active}
+              applications={applications}
+              quota={quota}
+              isActiveStep={isHome}
+              onNewJob={() => {
+                setJob(null)
+                setApplication(null)
+                go(1)
+              }}
+              onOpenResume={() => openResume("summary")}
+              onOpenApplication={(id) => void openApplication(id)}
+              onOpenRecent={() => setRecentOpen(true)}
+            />
+          </section>
+        )}
         <div
-          className="flex h-full transition-transform duration-300 ease-out motion-reduce:transition-none"
-          style={{ transform: `translateX(-${step * 100}%)` }}
+          className={cn("flex h-full transition-transform duration-300 ease-out motion-reduce:transition-none", isHome && "invisible")}
+          style={{ transform: `translateX(-${Math.max(0, step) * 100}%)` }}
         >
           {cards.map((card, i) => (
             <section
