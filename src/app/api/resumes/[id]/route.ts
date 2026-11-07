@@ -28,7 +28,8 @@ export async function GET(
   return NextResponse.json({ success: true, master: toMasterDTO(resume) })
 }
 
-// PATCH { resume: ParsedResume, title? } from the inline "Fix something" editor.
+// PATCH { resume: ParsedResume, title? } from the inline "Fix something" editor, { title } to rename,
+// { hidden } to hide.
 // Saving counts as the user having reviewed the parse, so needsReview is cleared.
 // PATCH { hidden: boolean } alone shows/hides a master (Manage resumes -> Set active).
 export async function PATCH(
@@ -56,6 +57,17 @@ export async function PATCH(
       where: { id: owned.id },
       data: { hiddenAt: body.hidden ? owned.hiddenAt ?? new Date() : null },
     })
+    return NextResponse.json({ success: true, master: toMasterDTO(updated) })
+  }
+  // Rename only (the label on Home, e.g. "SWE" or "Blockchain").
+  if (body.resume === undefined && typeof body.title === 'string') {
+    const title = body.title.trim().slice(0, 60)
+    if (!title) return NextResponse.json({ error: 'Give it a name' }, { status: 400 })
+    const owned = await findOwned(id, session.user.id)
+    if (!owned) {
+      return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
+    }
+    const updated = await prisma.resume.update({ where: { id: owned.id }, data: { title } })
     return NextResponse.json({ success: true, master: toMasterDTO(updated) })
   }
   if (!body.resume || typeof body.resume !== 'object' || !('contact' in body.resume)) {

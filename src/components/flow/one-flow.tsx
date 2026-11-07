@@ -427,6 +427,7 @@ export function OneFlow() {
           <section className="absolute inset-0 flex justify-center px-3 py-3 sm:px-6 sm:pb-6 sm:pt-6">
             <HomeCard
               active={active}
+              masters={masters}
               applications={applications}
               quota={quota}
               isActiveStep={isHome}
@@ -435,7 +436,12 @@ export function OneFlow() {
                 setApplication(null)
                 go(1)
               }}
-              onOpenResume={() => openResume("summary")}
+              onOpenResume={(id) => {
+                if (id !== activeId) selectMaster(id)
+                openResume("summary")
+              }}
+              onAddResume={() => openResume("new")}
+              onRenamed={(m) => setMasters((list) => list.map((x) => (x.id === m.id ? m : x)))}
               onOpenApplication={(id) => void openApplication(id)}
               onOpenRecent={() => setRecentOpen(true)}
             />
