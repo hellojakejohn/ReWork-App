@@ -127,6 +127,10 @@ the $2 daily ceilings if free users hit them; feedback email to Jake; fix what u
 **Nice before launch, else week 1**: tracker follow-up nudges ("7 days, no reply: here's a short
 follow-up"); landing headline on speed plus the match.
 
+**First big feature after launch: the job feed** ("jobs that match you": ReWork finds and
+ranks jobs against your resumes, then one tap tailors, writes the letter and tracks it). Plan,
+sources, costs, MVP and the other Nov 7 ideas: `docs/job-feed-plan.md`.
+
 **Month 1**: real tailor output on the landing; follow-up reminder emails (needs an email
 provider); admin feedback view; one more template; durable rate limit if abuse shows.
 
