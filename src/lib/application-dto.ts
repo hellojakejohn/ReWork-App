@@ -7,6 +7,7 @@ import type { BulletChange, FactGuardWarning, KeywordCoverage, TailorCategorySco
 import { buildTailorInput, type MasterResume } from '@/lib/tailor'
 import { coverageReport } from '@/lib/keyword-coverage'
 import { outputWithDecisions } from '@/lib/tailor-changes'
+import { payFromText } from '@/lib/pay'
 
 export interface ApplicationSummaryDTO {
   id: string
@@ -28,6 +29,8 @@ export interface TrackerCardDTO extends ApplicationSummaryDTO {
   followUpAt: string | null // YYYY-MM-DD
   tailored: boolean
   hasCoverLetter: boolean
+  /** Pay the job post names ("$120k to $150k a year"), null when it names none. */
+  pay: string | null
 }
 
 export interface ApplicationDetailDTO extends ApplicationSummaryDTO {
@@ -157,5 +160,6 @@ export function toTrackerCard(row: TrackerRowLike): TrackerCardDTO {
     followUpAt: row.followUpAt ? row.followUpAt.toISOString().slice(0, 10) : null,
     tailored: !!row.optimizedStructured,
     hasCoverLetter: !!row.coverLetter,
+    pay: payFromText(row.jobDescription)?.label ?? null,
   }
 }

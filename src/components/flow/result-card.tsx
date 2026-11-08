@@ -12,6 +12,7 @@ import { CoverLetterPanel } from "./cover-letter-panel"
 import { DownloadMenu } from "./download-menu"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { missingNudge } from "@/lib/receipt"
+import { payFromText } from "@/lib/pay"
 import { Card, CardHeader, ErrorNote } from "./ui"
 import { rememberCoverage, SkillCheck } from "./skill-check"
 
@@ -70,6 +71,7 @@ function Result({
     setAdded(0)
   }, [application.id])
   const receipt = useReceipt(application)
+  const pay = useMemo(() => payFromText(application.jobDescription)?.label ?? null, [application.jobDescription])
 
   const highlight = useMemo(
     () => new Set(application.changes.filter((c) => c.status === "accepted").map((c) => c.after)),
@@ -252,6 +254,7 @@ function Result({
             <p className="pt-1 text-sm text-text-muted">
               {application.jobTitle}
               {application.company && ` · ${application.company}`}
+              {pay && <span className="block text-xs font-semibold text-text-secondary">{pay}</span>}
             </p>
           </div>
           <h2 className="font-serif text-3xl font-medium leading-tight tracking-tight text-text">Nice. Here&apos;s what changed.</h2>

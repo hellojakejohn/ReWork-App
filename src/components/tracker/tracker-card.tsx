@@ -114,6 +114,7 @@ export function TrackerCard({
             · <span className="text-success">{app.coverageAfter}%</span> keywords
           </span>
         )}
+        {app.pay && <span>· {app.pay}</span>}
         {app.followUpAt && (
           <span className={cn("flex items-center gap-1", due ? "text-warn" : "")}>
             · <CalendarClock className="h-3 w-3" /> {due ? "Follow up" : "Follow-up"} {day(`${app.followUpAt}T12:00:00`)}

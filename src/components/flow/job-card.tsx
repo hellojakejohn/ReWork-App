@@ -2,11 +2,12 @@
 
 import { Button } from "@/components/ui/button"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ChevronDown, Info, Link2, Loader2, MapPin, Pencil, ShieldAlert } from "lucide-react"
+import { Banknote, ChevronDown, Info, Link2, Loader2, MapPin, Pencil, ShieldAlert } from "lucide-react"
 import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
+import { payFromText } from "@/lib/pay"
 import { ghostSignals, otherCompanyNamed, readPastedJob, scamSignals, SCAM_SAFETY_TIP, type PastedJob } from "@/lib/job-checks"
 
 type Mode = "url" | "fetching" | "fetched" | "paste"
@@ -150,6 +151,7 @@ export function JobCard({
   )
   // Job-scam tells in the ad itself. A warning with what we saw, never a verdict, and it doesn't block tailoring.
   const scams = useMemo(() => scamSignals(draft.description), [draft.description])
+  const pay = useMemo(() => payFromText(draft.description), [draft.description])
   const scamNote = scams.length > 0 && (
     <div role="alert" className="rounded-input border border-accent-strong/40 bg-removed px-3 py-3 text-sm text-text">
       <p className="flex items-center gap-2 font-bold">
@@ -304,9 +306,18 @@ export function JobCard({
               <div>
                 <p className="text-lg font-semibold text-text">{draft.title}</p>
                 <p className="text-sm text-text-secondary">{draft.company}</p>
-                {draft.location && (
-                  <p className="mt-0.5 flex items-center gap-1 text-xs text-text-muted">
-                    <MapPin className="h-3 w-3" /> {draft.location}
+                {(draft.location || pay) && (
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-text-muted">
+                    {draft.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> {draft.location}
+                      </span>
+                    )}
+                    {pay && (
+                      <span className="flex items-center gap-1 font-semibold text-text-secondary" title="Pay from the job post">
+                        <Banknote className="h-3 w-3" /> {pay.label}
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
