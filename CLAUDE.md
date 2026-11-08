@@ -29,6 +29,7 @@
 - `src/lib/evidence.ts` - evidence interview (questions, answer-only rewrites, apply to master)
 - `src/lib/skill-check.ts` + `src/components/flow/skill-check.tsx` - free fit check and skill check (job keywords, answers placed from the user's note only, `guardAddition`, apply to master)
 - `src/lib/keyword-coverage.ts` + `src/lib/job-keywords.ts` - the Job match (exact words, "in other words", missing; weighted; one list per job post). `npm run eval:match` checks it with the real model (billed: ask for a budget)
+- `src/lib/feed/` + `docs/job-feed-plan.md` - matches on upload: company boards (`board-list.ts`), prefilter, `sync.ts` (daily pull at `/api/cron/pull-jobs`, closes jobs gone from a board); Workday is searched by title, not pulled
 - `src/lib/job-checks.ts` - job title cleanup, "this ad is about another company" and job-scam warnings (`scamSignals`, no AI)
 - `src/lib/tracker.ts` + `src/components/tracker/` - application tracker at `/dashboard/tracker`
 - `src/lib/plans.ts` - every plan limit and all pricing copy; `src/lib/tailor-quota.ts` meters tailors and cover letters

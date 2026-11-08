@@ -17,8 +17,11 @@ export interface Board {
 export interface FeedJob extends ResolvedJob {
   /** Stable id: ats:slug:jobId. */
   key: string
+  /** boardId(): ats:slug. */
   board: string
 }
+
+export const boardId = (b: { ats: string; slug?: string; tenant?: string }) => `${b.ats}:${b.slug ?? b.tenant}`
 
 export function boardListUrl({ ats, slug }: Board): string {
   const s = encodeURIComponent(slug)
@@ -46,7 +49,7 @@ export function parseBoardList(board: Board, data: Json): FeedJob[] {
   for (const { id, url, item } of items) {
     if (!id) continue
     const job = parseAtsResponse({ ats: board.ats, apiUrl: '', company, jobId: id }, item, url)
-    if (job) out.push({ ...job, key: `${board.ats}:${board.slug}:${id}`, board: board.slug })
+    if (job) out.push({ ...job, key: `${board.ats}:${board.slug}:${id}`, board: boardId(board) })
   }
   return out
 }
@@ -71,4 +74,59 @@ export function roleKey(job: { company: string; title: string }): string {
     .replace(/[^a-z0-9+#]+/g, ' ')
     .trim()
   return `${job.company.toLowerCase()}|${title}`
+}
+
+// ---------- Workday: searched by title, not pulled whole ----------
+
+export interface WorkdayBoard {
+  company: string
+  tenant: string
+  /** e.g. target.wd5.myworkdayjobs.com */
+  host: string
+  site: string
+}
+
+/** Workday's own career-site search: 20 jobs per call, newest and best first. */
+export function workdaySearchRequest(b: WorkdayBoard, searchText: string, offset = 0): { url: string; body: string } {
+  return {
+    url: `https://${b.host}/wday/cxs/${b.tenant}/${b.site}/jobs`,
+    body: JSON.stringify({ appliedFacets: {}, limit: 20, offset, searchText }),
+  }
+}
+
+/** "Posted Today", "Posted Yesterday", "Posted 3 Days Ago", "Posted 30+ Days Ago". */
+export function workdayPostedAt(postedOn: string, now = new Date()): Date | null {
+  const t = postedOn.toLowerCase()
+  const day = 24 * 60 * 60 * 1000
+  if (/today/.test(t)) return now
+  if (/yesterday/.test(t)) return new Date(now.getTime() - day)
+  const n = t.match(/(\d+)\+?\s*days?/)
+  return n ? new Date(now.getTime() - Number(n[1]) * day) : null
+}
+
+/**
+ * Search results, without the description (the list doesn't carry it). The job's own page is
+ * fetched later, only for jobs that pass someone's prefilter, through the resolver.
+ */
+export function parseWorkdaySearch(b: WorkdayBoard, data: Json, now = new Date()): (Omit<FeedJob, 'facts'> & { postedAt: Date | null })[] {
+  const company = b.company || companyFromSlug(b.tenant)
+  const out: (Omit<FeedJob, 'facts'> & { postedAt: Date | null })[] = []
+  for (const p of Array.isArray(data?.jobPostings) ? data.jobPostings : []) {
+    const path = str(p?.externalPath)
+    const title = str(p?.title).trim()
+    if (!path.startsWith('/job/') || !title) continue
+    const id = (Array.isArray(p?.bulletFields) && str(p.bulletFields[0])) || path.split('_').pop() || path
+    out.push({
+      key: `workday:${b.tenant}:${id}`,
+      board: boardId({ ats: 'workday', tenant: b.tenant }),
+      source: 'workday',
+      title,
+      company,
+      location: str(p?.locationsText),
+      description: '',
+      url: `https://${b.host}/${b.site}${path}`,
+      postedAt: workdayPostedAt(str(p?.postedOn), now),
+    })
+  }
+  return out
 }
