@@ -1,7 +1,7 @@
 # Job feed: jobs that match you
 
-Written 2026-11-07 with Jake. Status: **spike done Nov 8 (results below)**, MVP not started. First big feature after launch.
-Out of scope for launch (docs/PROJECT.md), so it starts once launch week is calm.
+Written 2026-11-07 with Jake. Status: **spike done Nov 8 (results below). Nov 8: Jake moved it
+before launch as "matches on upload"** (build plan below). Launch waits for it.
 
 ## The idea
 
@@ -68,6 +68,45 @@ a settled decision). Users can still bring those in with Save to ReWork.
 
 Cost to measure in the spike: Sonnet keyword extraction per job (rough guess: well under a
 cent) x new jobs per day. Put it behind its own daily ceiling, like `AI_FREE_DAILY_USD`.
+
+## Build plan: matches on upload (decided Nov 8, before launch)
+
+The new main flow: **upload a resume -> one question -> "Top matches for you" -> tap a job ->
+tailor, letter, answers -> tracker.** Pasting a link stays as the backup. A feed job never
+needs a link fetch: we already hold its full text, so LinkedIn and Indeed stop mattering.
+
+The one question, right after the upload: **"What job do you want next?"** (prefilled from
+the latest title; career changers type theirs) plus **Remote / near me / both**. Stored on
+the resume, editable on its card.
+
+Sources, all free and within their rules:
+- Greenhouse, Lever, Ashby boards (built in the spike): tech and startups.
+- **Workday** (checked Nov 8: Target 2,000+ jobs, 3M 781, public list API, no key): big
+  employers, retail, health, manufacturing, banks. The non-tech answer. The list has title and
+  location only; the full text is a second call, made only for jobs that pass someone's
+  prefilter.
+- SmartRecruiters (public list, e.g. Bosch 5,000+): later if Workday isn't enough.
+- Company list: a few hundred boards in a checked-in file, grown over time, weighted to US
+  employers across industries (Minnesota heavy at first is fine: it's who we test with).
+
+Chunks (each tested, small commits, one PR):
+1. **Tables** (SQL for Jake to paste): `jobs` (key, source, board, company, title, location,
+   remote, us_state, pay label, posted, description, url, keywords, first/last seen, closed)
+   and `job_matches` (user, resume, job, score, present/missing, seen, dismissed, saved).
+   Resume gets `feed_prefs` (target titles, remote/near me).
+2. **Daily pull** cron: boards in batches (fits the 300 s limit), upsert by key, mark jobs
+   gone from the board as closed (the real ghost signal, instead of "30+ days old").
+3. **Matching**: free prefilter over open jobs -> top 40 -> keywords (once per job, shared, own
+   daily ceiling `AI_FEED_DAILY_USD`) -> real Job match -> save top matches. Runs after an
+   upload, when prefs change, and after each daily pull. Sorted by the real match.
+4. **Upload flow UI**: the question, then "Top matches" on the Resume card / Home: title,
+   company, place, pay, match %, top missing skills, Tailor (fills the Job card with the full
+   text), Not for me, Save to tracker. "Nothing good yet" said plainly, with what to change.
+5. **Limits**: Free sees the top 5, Pro the full list (prices unchanged). `/admin`: jobs per
+   source, matches shown, tailors started from a match, feed AI spend.
+6. **Real-data check** before merge: the three fixtures plus Jake's own resumes, budget asked.
+
+Jake's part: paste the SQL (chunk 1), set `AI_FEED_DAILY_USD` in Vercel, look at the screens.
 
 ## Spike results (Nov 8)
 
