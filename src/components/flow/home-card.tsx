@@ -6,11 +6,13 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { ArrowRight, Check, KanbanSquare, Pencil, Plus } from "lucide-react"
+import { ArrowRight, Check, KanbanSquare, Mail, Pencil, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { TRACKER_COLUMNS, columnOf, trackerStats, type TrackerColumn } from "@/lib/tracker"
 import { summarizeResume } from "@/lib/master-resume"
+import { dueLine, followUpDue } from "@/lib/follow-up"
+import { FollowUpDialog } from "@/components/tracker/follow-up-dialog"
 import { loadTracker, renameMaster, updateTracked, type ApplicationSummaryDTO, type MasterResumeDTO, type Quota, type TrackerCardDTO } from "./api"
 import { Card } from "./ui"
 
@@ -59,9 +61,29 @@ export function HomeCard({
   }, [isActiveStep])
 
   const stats = useMemo(() => (tracked ? trackerStats(tracked) : null), [tracked])
-  const statusOf = useMemo(() => new Map((tracked ?? []).map((t) => [t.id, columnOf(t.status)])), [tracked])
+  const byId = useMemo(() => new Map((tracked ?? []).map((t) => [t.id, t])), [tracked])
+  // Jobs due a check-in email, longest-waiting first.
+  const followUps = useMemo(
+    () =>
+      (tracked ?? [])
+        .map((app) => ({ app, due: followUpDue(app) }))
+        .filter((f): f is { app: TrackerCardDTO; due: NonNullable<ReturnType<typeof followUpDue>> } => !!f.due)
+        .sort((a, b) => b.due.days - a.due.days),
+    [tracked]
+  )
+  const [writing, setWriting] = useState<TrackerCardDTO | null>(null)
   const recent = applications.slice(0, RECENT)
   const shown = masters.filter((m) => !m.hidden || m.id === active?.id)
+
+  const snooze = async (id: string, followUpAt: string) => {
+    const r = await updateTracked(id, { followUpAt })
+    if (!r.ok) {
+      toast.error(r.error)
+      return false
+    }
+    setTracked((list) => (list ? list.map((t) => (t.id === id ? r.application : t)) : list))
+    return true
+  }
 
   const markApplied = async (id: string) => {
     setMarking(id)
@@ -99,6 +121,35 @@ export function HomeCard({
           <Stat label="Interviews" value={stats?.interviews} />
         </div>
 
+        {followUps.length > 0 && (
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold text-text">
+              Follow up <span className="ml-1 rounded-full bg-warn-tint px-1.5 text-xs text-text">{followUps.length}</span>
+            </h3>
+            <ul className="divide-y divide-border rounded-card border border-border">
+              {followUps.slice(0, 3).map(({ app, due }) => (
+                <li key={app.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text">
+                      {app.company} <span className="font-normal text-text-muted">· {app.jobTitle}</span>
+                    </p>
+                    <p className="truncate text-xs text-text-muted">{dueLine(due)}</p>
+                  </div>
+                  <Button size="sm" onClick={() => setWriting(app)}>
+                    <Mail className="h-3 w-3" /> Write it
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            {followUps.length > 3 && (
+              <Link href="/dashboard/tracker" className="text-xs font-semibold text-text-muted hover:text-text">
+                {followUps.length - 3} more on your tracker
+              </Link>
+            )}
+            {writing && <FollowUpDialog app={writing} open onClose={() => setWriting(null)} onSnooze={(date) => snooze(writing.id, date)} />}
+          </section>
+        )}
+
         <section className="space-y-2">
           <h3 className="text-sm font-semibold text-text">{shown.length > 1 ? "Your resumes" : "Your resume"}</h3>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -128,7 +179,8 @@ export function HomeCard({
           ) : (
             <ul className="divide-y divide-border rounded-card border border-border">
               {recent.map((a) => {
-                const column = statusOf.get(a.id)
+                const card = byId.get(a.id)
+                const column = card ? columnOf(card.status) : undefined
                 return (
                   <li key={a.id} className="flex items-center gap-2 pr-3">
                     <button onClick={() => onOpenApplication(a.id)} className="min-w-0 flex-1 rounded-card px-4 py-3 text-left hover:bg-surface-raised">
@@ -141,6 +193,7 @@ export function HomeCard({
                             <span className="text-success">{a.coverageAfter}%</span> match
                           </>
                         )}
+                        {card?.pay && ` · ${card.pay}`}
                       </p>
                     </button>
                     {column === "saved" ? (

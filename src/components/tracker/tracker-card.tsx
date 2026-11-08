@@ -5,7 +5,9 @@
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, MoreHorizontal, StickyNote, Trash2, Wand2 } from "lucide-react"
+import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, Mail, MoreHorizontal, StickyNote, Trash2, Wand2 } from "lucide-react"
+import { followUpDue } from "@/lib/follow-up"
+import { FollowUpDialog } from "./follow-up-dialog"
 import { cn } from "@/lib/utils"
 import { TRACKER_COLUMNS, columnOf, type TrackerColumn } from "@/lib/tracker"
 import type { TemplateId } from "@/lib/resume-templates"
@@ -21,7 +23,6 @@ import {
 import type { TrackerCardDTO } from "@/components/flow/api"
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-const todayISO = () => new Date().toLocaleDateString("en-CA") // YYYY-MM-DD, local
 
 function statusLine(app: TrackerCardDTO): string {
   const column = TRACKER_COLUMNS.find((c) => c.id === columnOf(app.status))!
@@ -52,7 +53,9 @@ export function TrackerCard({
   const [notes, setNotes] = useState(app.notes)
   useEffect(() => setNotes(app.notes), [app.notes])
 
-  const due = app.followUpAt && app.followUpAt <= todayISO() && !["offer", "rejected"].includes(columnOf(app.status))
+  const [writing, setWriting] = useState(false)
+  const nudge = followUpDue(app)
+  const due = !!nudge
   const resume = `/api/resumes/${app.resumeId}/download?applicationId=${app.id}&template=${template}`
   const letter = `/api/resumes/applications/${app.id}/cover-letter/download?template=${template}`
   const menuItem = "cursor-pointer text-text focus:bg-surface-raised focus:text-text"
@@ -134,6 +137,11 @@ export function TrackerCard({
             </Link>
           </Button>
         )}
+        {nudge && (
+          <Button size="sm" className="h-7 px-2.5" onClick={() => setWriting(true)} title={nudge.reason === "quiet" ? "No reply in a week" : "Your follow-up date is here"}>
+            <Mail className="h-3 w-3" /> Follow up
+          </Button>
+        )}
         {app.jobUrl && (
           <a href={app.jobUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-full px-2 py-1 text-text-muted hover:bg-surface-raised hover:text-text">
             Posting <ExternalLink className="h-3 w-3" />
@@ -165,6 +173,10 @@ export function TrackerCard({
           ))}
         </select>
       </label>
+
+      <div {...stop}>
+        <FollowUpDialog app={app} open={writing} onClose={() => setWriting(false)} onSnooze={(followUpAt) => onSave({ followUpAt })} />
+      </div>
 
       {open && (
         <div className="mt-2 space-y-2" {...stop}>
