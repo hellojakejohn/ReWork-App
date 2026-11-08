@@ -105,6 +105,14 @@ Chunks (each tested, small commits, one PR):
 5. **Limits**: Free sees the top 5, Pro the full list (prices unchanged). `/admin`: jobs per
    source, matches shown, tailors started from a match, feed AI spend.
 6. **Real-data check** before merge: the three fixtures plus Jake's own resumes, budget asked.
+7. **Apply assist** (after 1-6): "Apply" opens the real application page and the Chrome
+   extension fills it (contact, tailored resume, letter, saved answers); the user checks and
+   clicks Submit, and the tracker marks it Applied. No auto-submit: ATS apply APIs need the
+   employer's key, bots break site terms and hit CAPTCHAs, and recruiters flag mass applies.
+
+Chunk 1 SQL: `prisma/migrations/20261109000000_job_feed/migration.sql` (checked Nov 8 on a
+throwaway Postgres: runs twice clean, cascades on resume delete, RLS on, no anon access).
+Download my data should include feed prefs and matches (chunk 3).
 
 Jake's part: paste the SQL (chunk 1), set `AI_FEED_DAILY_USD` in Vercel, look at the screens.
 

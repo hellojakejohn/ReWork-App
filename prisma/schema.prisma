@@ -75,6 +75,8 @@ model User {
   entitlements           Entitlement[]
   events                 Event[]
   aiCapOverride          AiCapOverride?
+  jobMatches             JobMatch[]
+  feedPrefs              FeedPrefs[]
 
   @@map("users")
 }
@@ -119,6 +121,8 @@ model Resume {
   updatedAt             DateTime         @updatedAt
   applications          JobApplication[]
   versions              ResumeVersion[]
+  jobMatches            JobMatch[]
+  feedPrefs             FeedPrefs?
   user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("resumes")
@@ -285,4 +289,84 @@ enum FeedbackType {
   BUG_REPORT
   FEATURE_REQUEST
   GENERAL_FEEDBACK
+}
+
+// ---------- Matches on upload (docs/job-feed-plan.md) ----------
+// Own tables, no new columns on existing ones, so the app keeps working before the SQL is
+// pasted: feed reads of a missing table fail soft.
+
+// One open (or recently closed) job from a public company board. Shared by every user.
+model Job {
+  // "{source}:{board}:{external id}", e.g. "greenhouse:stripe:7012345"
+  id          String     @id
+  source      String
+  board       String
+  company     String
+  title       String
+  location    String
+  remote      Boolean    @default(false)
+  usState     String?
+  // "us" | "other" | "unknown" (src/lib/feed/prefilter.ts locationCountry)
+  country     String
+  payLabel    String?
+  postedAt    DateTime?
+  // Full text. Empty until fetched for sources whose list has titles only (Workday).
+  description String     @default("")
+  url         String
+  // The Job match keywords, extracted once per job and reused for every user.
+  keywords    String[]
+  keywordsAt  DateTime?
+  firstSeenAt DateTime   @default(now())
+  lastSeenAt  DateTime   @default(now())
+  // Gone from the board: the honest "this job is closed" signal.
+  closedAt    DateTime?
+  matches     JobMatch[]
+
+  @@index([closedAt, country])
+  @@index([board])
+  @@map("jobs")
+}
+
+// One job scored against one resume.
+model JobMatch {
+  id            String    @id @default(cuid())
+  userId        String
+  resumeId      String
+  jobId         String
+  score         Int
+  prescore      Int
+  present       String[]
+  related       String[]
+  missing       String[]
+  seenAt        DateTime?
+  dismissedAt   DateTime?
+  savedAt       DateTime?
+  // Set when the user tailors from this match.
+  applicationId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume        Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  job           Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([resumeId, jobId])
+  @@index([userId, resumeId, score])
+  @@index([jobId])
+  @@map("job_matches")
+}
+
+// The "what job do you want next" answer for one resume.
+model FeedPrefs {
+  resumeId     String    @id
+  userId       String
+  targetTitles String[]
+  // "remote" | "near" | "both"
+  workplace    String    @default("both")
+  matchedAt    DateTime?
+  updatedAt    DateTime  @updatedAt
+  resume       Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("feed_prefs")
 }
