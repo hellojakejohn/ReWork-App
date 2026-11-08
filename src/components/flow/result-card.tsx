@@ -10,6 +10,7 @@ import { decideChange, type ApplicationDetailDTO, type MasterResumeDTO, type Quo
 import { ResumeDocument } from "./resume-document"
 import { CoverLetterPanel } from "./cover-letter-panel"
 import { LinkedInPanel } from "./linkedin-panel"
+import { AnswersPanel } from "./answers-panel"
 import { DownloadMenu } from "./download-menu"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { missingNudge } from "@/lib/receipt"
@@ -17,7 +18,7 @@ import { payFromText } from "@/lib/pay"
 import { Card, CardHeader, ErrorNote } from "./ui"
 import { rememberCoverage, SkillCheck } from "./skill-check"
 
-type Tab = "preview" | "changes" | "keywords" | "letter" | "linkedin"
+type Tab = "preview" | "changes" | "keywords" | "letter" | "linkedin" | "answers"
 
 export function ResultCard(props: {
   application: ApplicationDetailDTO | null
@@ -98,6 +99,7 @@ function Result({
     { id: "keywords", label: "Keywords" },
     { id: "letter", label: "Cover letter", count: application.coverLetter?.warnings.length || undefined },
     { id: "linkedin", label: "LinkedIn" },
+    { id: "answers", label: "Questions", count: application.answers.length || undefined },
   ]
 
   const panels: Record<Tab, React.ReactNode> = {
@@ -243,6 +245,7 @@ function Result({
       />
     ),
     linkedin: <LinkedInPanel resume={application.tailored} />,
+    answers: <AnswersPanel application={application} onChange={onChange} onUpgrade={onUpgrade} />,
   }
 
   return (
