@@ -16,6 +16,7 @@ export const CEILING_EVENTS: Record<DailyCeilingKind, EventName> = {
   evidence: 'evidence_started',
   skillCheck: 'skill_check',
   answers: 'application_answer',
+  interviewPrep: 'interview_prep',
 }
 
 export function startOfUtcDay(now = new Date()): Date {

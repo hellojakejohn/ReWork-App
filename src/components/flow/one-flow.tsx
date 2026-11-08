@@ -32,7 +32,7 @@ import { ManageResumesDialog } from "./manage-resumes"
 import { JobCard, jobIsValid } from "./job-card"
 import { TailorCard } from "./tailor-card"
 import { previousTailor } from "@/lib/previous-tailor"
-import { ResultCard } from "./result-card"
+import { ResultCard, type ResultTab } from "./result-card"
 import { HomeCard } from "./home-card"
 import { RecentDrawer } from "./recent-drawer"
 import { ErrorNote } from "./ui"
@@ -75,6 +75,7 @@ export function OneFlow() {
   const [resumeConfirmed, setResumeConfirmed] = useState(false)
   const [job, setJob] = useState<JobDraft | null>(null)
   const [application, setApplication] = useState<ApplicationDetailDTO | null>(null)
+  const [resultTab, setResultTab] = useState<{ tab: ResultTab; nonce: number } | null>(null)
   const [template, setTemplate] = useState<TemplateId>("classic")
 
   const [recentOpen, setRecentOpen] = useState(false)
@@ -112,8 +113,9 @@ export function OneFlow() {
     const open = params.get("open")
     const applicationParam = params.get("application")
     const tailorParam = params.get("tailor")
-    if (open || applicationParam || tailorParam) {
-      for (const key of ["open", "application", "tailor"]) params.delete(key)
+    const tabParam = params.get("tab")
+    if (open || applicationParam || tailorParam || tabParam) {
+      for (const key of ["open", "application", "tailor", "tab"]) params.delete(key)
       const query = params.toString()
       window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
     }
@@ -143,6 +145,7 @@ export function OneFlow() {
       }
       const draft: JobDraft = { url: app.jobUrl ?? "", title: app.jobTitle, company: app.company, location: app.jobLocation, description: app.jobDescription }
       if (applicationParam) {
+        if (tabParam === "interview" || tabParam === "answers" || tabParam === "letter") setResultTab({ tab: tabParam, nonce: Date.now() })
         setApplication(app)
         setJob(draft)
         setStep(3)
@@ -376,6 +379,7 @@ export function OneFlow() {
     />,
     <ResultCard
       key="result"
+      requestedTab={resultTab}
       application={application}
       template={template}
       onTemplate={chooseTemplate}

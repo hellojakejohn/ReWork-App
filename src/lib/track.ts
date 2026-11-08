@@ -18,6 +18,7 @@ export type EventName =
   | 'skill_check' // { step: keywords | place, ok } one model call; the daily ceiling counts these
   | 'skill_check_applied' // { applied, kinds }
   | 'application_answer' // { ms, length, needsYou } + usage; the daily ceiling and FREE's monthly count read these
+  | 'interview_prep' // { ms, questions } + usage; same
   | 'ai_usage' // model calls with no event of their own (evidence questions/rewrites)
   | 'ai_call' // { tier, provider, model, task, tokensIn, tokensOut, cachedIn, costUsd, ms, ok } one per provider call; spend source of truth
   | 'ai_inflight' // a model call running now (src/lib/ai-inflight.ts); deleted when it ends

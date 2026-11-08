@@ -4,6 +4,7 @@ import type { ApplicationStatus } from '@prisma/client'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { readStoredCoverLetter, type StoredCoverLetter } from '@/lib/cover-letter-shared'
 import { readStoredAnswers, type StoredAnswer } from '@/lib/app-answers-shared'
+import { readStoredInterviewPrep, type StoredInterviewPrep } from '@/lib/interview-prep-shared'
 import type { BulletChange, FactGuardWarning, KeywordCoverage, TailorCategoryScores, TailorOutput, TailorReport } from '@/types/tailor'
 import { buildTailorInput, type MasterResume } from '@/lib/tailor'
 import { coverageReport } from '@/lib/keyword-coverage'
@@ -45,6 +46,8 @@ export interface ApplicationDetailDTO extends ApplicationSummaryDTO {
   coverLetterUpdatedAt: string | null
   /** Application answers, newest first (kept in suggestions.answers). */
   answers: StoredAnswer[]
+  /** Likely interview questions (kept in suggestions.interviewPrep). */
+  interviewPrep: StoredInterviewPrep | null
 }
 
 interface ApplicationRowLike {
@@ -142,6 +145,7 @@ function withKeywords(
     coverLetter: readStoredCoverLetter(row.coverLetter),
     coverLetterUpdatedAt: row.coverLetterUpdatedAt ? row.coverLetterUpdatedAt.toISOString() : null,
     answers: readStoredAnswers((report as Record<string, unknown>).answers),
+    interviewPrep: readStoredInterviewPrep((report as Record<string, unknown>).interviewPrep),
   }
 }
 

@@ -5,7 +5,7 @@
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, Mail, MoreHorizontal, StickyNote, Trash2, Wand2 } from "lucide-react"
+import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, Mail, MessageCircleQuestion, MoreHorizontal, StickyNote, Trash2, Wand2 } from "lucide-react"
 import { followUpDue } from "@/lib/follow-up"
 import { FollowUpDialog } from "./follow-up-dialog"
 import { cn } from "@/lib/utils"
@@ -126,7 +126,13 @@ export function TrackerCard({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs" {...stop}>
-        {app.tailored ? (
+        {app.tailored && columnOf(app.status) === "interview" ? (
+          <Button asChild size="sm" className="h-7 px-2.5">
+            <Link href={`/dashboard?application=${app.id}&tab=interview`}>
+              <MessageCircleQuestion className="h-3 w-3" /> Prep
+            </Link>
+          </Button>
+        ) : app.tailored ? (
           <Button asChild variant="secondary" size="sm" className="h-7 px-2.5">
             <Link href={`/dashboard?application=${app.id}`}>Open result</Link>
           </Button>

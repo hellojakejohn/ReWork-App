@@ -14,7 +14,7 @@ import { recruiterText } from '@/lib/recruiter-text'
 import { AnswerError, MAX_ANSWERS, MAX_ANSWER_CHARS, MAX_QUESTION_CHARS, generateAnswer, isAnswerLength, readStoredAnswers, type StoredAnswer } from '@/lib/app-answers'
 import { evidenceFacts } from '@/lib/evidence-shared'
 import { getAccess } from '@/lib/entitlements'
-import { getAnswersQuota } from '@/lib/answers-quota'
+import { afterUse, getAnswersQuota } from '@/lib/answers-quota'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { FREE_ANSWERS_PER_MONTH, GO_PRO_OFFERS } from '@/lib/plans'
 import { checkDailyCeiling } from '@/lib/daily-ceiling'
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   return NextResponse.json({
     success: true,
     answers,
-    answersQuota: quota.remaining === null ? quota : { ...quota, used: quota.used + 1, remaining: Math.max(0, quota.remaining - 1) },
+    answersQuota: afterUse(quota),
   })
 }
 

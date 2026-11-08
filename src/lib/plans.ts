@@ -8,6 +8,8 @@ export const FREE_COVER_LETTERS_PER_MONTH = 1
 // Application answers ("Why do you want to work here?"): short, one model call each.
 // FREE gets a few to try; counted from events (src/lib/answers-quota.ts).
 export const FREE_ANSWERS_PER_MONTH = 3
+// Interview prep (likely questions + which bullets answer each): one to try.
+export const FREE_INTERVIEW_PREPS_PER_MONTH = 1
 // The tracker shows and manages this many applications on FREE (newest first).
 export const FREE_TRACKER_APPLICATIONS = 10
 // Uploads are unlimited, but FREE accounts can only keep this many master resumes
@@ -24,7 +26,8 @@ export const DAILY_CEILINGS = {
   parse: 10,
   evidence: 10,
   skillCheck: 30, // fit checks and answer placements together
-  answers: 40, // application answers and interview prep together
+  answers: 40,
+  interviewPrep: 10,
 } as const
 export type DailyCeilingKind = keyof typeof DAILY_CEILINGS
 
@@ -35,6 +38,7 @@ const DAILY_NOUN: Record<DailyCeilingKind, string> = {
   evidence: 'evidence interviews',
   skillCheck: 'skill checks',
   answers: 'application answers',
+  interviewPrep: 'interview preps',
 }
 
 export function dailyCeilingMessage(kind: DailyCeilingKind): string {
@@ -203,6 +207,7 @@ export const PRO_FEATURES = [
   'Cover letters, fact-checked like your resume',
   'Evidence interview: stronger bullets from your real numbers',
   'Answers to application questions, built only from your resume',
+  'Interview prep: likely questions and the bullets that answer them',
   'Track every application',
   'PDF + Word downloads (Word for application portals)',
   FAIR_USE,
@@ -211,7 +216,7 @@ export const PRO_FEATURES = [
 export const FREE_FEATURES = [
   `${FREE_TAILORS_PER_MONTH} tailored resumes per month`,
   `${FREE_COVER_LETTERS_PER_MONTH} cover letter per month`,
-  `${FREE_ANSWERS_PER_MONTH} application answers per month`,
+  `${FREE_ANSWERS_PER_MONTH} application answers and ${FREE_INTERVIEW_PREPS_PER_MONTH} interview prep per month`,
   `Application tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs`,
   'PDF downloads',
 ]

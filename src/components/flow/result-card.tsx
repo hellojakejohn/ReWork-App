@@ -11,6 +11,7 @@ import { ResumeDocument } from "./resume-document"
 import { CoverLetterPanel } from "./cover-letter-panel"
 import { LinkedInPanel } from "./linkedin-panel"
 import { AnswersPanel } from "./answers-panel"
+import { InterviewPanel } from "./interview-panel"
 import { DownloadMenu } from "./download-menu"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { missingNudge } from "@/lib/receipt"
@@ -18,7 +19,8 @@ import { payFromText } from "@/lib/pay"
 import { Card, CardHeader, ErrorNote } from "./ui"
 import { rememberCoverage, SkillCheck } from "./skill-check"
 
-type Tab = "preview" | "changes" | "keywords" | "letter" | "linkedin" | "answers"
+export type ResultTab = "preview" | "changes" | "keywords" | "letter" | "linkedin" | "answers" | "interview"
+type Tab = ResultTab
 
 export function ResultCard(props: {
   application: ApplicationDetailDTO | null
@@ -37,6 +39,8 @@ export function ResultCard(props: {
   /** A left-out claim's real number was written to the master. */
   onMasterSaved?: (master: MasterResumeDTO) => void
   isPro: boolean
+  /** Open on this tab (a link from the tracker); the nonce re-applies the same tab. */
+  requestedTab?: { tab: ResultTab; nonce: number } | null
 }) {
   if (!props.application) {
     return (
@@ -62,8 +66,12 @@ function Result({
   renderChangeExtra,
   onMasterSaved,
   isPro,
+  requestedTab,
 }: React.ComponentProps<typeof ResultCard> & { application: ApplicationDetailDTO }) {
-  const [tab, setTab] = useState<Tab>("preview")
+  const [tab, setTab] = useState<Tab>(requestedTab?.tab ?? "preview")
+  useEffect(() => {
+    if (requestedTab) setTab(requestedTab.tab)
+  }, [requestedTab])
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [checking, setChecking] = useState(false)
@@ -100,6 +108,7 @@ function Result({
     { id: "letter", label: "Cover letter", count: application.coverLetter?.warnings.length || undefined },
     { id: "linkedin", label: "LinkedIn" },
     { id: "answers", label: "Questions", count: application.answers.length || undefined },
+    { id: "interview", label: "Interview" },
   ]
 
   const panels: Record<Tab, React.ReactNode> = {
@@ -246,6 +255,7 @@ function Result({
     ),
     linkedin: <LinkedInPanel resume={application.tailored} />,
     answers: <AnswersPanel application={application} onChange={onChange} onUpgrade={onUpgrade} />,
+    interview: <InterviewPanel application={application} onChange={onChange} onUpgrade={onUpgrade} />,
   }
 
   return (

@@ -11,6 +11,7 @@ import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/eviden
 import type { FitCoverage, SkillAddition, SkillAnswer } from "@/lib/skill-check-shared"
 import type { JobFacts } from "@/lib/job-checks"
 import type { AnswerLength, StoredAnswer } from "@/lib/app-answers-shared"
+import type { StoredInterviewPrep } from "@/lib/interview-prep-shared"
 
 export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO, TrackerCardDTO }
 
@@ -488,6 +489,31 @@ export async function deleteAnswer(applicationId: string, answerId: string): Pro
     })
     if (!res.ok) return failure(res, "Couldn't delete that answer.")
     return { ok: true, answers: (await res.json()).answers }
+  } catch {
+    return NETWORK
+  }
+}
+
+// ---------- interview prep ----------
+
+const prepUrl = (applicationId: string) => `/api/resumes/applications/${applicationId}/interview-prep`
+
+export async function loadPrepQuota(applicationId: string): Promise<{ ok: true; prepQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(prepUrl(applicationId), { cache: "no-store" })
+    if (!res.ok) return failure(res, "Couldn't load your interview prep.")
+    return { ok: true, prepQuota: (await res.json()).prepQuota }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function buildInterviewPrep(applicationId: string): Promise<{ ok: true; interviewPrep: StoredInterviewPrep; prepQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(prepUrl(applicationId), { method: "POST" })
+    if (!res.ok) return failure(res, "We couldn't build your interview prep. Please try again.")
+    const data = await res.json()
+    return { ok: true, interviewPrep: data.interviewPrep, prepQuota: data.prepQuota }
   } catch {
     return NETWORK
   }

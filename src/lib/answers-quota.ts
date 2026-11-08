@@ -1,25 +1,36 @@
-// FREE's monthly application answers (server only). Counted from this UTC month's
-// application_answer events, like the daily ceilings: no counter column to migrate.
-// Fails open if the events table can't be read; the daily ceiling and AI cap still apply.
+// FREE's monthly allowance for features counted from events (server only): application
+// answers and interview prep. Counted from this UTC month's events, like the daily
+// ceilings, so there's no counter column to migrate. Fails open if the events table can't
+// be read; the daily ceiling and the AI cap still apply.
 import { prisma } from '@/lib/prisma'
-import { FREE_ANSWERS_PER_MONTH } from '@/lib/plans'
+import { FREE_ANSWERS_PER_MONTH, FREE_INTERVIEW_PREPS_PER_MONTH } from '@/lib/plans'
+import type { EventName } from '@/lib/track'
 
-export interface AnswersQuota {
+export interface EventQuota {
   isPro: boolean
   used: number
   limit: number | null // null = unlimited (Pro)
   remaining: number | null
 }
+export type AnswersQuota = EventQuota
 
-export async function getAnswersQuota(userId: string, isPro: boolean, now = new Date()): Promise<AnswersQuota> {
+export async function getEventQuota(userId: string, isPro: boolean, event: EventName, freeLimit: number, now = new Date()): Promise<EventQuota> {
   if (isPro) return { isPro, used: 0, limit: null, remaining: null }
   let used = 0
   try {
     used = await prisma.event.count({
-      where: { userId, name: 'application_answer', createdAt: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) } },
+      where: { userId, name: event, createdAt: { gte: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) } },
     })
   } catch (error) {
-    console.error('[answers-quota] could not count, letting it through:', (error as Error)?.message)
+    console.error(`[event-quota] could not count ${event}, letting it through:`, (error as Error)?.message)
   }
-  return { isPro, used, limit: FREE_ANSWERS_PER_MONTH, remaining: Math.max(0, FREE_ANSWERS_PER_MONTH - used) }
+  return { isPro, used, limit: freeLimit, remaining: Math.max(0, freeLimit - used) }
+}
+
+export const getAnswersQuota = (userId: string, isPro: boolean) => getEventQuota(userId, isPro, 'application_answer', FREE_ANSWERS_PER_MONTH)
+export const getInterviewPrepQuota = (userId: string, isPro: boolean) => getEventQuota(userId, isPro, 'interview_prep', FREE_INTERVIEW_PREPS_PER_MONTH)
+
+/** The quota after one more use. */
+export function afterUse(q: EventQuota): EventQuota {
+  return q.remaining === null ? q : { ...q, used: q.used + 1, remaining: Math.max(0, q.remaining - 1) }
 }
