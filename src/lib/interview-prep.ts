@@ -9,7 +9,7 @@
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { callOverrides, generateStructured, type AICallOptions } from '@/lib/ai'
 import { normalizeSpace } from '@/lib/resume-text'
-import { dropUnsupportedSentences } from '@/lib/text-facts'
+import { dropUnsupportedSentences, unsupportedFacts } from '@/lib/text-facts'
 import { toLayout } from '@/lib/resume-templates'
 import type { CoverLetterJob } from '@/lib/cover-letter'
 import type { ParsedResume } from '@/types/parsed-resume'
@@ -107,6 +107,16 @@ function guardProse(text: string, allowedText: string, jobDescription: string): 
   return dropUnsupportedSentences(dash(text), allowedText, jobDescription).text
 }
 
+/**
+ * Prose about the job, not the candidate ("why" a question is asked, questions to ask them):
+ * a number there ("your first 90 days") isn't a claim about the candidate, so only names are
+ * checked, against the resume and the job post.
+ */
+function guardJobProse(text: string, allowedText: string, jobDescription: string): string {
+  const t = dash(text)
+  return unsupportedFacts(t, `${allowedText}\n${jobDescription}`).terms.length ? '' : t
+}
+
 export function guardPrep(draft: PrepDraft, input: PrepInput): Omit<StoredInterviewPrep, 'model' | 'generatedAt'> {
   const bullets = numberedBullets(input.tailored)
   const questions: PrepQuestion[] = (draft.questions || [])
@@ -114,7 +124,7 @@ export function guardPrep(draft: PrepDraft, input: PrepInput): Omit<StoredInterv
       const chosen = bulletsFor(q.bulletNumbers, bullets)
       return {
         question: guardProse(q.question, input.allowedText, input.job.description),
-        why: guardProse(q.why, input.allowedText, input.job.description),
+        why: guardJobProse(q.why, input.allowedText, input.job.description),
         bullets: chosen,
         // The angle may also lean on the bullets it was given (they are resume text already).
         angle: guardProse(q.angle, `${input.allowedText}\n${chosen.join('\n')}`, input.job.description),
@@ -122,7 +132,7 @@ export function guardPrep(draft: PrepDraft, input: PrepInput): Omit<StoredInterv
     })
     .filter((q) => q.question)
     .slice(0, PREP_QUESTIONS)
-  const askThem = (draft.askThem || []).map((q) => guardProse(q, input.allowedText, input.job.description)).filter(Boolean).slice(0, 3)
+  const askThem = (draft.askThem || []).map((q) => guardJobProse(q, input.allowedText, input.job.description)).filter(Boolean).slice(0, 3)
   return { version: 1, questions, askThem }
 }
 

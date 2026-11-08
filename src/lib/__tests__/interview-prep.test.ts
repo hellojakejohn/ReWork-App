@@ -44,14 +44,15 @@ describe('guardPrep', () => {
           { question: 'How have you worked on payments?', why: 'They want payments experience for Stripe work.', bulletNumbers: [1, 2], angle: 'Lead with the billing service — then the 30% drop in errors. Mention you managed 8 engineers on Kubernetes.' },
           { question: 'Have you used React?', why: 'The role is React-heavy.', bulletNumbers: [], angle: 'Be honest and talk about how you learn new frameworks.' },
         ],
-        askThem: ['What does success look like for this Product Engineer in 90 days?', 'How does Northwind split payments work across teams?'],
+        askThem: ['What does success look like for this Product Engineer in 90 days?', 'How does Northwind split payments work across teams?', 'Do you use Kafka with Kubernetes here?'],
       },
       { tailored, allowedText, job }
     )
     expect(out.questions[0].bullets).toEqual(['Built the billing service in TypeScript', 'Cut checkout errors by 30%'])
     expect(out.questions[0].angle).toBe('Lead with the billing service, then the 30% drop in errors.')
     expect(out.questions[1].bullets).toEqual([])
-    expect(out.askThem).toEqual(['How does Northwind split payments work across teams?'])
+    // Numbers are fine in questions about the job; names not in the resume or post are not.
+    expect(out.askThem).toEqual(['What does success look like for this Product Engineer in 90 days?', 'How does Northwind split payments work across teams?'])
   })
 })
 
