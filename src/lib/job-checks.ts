@@ -86,15 +86,20 @@ const SCAM_CHECKS: { id: ScamSignalId; label: string; test: (s: string) => boole
     label: 'It moves the conversation to a chat app. Real recruiters rarely interview over Telegram, WhatsApp or Signal.',
     test: (s) =>
       /\b(t\.me|wa\.me|chat\.whatsapp\.com)\/\S+/i.test(s) ||
-      /\b(contact|message|reach|text|dm|add|interview|chat with|apply|write to|ping)\b[^.\n]{0,50}\b(telegram|whatsapp|signal|wechat|discord)\b/i.test(s) ||
+      // "contact ... on Telegram": the app has to be where you reach them, not any word nearby
+      // ("contact driver, policy or product and separate signal" is a support ops bullet).
+      /\b(contact|message|reach|text|dm|add|interview|chat with|apply|write to|ping)\b[^.\n]{0,40}\b(on|via|through|over|using|at)\s+(telegram|whatsapp|signal|wechat|discord)\b/i.test(s) ||
       /\b(telegram|whatsapp|signal|wechat)\b[^.\n]{0,20}(@\w{4,}|\+\d[\d ()-]{6,})/i.test(s),
   },
   {
     id: 'pay_to_start',
     label: 'It asks you to pay something or handle a check. Real employers never charge you to start or ask you to deposit their checks.',
     test: (s) =>
-      !/\b(no|never|free|without|zero|waived?)\b[^.\n]{0,25}\b(fees?|cost|deposit|charge)\b/i.test(s) &&
-      (/\b(training|registration|onboarding|starter(?: kit)?|application|processing|equipment|enrollment|certification) (fee|deposit|cost|charge)s?\b/i.test(s) ||
+      !/\b(no|not|never|don['’]t|doesn['’]t|won['’]t|will not|free|without|zero|waived?)\b[^.\n]{0,40}\b(fees?|costs?|deposits?|charges?)\b/i.test(s) &&
+      // "a training fee", or a cost with a price on it. Not "processing costs" or "GPU training
+      // costs", which are the job's own work at fintech and ML companies.
+      (/\b(training|registration|onboarding|starter(?: kit)?|application|processing|equipment|enrollment|certification) (fee|deposit)s?\b/i.test(s) ||
+        /\b(training|registration|onboarding|starter(?: kit)?|application|processing|equipment|enrollment|certification) (cost|charge)s? (of|is|are)\s*\$\s?\d/i.test(s) ||
         /\b(you will|you'll|you must|you need to|required to|need to|must first)\s+(pay|purchase|buy)\b/i.test(s) ||
         /\b(deposit|cash) (the|a|our) (check|cheque)\b/i.test(s) ||
         /\bsend you a (check|cheque)\b/i.test(s)),
@@ -106,7 +111,10 @@ const SCAM_CHECKS: { id: ScamSignalId; label: string; test: (s: string) => boole
       /\bconnect (?:your |a )?(?:crypto |web3 )?wallet\b/i.test(s) ||
       /\byour (seed|recovery|secret) phrase\b/i.test(s) ||
       /\byour private keys?\b/i.test(s) ||
-      /\b(send|transfer|deposit)\b[^.\n]{0,30}\b(usdt|usdc|btc|bitcoin|eth|ethereum|crypto)\b/i.test(s),
+      // Sending an amount, or sending to unlock something. Not "how users send, receive, and
+      // move crypto", which is an exchange describing its product.
+      /\b(send|transfer|deposit)\b[^.\n]{0,30}\b\d[\d,.]*\s*\$?\s*(usdt|usdc|btc|bitcoin|eth|ethereum|crypto)\b/i.test(s) ||
+      /\b(send|transfer|deposit)\b[^.\n]{0,30}\b(usdt|usdc|btc|bitcoin|eth|ethereum|crypto)\b[^.\n]{0,30}\bto (activate|unlock|start|verify|register|confirm|our wallet|this wallet|the wallet|this address|our address)\b/i.test(s),
   },
   {
     id: 'personal_info',

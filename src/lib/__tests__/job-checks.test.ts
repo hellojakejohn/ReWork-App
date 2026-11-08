@@ -85,6 +85,25 @@ Experience with Ethereum and Solidity required. We build Telegram mini apps for 
     expect(ids(ops)).toEqual([])
   })
 
+  // Real sentences from Stripe, Reddit, Affirm, Flexport, Airbnb and Coinbase boards (feed spike, Nov 8).
+  it('leaves real company job posts alone', () => {
+    for (const line of [
+      "You'll join the Product Accounting team to support payment processing cost accounting.",
+      'Collaborate with ML engineers on performance tuning, including improving model training time, efficiency, and GPU training costs.',
+      'Drive success metrics by running experiments that improve payment success and processing cost.',
+      'Own solution design from pre-sale through onboarding, including time studies, equipment cost scoping, and total cost-to-serve estimates.',
+      'Diagnose what is genuinely driving performance gaps, market, language, tier, partner, agent tenure, contact driver, policy or product and separate signal from noise.',
+      'This team owns the infrastructure, experiences, and controls that power how millions of users send, receive, and move crypto on Coinbase.',
+      'Peloton does NOT charge any application, processing, or training fee at any stage of the recruitment or hiring process.',
+    ])
+      expect(ids(line)).toEqual([])
+  })
+  it('still flags a priced fee and a send-to-unlock', () => {
+    expect(ids('The training cost is $199, refunded after your first month.')).toContain('pay_to_start')
+    expect(ids('Send USDT to activate your work account.')).toContain('wallet')
+    expect(ids('Message our recruiter via WhatsApp to continue.')).toContain('chat_app')
+  })
+
   it('quotes the sentence that matched, trimmed', () => {
     const [s] = scamSignals(`Great pay. ${'Very '.repeat(40)}long: send 10 USDT to start.`)
     expect(s.id).toBe('wallet')
