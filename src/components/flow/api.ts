@@ -509,3 +509,14 @@ export async function markMatch(id: string, action: "save" | "unsave" | "dismiss
     return NETWORK
   }
 }
+
+/** Apply pressed: the extension will fill this job's form (src/app/api/apply). */
+export async function startApply(applicationId: string): Promise<{ ok: true } | Failure> {
+  try {
+    const res = await postJson("/api/apply/start", { applicationId })
+    if (!res.ok) return failure(res, "Couldn't get your application kit ready.")
+    return { ok: true }
+  } catch {
+    return NETWORK
+  }
+}

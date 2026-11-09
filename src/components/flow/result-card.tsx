@@ -11,6 +11,7 @@ import { ResumeDocument } from "./resume-document"
 import { CoverLetterPanel } from "./cover-letter-panel"
 import { LinkedInPanel } from "./linkedin-panel"
 import { DownloadMenu } from "./download-menu"
+import { ApplyBox } from "./apply-box"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { missingNudge } from "@/lib/receipt"
 import { payFromText } from "@/lib/pay"
@@ -288,6 +289,7 @@ function Result({
           />
           <div className="space-y-2 pt-1">
             <DownloadMenu application={application} template={template} isPro={isPro} onUpgrade={onUpgrade} className="h-12 w-full text-base" />
+            <ApplyBox key={application.id} application={application} />
             <div className="grid grid-cols-2 gap-2">
               <Button variant="secondary" onClick={onAnotherJob}>
                 Another job <ArrowRight className="h-3.5 w-3.5" />

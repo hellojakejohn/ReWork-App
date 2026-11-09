@@ -264,6 +264,8 @@ const ROUTES: Case[] = [
   ['tracker DELETE', '@/app/api/tracker/[id]/route', 'DELETE', '/api/tracker/appB', undefined, 'appB'],
   ['tracker GET', '@/app/api/tracker/route', 'GET', '/api/tracker'],
   ['tracker POST', '@/app/api/tracker/route', 'POST', '/api/tracker', { title: 't', company: 'c', resumeId: 'resB' }],
+  ['apply start', '@/app/api/apply/start/route', 'POST', '/api/apply/start', { applicationId: 'appB' }],
+  ['apply packet', '@/app/api/apply/packet/route', 'GET', '/api/apply/packet'],
   ['feed GET', '@/app/api/feed/route', 'GET', '/api/feed?resumeId=resB'],
   ['feed POST', '@/app/api/feed/route', 'POST', '/api/feed', { resumeId: 'resB', targetTitles: ['x'], workplace: 'remote' }],
   ['feed match GET', '@/app/api/feed/matches/[id]/route', 'GET', '/api/feed/matches/matchB', undefined, 'matchB'],

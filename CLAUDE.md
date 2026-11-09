@@ -41,6 +41,7 @@
 - `src/instrumentation.ts` - server errors to `events` (shown in `/admin`)
 - `docs/PROJECT.md` - the whole project on one page; `docs/launch-audit.md`, `docs/token-plan.md` - launch go/no-go and the token plan; `docs/job-feed-plan.md` - the job feed (next big feature) and other post-launch ideas
 - `scripts/eval-models.ts` - real-model quality eval (private resumes in `scripts/fixtures/private/`, output in `eval-results/`, both gitignored)
+- `src/lib/apply-fill.ts` + `src/lib/apply-packet.ts` + `src/components/flow/apply-box.tsx` - apply assist: Result card Apply, then the extension fills the form (never submits)
 - `src/lib/save-job-script.ts` + `src/lib/saved-job.ts` + `src/app/save/` - Save to ReWork (LinkedIn/Indeed read in the user's browser); `extension/` is the Chrome extension
 - `src/lib/account.ts` - Download my data / Delete my account (Stripe cancel first)
 - `src/app/page.tsx` + `src/components/site/` - landing, legal pages, public header/footer (no auth JS); session pages live in `src/app/(app)/`

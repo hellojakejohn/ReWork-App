@@ -110,6 +110,10 @@ Chunks (each tested, small commits, one PR):
    clicks Submit, and the tracker marks it Applied. No auto-submit: ATS apply APIs need the
    employer's key, bots break site terms and hit CAPTCHAs, and recruiters flag mass applies.
 
+Built Nov 8 on `matches-on-upload`: chunks 1-5 and 7. Chunk 6 (real-data check) needs a
+budget. Apply assist needs extension 0.2.0 uploaded to the Web Store (new host permission:
+ReWork itself), and can't reach forms framed from another site (open the board's own page).
+
 Chunk 1 SQL: `prisma/migrations/20261109000000_job_feed/migration.sql` (checked Nov 8 on a
 throwaway Postgres: runs twice clean, cascades on resume delete, RLS on, no anon access).
 Download my data should include feed prefs and matches (chunk 3).
