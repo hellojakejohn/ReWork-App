@@ -81,8 +81,8 @@ describe('plan limits', () => {
   })
 
   it('pricing copy states the same limits', () => {
-    expect(FREE_FEATURES).toEqual(['3 tailored resumes per month', '1 cover letter per month', 'Application tracker for up to 10 jobs', 'PDF downloads'])
-    expect(PRO_FEATURES.join(' ')).toMatch(/every job you apply to.*Cover letters.*Evidence interview.*Track every application.*PDF \+ Word.*Fair use: plenty for an active job search/)
+    expect(FREE_FEATURES).toEqual(['Your top 5 job matches', '3 tailored resumes per month', '1 cover letter per month', 'Application tracker for up to 10 jobs', 'PDF downloads'])
+    expect(PRO_FEATURES.join(' ')).toMatch(/Every job that matches your resume.*every job you apply to.*Cover letters.*Evidence interview.*Track every application.*PDF \+ Word.*Fair use: plenty for an active job search/)
   })
 
   it('never says "unlimited" in pricing copy', () => {

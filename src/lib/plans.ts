@@ -10,6 +10,11 @@ export const FREE_TRACKER_APPLICATIONS = 10
 // Uploads are unlimited, but FREE accounts can only keep this many master resumes
 // at once so nobody uses uploads as a free parsing API.
 export const FREE_MAX_MASTER_RESUMES = 5
+// Matches on upload (src/lib/feed/): FREE sees its best few, Pro the whole ranked list.
+export const FREE_FEED_MATCHES = 5
+export const PRO_FEED_MATCHES = 50
+// Match runs (each searches the employers and may pay for new job keywords) per resume a day.
+export const FEED_RUNS_PER_DAY = 10
 
 // Per-user daily ceilings for everyone, Pro included. An abuse guard, not a plan limit:
 // a real job search doesn't come close. The money guard is the AI cap
@@ -194,6 +199,7 @@ export function masterResumeLimitFor(isPro: boolean): number {
 
 // Only list what Pro actually does today. Landing, /pricing and the upgrade sheet read these.
 export const PRO_FEATURES = [
+  'Every job that matches your resume, ranked by your real match',
   'A tailored resume for every job you apply to',
   'Cover letters, fact-checked like your resume',
   'Evidence interview: stronger bullets from your real numbers',
@@ -203,6 +209,7 @@ export const PRO_FEATURES = [
 ]
 
 export const FREE_FEATURES = [
+  `Your top ${FREE_FEED_MATCHES} job matches`,
   `${FREE_TAILORS_PER_MONTH} tailored resumes per month`,
   `${FREE_COVER_LETTERS_PER_MONTH} cover letter per month`,
   `Application tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs`,
