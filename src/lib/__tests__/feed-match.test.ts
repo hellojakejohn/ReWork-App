@@ -73,7 +73,7 @@ describe('searchTitles and placeFilter', () => {
   it('limits jobs to remote, near home, or both', () => {
     expect(placeFilter('remote', 'MN')).toMatchObject({ remote: true })
     expect(placeFilter('near', 'MN')).toMatchObject({ usState: 'MN' })
-    expect(placeFilter('both', 'MN').OR).toEqual([{ remote: true }, { usState: 'MN' }])
+    expect(placeFilter('both', 'MN')).toMatchObject({ OR: [{ remote: true }, { usState: 'MN' }] })
     expect(placeFilter('both', null)).toMatchObject({ remote: true })
   })
 })
