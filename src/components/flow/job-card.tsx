@@ -6,6 +6,7 @@ import { Banknote, ChevronDown, Info, Link2, Loader2, MapPin, Pencil, ShieldAler
 import { fetchJobFromUrl, type JobDraft } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, inputClass } from "./ui"
 import { useAdvance } from "./use-advance"
+import { MatchesPanel } from "./matches-panel"
 import { INPUT_LIMITS, INPUT_LIMIT_MESSAGES } from "@/lib/plans"
 import { payFromText } from "@/lib/pay"
 import { ghostSignals, otherCompanyNamed, readPastedJob, scamSignals, SCAM_SAFETY_TIP, type PastedJob } from "@/lib/job-checks"
@@ -29,11 +30,18 @@ export function JobCard({
   isActiveStep,
   onBack,
   onConfirm,
+  resumeId,
+  home = "",
+  onUpgrade,
 }: {
   job: JobDraft | null
   isActiveStep: boolean
   onBack: () => void
   onConfirm: (job: JobDraft) => void
+  /** The confirmed resume: its Top matches show above the link box. */
+  resumeId?: string | null
+  home?: string
+  onUpgrade?: (reason?: string) => void
 }) {
   const [draft, setDraft] = useState<JobDraft>(job ?? EMPTY)
   const [mode, setMode] = useState<Mode>(job ? "fetched" : "url")
@@ -47,6 +55,11 @@ export function JobCard({
   const [overflows, setOverflows] = useState(false)
   const descriptionBox = useRef<HTMLDivElement>(null)
   const request = useRef(0)
+  // Matches load (and refresh) once this step has been opened, not while it sits off-screen.
+  const [opened, setOpened] = useState(isActiveStep)
+  useEffect(() => {
+    if (isActiveStep) setOpened(true)
+  }, [isActiveStep])
 
   // Follow the parent: "Tailor for another job" clears the job (start over at the URL
   // box); reopening a tailored resume from Recent sets it.
@@ -223,16 +236,24 @@ export function JobCard({
 
   return (
     <Card>
-      <CardHeader title="The job" subtitle="Paste the job's link, or the whole post." onBack={onBack} />
+      <CardHeader title="The job" subtitle={resumeId ? "Pick one of your matches, or paste a job you found." : "Paste the job's link, or the whole post."} onBack={onBack} />
       <CardBody className="space-y-4">
         {(mode === "url" || mode === "fetching") && (
           <>
+            {resumeId && opened && (
+              <>
+                <MatchesPanel resumeId={resumeId} home={home} onPick={onConfirm} onUpgrade={(r) => onUpgrade?.(r)} />
+                <p className="flex items-center gap-3 pt-1 text-xs font-medium text-text-muted">
+                  <span className="h-px flex-1 bg-border" aria-hidden /> Or paste a job you found <span className="h-px flex-1 bg-border" aria-hidden />
+                </p>
+              </>
+            )}
             <div className="relative">
               <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
                 type="text"
                 inputMode="url"
-                autoFocus={isActiveStep}
+                autoFocus={isActiveStep && !resumeId}
                 aria-label="Job link or job post"
                 placeholder="Paste a job link, or the whole job post"
                 className={`${inputClass} py-3 pl-9 text-base`}
