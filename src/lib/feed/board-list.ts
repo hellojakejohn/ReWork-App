@@ -60,9 +60,30 @@ export const WORKDAY_BOARDS: WorkdayBoard[] = [
   { company: 'Pfizer', tenant: 'pfizer', host: 'pfizer.wd1.myworkdayjobs.com', site: 'PfizerCareers' },
   { company: 'Abbott', tenant: 'abbott', host: 'abbott.wd5.myworkdayjobs.com', site: 'abbottcareers' },
   { company: 'Cardinal Health', tenant: 'cardinalhealth', host: 'cardinalhealth.wd1.myworkdayjobs.com', site: 'EXT' },
-  { company: 'FedEx', tenant: 'fedex', host: 'fedex.wd1.myworkdayjobs.com', site: 'FXE-LAC_External_Career_Site' },
   { company: 'PwC', tenant: 'pwc', host: 'pwc.wd3.myworkdayjobs.com', site: 'Global_Experienced_Careers' },
   { company: 'Accenture', tenant: 'accenture', host: 'accenture.wd103.myworkdayjobs.com', site: 'AccentureCareers' },
   { company: 'Boeing', tenant: 'boeing', host: 'boeing.wd1.myworkdayjobs.com', site: 'EXTERNAL_CAREERS' },
-  { company: 'Chipotle', tenant: 'chipotle', host: 'chipotle.wd5.myworkdayjobs.com', site: 'ChipotleCareers' },
+  // Added Nov 9 (non-tech: health care, retail, food, logistics, insurance; many in MN). Each
+  // checked live. Not on public Workday search: Walmart, Comcast (422), Best Buy US, Target-style
+  // own sites (UnitedHealth, Mayo, Fairview, HealthPartners, Cargill, Starbucks). Dropped: Chipotle
+  // and Kohl's (places are store numbers), FedEx (that site is Latin America only).
+  { company: 'Allina Health', tenant: 'allina', host: 'allina.wd5.myworkdayjobs.com', site: 'External', state: 'MN' },
+  { company: 'Essentia Health', tenant: 'essentiahealth', host: 'essentiahealth.wd1.myworkdayjobs.com', site: 'Essentia_Health' },
+  { company: 'Sanford Health', tenant: 'sanford', host: 'sanford.wd5.myworkdayjobs.com', site: 'SanfordHealth' },
+  { company: 'Elevance Health', tenant: 'elevancehealth', host: 'elevancehealth.wd1.myworkdayjobs.com', site: 'ANT' },
+  { company: 'Cigna', tenant: 'cigna', host: 'cigna.wd5.myworkdayjobs.com', site: 'cignacareers' },
+  { company: 'McKesson', tenant: 'mckesson', host: 'mckesson.wd3.myworkdayjobs.com', site: 'External_Careers' },
+  { company: 'Baxter', tenant: 'baxter', host: 'baxter.wd1.myworkdayjobs.com', site: 'baxter' },
+  { company: 'Johnson & Johnson', tenant: 'jj', host: 'jj.wd5.myworkdayjobs.com', site: 'jj' },
+  { company: 'Nordstrom', tenant: 'nordstrom', host: 'nordstrom.wd501.myworkdayjobs.com', site: 'nordstrom_careers' },
+  { company: 'General Mills', tenant: 'genmills', host: 'genmills.wd1.myworkdayjobs.com', site: 'GMI_External_Careers' },
+  { company: "Land O'Lakes", tenant: 'landolakes', host: 'landolakes.wd1.myworkdayjobs.com', site: 'landolakes' },
+  { company: 'Sysco', tenant: 'sysco', host: 'sysco.wd5.myworkdayjobs.com', site: 'syscocareers' },
+  { company: 'Polaris', tenant: 'polaris', host: 'polaris.wd5.myworkdayjobs.com', site: 'polarisjobs' },
+  { company: 'C.H. Robinson', tenant: 'chrobinson', host: 'chrobinson.wd5.myworkdayjobs.com', site: 'chrobinson' },
+  { company: 'Ryder', tenant: 'ryder', host: 'ryder.wd5.myworkdayjobs.com', site: 'rydercareers' },
+  { company: 'J.B. Hunt', tenant: 'jbhunt', host: 'jbhunt.wd501.myworkdayjobs.com', site: 'Careers' },
+  { company: 'Thrivent', tenant: 'thrivent', host: 'thrivent.wd5.myworkdayjobs.com', site: 'External' },
+  { company: 'Travelers', tenant: 'travelers', host: 'travelers.wd5.myworkdayjobs.com', site: 'External' },
+  { company: 'Wells Fargo', tenant: 'wf', host: 'wf.wd1.myworkdayjobs.com', site: 'WellsFargoJobs' },
 ]

@@ -87,14 +87,17 @@ async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>): P
   }))
 }
 
+// Some employers (Allina, Nordstrom) answer 500 without a language.
+const WORKDAY_HEADERS = { 'content-type': 'application/json', accept: 'application/json', 'accept-language': 'en-US' }
+
 /** Step 1: ask every Workday employer for these searches, and keep what comes back. Returns how many different jobs. */
 export async function searchWorkday(db: Db, queries: string[], { fetchFn = fetch, boards = WORKDAY_BOARDS, now = new Date() } = {}): Promise<number> {
   const found = new Set<string>()
   const tasks = boards.flatMap((b) => queries.map((t) => ({ b, t })))
-  await pool(tasks, 12, async ({ b, t }) => {
+  await pool(tasks, 24, async ({ b, t }) => {
     try {
       const req = workdaySearchRequest(b, t)
-      const res = await fetchFn(req.url, { method: 'POST', body: req.body, headers: { 'content-type': 'application/json', accept: 'application/json' }, signal: AbortSignal.timeout(10_000) })
+      const res = await fetchFn(req.url, { method: 'POST', body: req.body, headers: WORKDAY_HEADERS, signal: AbortSignal.timeout(10_000) })
       if (!res.ok) return
       const jobs = parseWorkdaySearch(b, await res.json(), now)
       if (!jobs.length) return
@@ -120,7 +123,7 @@ async function fetchDescription(job: { url: string }, fetchFn: typeof fetch): Pr
   const ats = matchAtsUrl(job.url)
   if (!ats) return null
   try {
-    const res = await fetchFn(ats.apiUrl, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(15_000) })
+    const res = await fetchFn(ats.apiUrl, { headers: { accept: 'application/json', 'accept-language': 'en-US' }, signal: AbortSignal.timeout(15_000) })
     if (!res.ok) return null
     const parsed = parseAtsResponse(ats, await res.json(), job.url)
     return parsed ? { description: parsed.description.slice(0, 50_000), payLabel: payFromText(parsed.description)?.label ?? null } : null

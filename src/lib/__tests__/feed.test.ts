@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dedupeJobs, parseBoardList, roleKey } from '@/lib/feed/boards'
+import { dedupeJobs, parseBoardList, roleKey, workdayLocation } from '@/lib/feed/boards'
 import { isRemote, locationCountry, prescore, resumeProfile, titleFit, titleWords, usState } from '@/lib/feed/prefilter'
 import type { ParsedResume } from '@/types/parsed-resume'
 
@@ -48,6 +48,16 @@ describe('locations', () => {
     expect(usState('San Francisco')).toBe('CA')
     expect(isRemote('Remote - United States')).toBe(true)
     expect(locationCountry('Remote - US')).toBe('us')
+    // Workday styles (Nov 9 check: these were read as other countries).
+    expect(usState('MN - St. Paul')).toBe('MN')
+    expect(usState('MO-ST. LOUIS, 100 S 4TH ST')).toBe('MO')
+    expect(usState('SD, Sioux Falls')).toBe('SD')
+    expect(usState('USA - Hutchinson KS 67501')).toBe('KS')
+    expect(usState('ON, Mississauga')).toBe(null)
+    expect(usState('LON - London')).toBe(null)
+    expect(locationCountry('AL - Birmingham')).toBe('us')
+    expect(locationCountry('3 Locations')).toBe('unknown')
+    expect(locationCountry('CAN, ON, Mississauga')).toBe('other')
     expect(locationCountry('Remote')).toBe('unknown')
     expect(locationCountry('Warsaw')).toBe('other')
     expect(locationCountry('Gurugram')).toBe('other')
@@ -106,5 +116,21 @@ describe('titleFit', () => {
     expect(titleFit('Senior Operations Associate', profile)).toBe(50)
     expect(titleFit('Front End Developer', profile)).toBe(100)
     expect(titleFit('Account Executive', profile)).toBe(0)
+  })
+})
+
+describe('workdayLocation', () => {
+  const b = { company: 'X', tenant: 'x', host: 'x.wd1.myworkdayjobs.com', site: 'S' }
+  it('reads the main place from the link when the text says "N Locations"', () => {
+    const loc = workdayLocation(b, '9 Locations', '/job/Mounds-View-Minnesota-United-States-of-America/Engineer_R1')
+    expect(loc).toBe('Mounds View Minnesota United States of America (and more)')
+    expect(usState(loc)).toBe('MN')
+    expect(usState(workdayLocation(b, '', '/job/TX---Houston/Analyst_R2'))).toBe('TX')
+    expect(usState(workdayLocation(b, '2 Locations', '/job/Seattle-WA-USA/PM_R3'))).toBe('WA')
+    expect(workdayLocation(b, 'Saint Paul, MN', '/job/x/y')).toBe('Saint Paul, MN')
+  })
+  it('adds the state for one-state employers that list sites by name', () => {
+    const loc = workdayLocation({ ...b, state: 'MN' }, 'Abbott Northwestern Hospital', '/job/Abbott-Northwestern-Hospital/RN_R4')
+    expect(usState(loc)).toBe('MN')
   })
 })

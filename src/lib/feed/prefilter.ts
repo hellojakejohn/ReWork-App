@@ -83,6 +83,10 @@ export function usState(location: string): string | null {
   if (/\b(d\.c\.?|dc|district of columbia)(?![a-z])/i.test(location)) return 'DC'
   const code = location.match(/,\s*([A-Z]{2})\b/)?.[1]
   if (code && CODES.has(code)) return code
+  // Workday styles: "MN - St. Paul", "MO-ST. LOUIS, 100 S 4TH ST", "SD, Sioux Falls",
+  // "USA - Hutchinson KS 67501".
+  const lead = location.match(/^\s*([A-Z]{2})\s*[-,]\s*[A-Za-z]/)?.[1] ?? location.match(/\b([A-Z]{2})\s+(?:\d{5}|USA?)\b/)?.[1]
+  if (lead && CODES.has(lead)) return lead
   const lower = location.toLowerCase()
   for (const [name, c] of Object.entries(US_STATES)) if (new RegExp(`\\b${name}\\b`).test(lower)) return c
   const city = Object.entries(US_CITIES).find(([name]) => lower.includes(name))
@@ -107,7 +111,7 @@ export function isRemote(location: string, description = ''): boolean {
  */
 export function locationCountry(location: string): 'us' | 'other' | 'unknown' {
   if (usState(location) || /\b(united states|usa|u\.s\.?|us|americas|north america|nationwide)\b/i.test(location)) return 'us'
-  const rest = location.replace(/\b(remote|hybrid|in[- ]office|on[- ]site|onsite|anywhere|flexible|n\/a|multiple locations?|various)\b/gi, '').replace(/[\s,;:()/|•-]+/g, '')
+  const rest = location.replace(/\b(remote|hybrid|in[- ]office|on[- ]site|onsite|anywhere|flexible|n\/a|multiple locations?|\d+ locations|various)\b/gi, '').replace(/[\s,;:()/|•-]+/g, '')
   return rest ? 'other' : 'unknown'
 }
 

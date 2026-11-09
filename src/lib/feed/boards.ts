@@ -84,6 +84,8 @@ export interface WorkdayBoard {
   /** e.g. target.wd5.myworkdayjobs.com */
   host: string
   site: string
+  /** For employers in one state that list sites by name ("Abbott Northwestern Hospital"). */
+  state?: string
 }
 
 /** Workday's own career-site search: 20 jobs per call, newest and best first. */
@@ -108,6 +110,20 @@ export function workdayPostedAt(postedOn: string, now = new Date()): Date | null
  * Search results, without the description (the list doesn't carry it). The job's own page is
  * fetched later, only for jobs that pass someone's prefilter, through the resolver.
  */
+/**
+ * The place to show and match on. "3 Locations" (or none) says nothing, but the job's link
+ * starts with its main place: /job/Mounds-View-Minnesota-United-States-of-America/...
+ */
+export function workdayLocation(b: WorkdayBoard, locationsText: string, path: string): string {
+  let place = locationsText.trim()
+  if (!place || /^\d+ locations$/i.test(place)) {
+    const slug = path.split('/')[2] ?? ''
+    const fromPath = slug.replace(/---/g, ' - ').replace(/-/g, ' ').trim()
+    if (fromPath) place = /^\d+ locations$/i.test(locationsText.trim()) ? `${fromPath} (and more)` : fromPath
+  }
+  return b.state && place && !place.includes(b.state) ? `${place}, ${b.state}` : place
+}
+
 export function parseWorkdaySearch(b: WorkdayBoard, data: Json, now = new Date()): (Omit<FeedJob, 'facts'> & { postedAt: Date | null })[] {
   const company = b.company || companyFromSlug(b.tenant)
   const out: (Omit<FeedJob, 'facts'> & { postedAt: Date | null })[] = []
@@ -122,7 +138,7 @@ export function parseWorkdaySearch(b: WorkdayBoard, data: Json, now = new Date()
       source: 'workday',
       title,
       company,
-      location: str(p?.locationsText),
+      location: workdayLocation(b, str(p?.locationsText), path),
       description: '',
       url: `https://${b.host}/${b.site}${path}`,
       postedAt: workdayPostedAt(str(p?.postedOn), now),

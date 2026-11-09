@@ -124,7 +124,7 @@ Jake's part: paste the SQL (chunk 1), set `AI_FEED_DAILY_USD` in Vercel, look at
 `npm run feed:check -- --max-usd N` (billed) runs the real `runMatch` on today's boards, the
 Workday search and real keyword calls, on an in-memory copy of the tables. Three fixtures plus
 the restaurant manager asking for "Operations Coordinator", all in Saint Paul, "Remote or near
-me". Spent $0.95 of the $2 budget over three runs.
+me". Spent $1.06 of the $2 budget over four runs.
 
 - Pull: 116 of 116 boards, about 19,950 jobs, 31-37 s. A match run takes 13-24 s.
 - Cost: about $0.15 for a new resume (12-14 keyword calls), $0 for the same resume again, and
@@ -142,7 +142,18 @@ me". Spent $0.95 of the $2 budget over three runs.
 - Still true: a career changer's list is thin and the % is low (5-11%), because their words
   don't match a new field's words yet. That is honest; the Skill check and tailoring are the
   answer. A restaurant GM asking for "General Manager" gets 3 jobs: these boards hire few.
-  More Workday employers in retail, health care and logistics would help most (post-launch).
+- **More employers (Nov 9, same day):** Workday went from 31 to 48 employers, adding health
+  care (Allina, Essentia, Sanford, Elevance, Cigna, McKesson, Baxter, J&J), retail and food
+  (Nordstrom, General Mills, Land O'Lakes, Sysco), logistics (C.H. Robinson, Ryder, J.B. Hunt),
+  Polaris, Thrivent, Travelers and Wells Fargo. Dropped Chipotle and Kohl's (their places are
+  store numbers) and FedEx (that site is Latin America only). Not on public Workday search:
+  Walmart, Comcast, Best Buy US, UnitedHealth, Mayo, Fairview, HealthPartners, Cargill.
+  Also fixed: Allina and Nordstrom answer only with an `accept-language` header; places like
+  "MN - St. Paul", "SD, Sioux Falls" and "3 Locations" were read as other countries
+  (`workdayLocation` now reads the main place from the job link).
+  Result: the career changer's top 4 are Operations Coordinator jobs in Minnesota (Wells
+  Fargo x2, Xcel, C.H. Robinson); the GM also gets a Land O'Lakes General Manager. Runs take
+  8-16 s. Total spent on the check: $1.06 of $2.
 
 ## Spike results (Nov 8)
 
