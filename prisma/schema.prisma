@@ -334,6 +334,8 @@ model JobMatch {
   resumeId      String
   jobId         String
   score         Int
+  // List order: score plus half the title fit (matchRank in src/lib/feed/match.ts).
+  rank          Int       @default(0)
   prescore      Int
   present       String[]
   related       String[]
@@ -350,7 +352,7 @@ model JobMatch {
   job           Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([resumeId, jobId])
-  @@index([userId, resumeId, score])
+  @@index([userId, resumeId, rank])
   @@index([jobId])
   @@map("job_matches")
 }

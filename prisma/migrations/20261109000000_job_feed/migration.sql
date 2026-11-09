@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS "job_matches" (
     "resumeId" TEXT NOT NULL,
     "jobId" TEXT NOT NULL,
     "score" INTEGER NOT NULL,
+    "rank" INTEGER NOT NULL DEFAULT 0,
     "prescore" INTEGER NOT NULL,
     "present" TEXT[],
     "related" TEXT[],
@@ -59,7 +60,10 @@ CREATE TABLE IF NOT EXISTS "feed_prefs" (
 
 CREATE INDEX IF NOT EXISTS "jobs_closedAt_country_idx" ON "jobs"("closedAt", "country");
 CREATE INDEX IF NOT EXISTS "jobs_board_idx" ON "jobs"("board");
-CREATE INDEX IF NOT EXISTS "job_matches_userId_resumeId_score_idx" ON "job_matches"("userId", "resumeId", "score");
+-- Safe to paste again on a database that has the first version of this file.
+ALTER TABLE "job_matches" ADD COLUMN IF NOT EXISTS "rank" INTEGER NOT NULL DEFAULT 0;
+DROP INDEX IF EXISTS "job_matches_userId_resumeId_score_idx";
+CREATE INDEX IF NOT EXISTS "job_matches_userId_resumeId_rank_idx" ON "job_matches"("userId", "resumeId", "rank");
 CREATE INDEX IF NOT EXISTS "job_matches_jobId_idx" ON "job_matches"("jobId");
 CREATE UNIQUE INDEX IF NOT EXISTS "job_matches_resumeId_jobId_key" ON "job_matches"("resumeId", "jobId");
 CREATE INDEX IF NOT EXISTS "feed_prefs_userId_idx" ON "feed_prefs"("userId");

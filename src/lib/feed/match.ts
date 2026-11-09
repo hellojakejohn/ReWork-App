@@ -11,7 +11,7 @@ import { extractJobKeywords, fitCoverage } from '@/lib/skill-check'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { parseWorkdaySearch, roleKey, workdaySearchRequest, type WorkdayBoard } from './boards'
 import { WORKDAY_BOARDS } from './board-list'
-import { prescore, resumeProfile, usState } from './prefilter'
+import { prescore, resumeProfile, stateName, titleFit, usState } from './prefilter'
 import { syncBoard, toJobRow } from './sync'
 import { payFromText } from '@/lib/pay'
 
@@ -55,6 +55,24 @@ export interface MatchRun {
   ms: number
 }
 
+/**
+ * Workday search ignores where you live, and one page per employer is mostly other places.
+ * So we also ask for "{title} {state}" and "{title} Remote", per where they want to work.
+ */
+export function workdayQueries(titles: string[], workplace: Workplace, homeState: string | null): string[] {
+  const state = homeState ? stateName(homeState) : null
+  return titles.flatMap((t) => [t, ...(workplace !== 'remote' && state ? [`${t} ${state}`] : []), ...(workplace !== 'near' || !state ? [`${t} Remote`] : [])])
+}
+
+/**
+ * The list order: the real match, plus half the title fit. A career changer who asks for
+ * "Operations Coordinator" sees Operations Coordinator jobs first even when few of their words
+ * show yet, ahead of a Data Analyst job that happens to share two of them.
+ */
+export function matchRank(score: number, titleFit: number): number {
+  return score + Math.round(titleFit / 2)
+}
+
 /** What we search for: their target titles, else their latest job title. */
 export function searchTitles(resume: ParsedResume, prefs: MatchPrefs): string[] {
   const own = prefs.targetTitles.map((t) => t.trim()).filter(Boolean)
@@ -69,10 +87,10 @@ async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>): P
   }))
 }
 
-/** Step 1: ask every Workday employer for these titles, and keep what comes back. */
-export async function searchWorkday(db: Db, titles: string[], { fetchFn = fetch, boards = WORKDAY_BOARDS, now = new Date() } = {}): Promise<number> {
-  let found = 0
-  const tasks = boards.flatMap((b) => titles.map((t) => ({ b, t })))
+/** Step 1: ask every Workday employer for these searches, and keep what comes back. Returns how many different jobs. */
+export async function searchWorkday(db: Db, queries: string[], { fetchFn = fetch, boards = WORKDAY_BOARDS, now = new Date() } = {}): Promise<number> {
+  const found = new Set<string>()
+  const tasks = boards.flatMap((b) => queries.map((t) => ({ b, t })))
   await pool(tasks, 12, async ({ b, t }) => {
     try {
       const req = workdaySearchRequest(b, t)
@@ -81,12 +99,12 @@ export async function searchWorkday(db: Db, titles: string[], { fetchFn = fetch,
       const jobs = parseWorkdaySearch(b, await res.json(), now)
       if (!jobs.length) return
       await syncBoard(db as never, jobs[0].board, jobs.map((j) => toJobRow(j, now)), { complete: false, now })
-      found += jobs.length
+      for (const j of jobs) found.add(j.key)
     } catch {
       // One employer timing out never stops the rest.
     }
   })
-  return found
+  return found.size
 }
 
 /** The open-job filter for where they want to work. Null home state: remote only for "near". */
@@ -117,10 +135,10 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
   const { userId, resumeId, resume, prefs } = input
   const run: MatchRun = { searched: searchTitles(resume, prefs), workdayJobs: 0, pool: 0, scored: 0, extracted: 0, fetched: 0, skippedNoBudget: 0, ms: 0 }
 
-  run.workdayJobs = await searchWorkday(db, run.searched, { fetchFn, boards: deps.workdayBoards ?? WORKDAY_BOARDS, now })
+  const homeState = usState(resume.contact.location)
+  run.workdayJobs = await searchWorkday(db, workdayQueries(run.searched, prefs.workplace, homeState), { fetchFn, boards: deps.workdayBoards ?? WORKDAY_BOARDS, now })
 
   // Step 2a: titles only, everything open in their area.
-  const homeState = usState(resume.contact.location)
   const profilePrefs = { targetTitles: prefs.targetTitles.filter((t) => t.trim()) }
   const profile = resumeProfile(resume, profilePrefs)
   const open = await db.job.findMany({ where: placeFilter(prefs.workplace, homeState), select: { id: true, title: true, company: true, location: true } })
@@ -142,15 +160,15 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
     .map((j) => {
       const s = prescore({ title: j.title, location: j.location, description: j.description }, profile)
       // A missing text can't show skills: give it the title-only score, which already is.
-      return { j, score: j.description ? s.score : Math.round(s.title * 0.6) }
+      return { j, score: j.description ? s.score : Math.round(s.title * 0.6), titleFit: titleFit(j.title, profile) }
     })
     .filter((x) => x.score >= MIN_PRESCORE)
     .sort((a, b) => b.score - a.score)
     .slice(0, MATCH_TOP)
 
   // Step 3: text and keywords where missing. A few at a time; each job is done once, ever.
-  const ready: { id: string; prescore: number; keywords: string[] }[] = []
-  await pool(top, 4, async ({ j, score }) => {
+  const ready: { id: string; prescore: number; titleFit: number; keywords: string[] }[] = []
+  await pool(top, 4, async ({ j, score, titleFit }) => {
     let description = j.description
     if (!description) {
       const got = await fetchDescription(j, fetchFn)
@@ -174,13 +192,13 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
       await db.job.update({ where: { id: j.id }, data: { keywords, keywordsAt: now } })
       if (keywords.length < 5) return
     }
-    ready.push({ id: j.id, prescore: score, keywords })
+    ready.push({ id: j.id, prescore: score, titleFit, keywords })
   })
 
   // Step 4: the real Job match, saved. Saved / dismissed / tailored marks stay as they are.
   for (const r of ready) {
     const cov = fitCoverage(r.keywords, resume)
-    const data = { score: cov.score, prescore: r.prescore, present: cov.present, related: cov.related, missing: cov.missing }
+    const data = { score: cov.score, rank: matchRank(cov.score, r.titleFit), prescore: r.prescore, present: cov.present, related: cov.related, missing: cov.missing }
     await db.jobMatch.upsert({ where: { resumeId_jobId: { resumeId, jobId: r.id } }, create: { userId, resumeId, jobId: r.id, ...data }, update: data })
   }
   run.scored = ready.length
@@ -206,13 +224,13 @@ export interface MatchDTO {
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string }
 }
 
-/** This resume's matches, best first: open jobs only, dismissed ones hidden. */
+/** This resume's matches, best first (matchRank): open jobs only, dismissed ones hidden. */
 export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: string, resumeId: string, take: number): Promise<{ matches: MatchDTO[]; total: number }> {
   const where = { userId, resumeId, dismissedAt: null, job: { closedAt: null } }
   const [rows, total] = await Promise.all([
     db.jobMatch.findMany({
       where,
-      orderBy: [{ score: 'desc' }, { prescore: 'desc' }],
+      orderBy: [{ rank: 'desc' }, { score: 'desc' }, { prescore: 'desc' }],
       take,
       include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true } } },
     }),

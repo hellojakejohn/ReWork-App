@@ -13,6 +13,8 @@ export interface FeedPrefs {
 
 export interface ResumeProfile {
   titleWords: Set<string>
+  /** Each title they want (or held), as its own words: for titleFit. */
+  titles?: string[][]
   skills: string[]
   years: number
   homeState: string | null
@@ -70,6 +72,13 @@ const US_STATES: Record<string, string> = {
 }
 const CODES = new Set(Object.values(US_STATES))
 
+/** "MN" -> "Minnesota" (for search text). */
+export function stateName(code: string): string | null {
+  if (code === 'DC') return 'Washington DC'
+  const name = Object.entries(US_STATES).find(([, c]) => c === code)?.[0]
+  return name ? name.replace(/\b[a-z]/g, (ch) => ch.toUpperCase()) : null
+}
+
 export function usState(location: string): string | null {
   if (/\b(d\.c\.?|dc|district of columbia)(?![a-z])/i.test(location)) return 'DC'
   const code = location.match(/,\s*([A-Z]{2})\b/)?.[1]
@@ -118,7 +127,18 @@ function yearsOf(resume: ParsedResume, now = new Date()): number {
 export function resumeProfile(resume: ParsedResume, prefs: FeedPrefs = {}): ResumeProfile {
   const titles = prefs.targetTitles?.length ? prefs.targetTitles : resume.experience.slice(0, 2).map((e) => e.title)
   const skills = [...new Set([...resume.skills.flatMap((g) => g.items), ...resume.projects.flatMap((p) => p.tech)].map((s) => s.trim()).filter(Boolean))]
-  return { titleWords: new Set(titles.flatMap(titleWords)), skills, years: yearsOf(resume), homeState: usState(resume.contact.location) }
+  return { titleWords: new Set(titles.flatMap(titleWords)), titles: titles.map((t) => [...new Set(titleWords(t))]).filter((t) => t.length), skills, years: yearsOf(resume), homeState: usState(resume.contact.location) }
+}
+
+/**
+ * How much of a title they asked for this job's title covers, 0 to 100 (best of their titles).
+ * "Operations Work Coordinator" covers all of "Operations Coordinator"; "Cyber Operations
+ * Lead" covers half. Used for the list order (matchRank), not the prefilter gate.
+ */
+export function titleFit(jobTitle: string, profile: ResumeProfile): number {
+  const job = new Set(titleWords(jobTitle))
+  const best = Math.max(0, ...(profile.titles ?? [[...profile.titleWords]]).map((t) => (t.length ? t.filter((w) => job.has(w)).length / t.length : 0)))
+  return Math.round(best * 100)
 }
 
 export function prescore(job: { title: string; location: string; description: string }, profile: ResumeProfile, prefs: FeedPrefs = {}): Prescore {

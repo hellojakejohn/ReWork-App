@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { placeFilter, runMatch, searchTitles } from '@/lib/feed/match'
+import { matchRank, placeFilter, runMatch, searchTitles, workdayQueries } from '@/lib/feed/match'
 import type { ParsedResume } from '@/types/parsed-resume'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -131,5 +131,21 @@ describe('runMatch', () => {
     })
     const run = await runMatch({ db, fetchFn, extract, workdayBoards: [board] }, { userId: 'u', resumeId: 'r', resume, prefs })
     expect(run).toMatchObject({ workdayJobs: 0, scored: 0 })
+  })
+})
+
+describe('workdayQueries and matchRank', () => {
+  it('adds the home state and Remote to the Workday search, per where they want to work', () => {
+    expect(workdayQueries(['Operations Coordinator'], 'both', 'MN')).toEqual(['Operations Coordinator', 'Operations Coordinator Minnesota', 'Operations Coordinator Remote'])
+    expect(workdayQueries(['Operations Coordinator'], 'near', 'MN')).toEqual(['Operations Coordinator', 'Operations Coordinator Minnesota'])
+    expect(workdayQueries(['Operations Coordinator'], 'remote', 'MN')).toEqual(['Operations Coordinator', 'Operations Coordinator Remote'])
+    expect(workdayQueries(['Nurse'], 'both', null)).toEqual(['Nurse', 'Nurse Remote'])
+    expect(workdayQueries(['Nurse'], 'near', 'NY')).toEqual(['Nurse', 'Nurse New York'])
+  })
+  it('puts the job they asked for ahead of a loosely related one with a few more shared words', () => {
+    // Real case (Nov 9 check): Operations Work Coordinator at 0% vs a Data Analyst job at 11%.
+    expect(matchRank(0, 100)).toBeGreaterThan(matchRank(11, 50))
+    // A much better skill match still wins.
+    expect(matchRank(40, 50)).toBeGreaterThan(matchRank(5, 100))
   })
 })

@@ -110,8 +110,7 @@ Chunks (each tested, small commits, one PR):
    clicks Submit, and the tracker marks it Applied. No auto-submit: ATS apply APIs need the
    employer's key, bots break site terms and hit CAPTCHAs, and recruiters flag mass applies.
 
-Built Nov 8 on `matches-on-upload`: chunks 1-5 and 7. Chunk 6 (real-data check) needs a
-budget. Apply assist needs extension 0.2.0 uploaded to the Web Store (new host permission:
+Built Nov 8 on `matches-on-upload`: chunks 1-5 and 7. Chunk 6 ran Nov 9 (below). Apply assist needs extension 0.2.0 uploaded to the Web Store (new host permission:
 ReWork itself), and can't reach forms framed from another site (open the board's own page).
 
 Chunk 1 SQL: `prisma/migrations/20261109000000_job_feed/migration.sql` (checked Nov 8 on a
@@ -119,6 +118,31 @@ throwaway Postgres: runs twice clean, cascades on resume delete, RLS on, no anon
 Download my data should include feed prefs and matches (chunk 3).
 
 Jake's part: paste the SQL (chunk 1), set `AI_FEED_DAILY_USD` in Vercel, look at the screens.
+
+## Real-data check (Nov 9, chunk 6)
+
+`npm run feed:check -- --max-usd N` (billed) runs the real `runMatch` on today's boards, the
+Workday search and real keyword calls, on an in-memory copy of the tables. Three fixtures plus
+the restaurant manager asking for "Operations Coordinator", all in Saint Paul, "Remote or near
+me". Spent $0.95 of the $2 budget over three runs.
+
+- Pull: 116 of 116 boards, about 19,950 jobs, 31-37 s. A match run takes 13-24 s.
+- Cost: about $0.15 for a new resume (12-14 keyword calls), $0 for the same resume again, and
+  $0.02-0.03 once others have bought the same jobs. Most of a day's spend is the first users.
+- Tech resumes: good lists (frontend: Ramp, Reddit, OpenAI frontend roles at 23-35%).
+- Found and fixed:
+  1. **The job they asked for came last.** The list sorted by skill words only, so the
+     restaurant manager's best job (Xcel Energy "Operations Work Coordinator", St Paul) was
+     #19 at 0%, under data analyst and recruiting jobs. Now the order is `matchRank`: the real
+     match plus half of `titleFit` (how much of the wanted title the job title covers). It is
+     #1 now. New `rank` column on `job_matches` (the SQL is safe to paste over the old one).
+  2. **Workday ignores where you live**: one page per employer was mostly other countries
+     (29 of 406 jobs in the area). Now we also search "{title} {state}" and "{title} Remote"
+     (`workdayQueries`): 61 more in-area jobs, and Target store leader jobs for the GM.
+- Still true: a career changer's list is thin and the % is low (5-11%), because their words
+  don't match a new field's words yet. That is honest; the Skill check and tailoring are the
+  answer. A restaurant GM asking for "General Manager" gets 3 jobs: these boards hire few.
+  More Workday employers in retail, health care and logistics would help most (post-launch).
 
 ## Spike results (Nov 8)
 

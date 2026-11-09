@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dedupeJobs, parseBoardList, roleKey } from '@/lib/feed/boards'
-import { isRemote, locationCountry, prescore, resumeProfile, titleWords, usState } from '@/lib/feed/prefilter'
+import { isRemote, locationCountry, prescore, resumeProfile, titleFit, titleWords, usState } from '@/lib/feed/prefilter'
 import type { ParsedResume } from '@/types/parsed-resume'
 
 const body = 'Build the checkout UI in React and TypeScript. You will work with design on our component library. '.repeat(3)
@@ -92,5 +92,19 @@ describe('prescore', () => {
     const target = { targetTitles: ['Operations Coordinator'] }
     expect(prescore(job, resumeProfile(gm, target), target).title).toBe(100)
     expect(prescore({ ...job, title: 'Associate General Counsel' }, resumeProfile(gm)).title).toBe(0)
+  })
+})
+
+describe('titleFit', () => {
+  const profile = resumeProfile(
+    { contact: { fullName: '', headline: '', email: '', phone: '', location: '', links: [] }, summary: '', skills: [], experience: [], projects: [], education: [], certifications: [], extraSections: [] },
+    { targetTitles: ['Operations Coordinator', 'Frontend Developer'] }
+  )
+  it('is how much of a wanted title the job title covers', () => {
+    expect(titleFit('Operations Work Coordinator - St Paul', profile)).toBe(100)
+    expect(titleFit('Cyber Operations Lead, Critical Harm Operations', profile)).toBe(50)
+    expect(titleFit('Senior Operations Associate', profile)).toBe(50)
+    expect(titleFit('Front End Developer', profile)).toBe(100)
+    expect(titleFit('Account Executive', profile)).toBe(0)
   })
 })
