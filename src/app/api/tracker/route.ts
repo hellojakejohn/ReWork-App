@@ -32,6 +32,7 @@ export async function GET() {
         jobTitle: true,
         company: true,
         jobUrl: true,
+        jobDescription: true,
         createdAt: true,
         updatedAt: true,
         matchScore: true,
