@@ -74,18 +74,27 @@ const KEYWORDS_SCHEMA = {
 } as const
 
 export function buildKeywordsPrompt(job: { title: string; company: string; description: string }): string {
-  return `List the 10-20 concrete skills and terms this job asks for (tools, technologies, domains, methods), most important first: required before nice-to-have, and what the posting stresses most (title, repeated, listed first) before the rest. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "user research"), never a phrase joining two ("gas and nonces", "Figma / Sketch"). No soft skills ("communication", "team player") and no job titles.
+  return `List the 10-20 concrete skills and terms this job asks for (tools, technologies, domains, methods), most important first: required before nice-to-have, and what the posting stresses most (title, repeated, listed first) before the rest. One term each, 1-3 words, spelled as the job description spells it ("ERC-721", "user research"), never a phrase joining two ("gas and nonces", "Figma / Sketch"). No soft skills ("communication", "team player"), no job titles, no degrees or years of experience ("Bachelor's degree", "5+ years"), and no generic words any job has ("reporting", "deadlines", "fast-paced", "time zones"). Licenses and certifications the job requires do count ("RN license", "CPA").
 
 JOB: ${job.title} at ${job.company}
 ${job.description}`
 }
 
+// Requirements that aren't skills: degrees and years. A resume can't "show" these in words.
+const NOT_A_SKILL = /^(?:(?:a |an )?(?:bachelor'?s?|master'?s?|associate'?s?|doctoral|phd|ba|bs|ma|ms|mba)(?: degree)?|(?:college |university )?degree|\d+\+? years?(?: of)?(?: \w+)?|high school diploma|ged)$/i
+
 export function cleanKeywords(raw: string[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   for (const k of raw) {
-    const keyword = normalizeSpace(String(k)).replace(/^[-*\d.)\s]+/, '').replace(/[.,;:]+$/, '')
-    if (!keyword || keyword.length > 40 || keyword.split(' ').length > 4) continue
+    const raw = normalizeSpace(String(k))
+    if (NOT_A_SKILL.test(raw.replace(/\s+(?:experience|skills?)$/i, ''))) continue
+    const keyword = raw
+      .replace(/^[-*\d.)\s]+/, '')
+      .replace(/[.,;:]+$/, '')
+      // "SaaS experience", "Excel skills": the thing itself is the keyword.
+      .replace(/\s+(?:experience|skills?|knowledge|proficiency)$/i, '')
+    if (!keyword || keyword.length > 40 || keyword.split(' ').length > 4 || NOT_A_SKILL.test(keyword)) continue
     const key = keyword.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)

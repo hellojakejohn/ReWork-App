@@ -31,6 +31,7 @@ const figma: SkillAnswer = { keyword: 'Figma', level: 'some', note: 'took a 3-ho
 describe('keywords and fit', () => {
   it('cleans the model list', () => {
     expect(cleanKeywords(['Figma', 'figma', '- Sketch.', '', 'a very long phrase that is not a keyword at all'])).toEqual(['Figma', 'Sketch'])
+    expect(cleanKeywords(["Bachelor's degree", 'Degree', '5+ years', '3 years of experience', 'High school diploma', 'SaaS experience', 'Excel skills', 'CPA', 'RN license', 'MBA'])).toEqual(['SaaS', 'Excel', 'CPA', 'RN license'])
   })
   it('scores the resume like the tailor does', () => {
     const fit = fitCoverage(['React', 'Figma', 'TypeScript', 'user research'], resume)
