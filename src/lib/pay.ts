@@ -25,7 +25,9 @@ const BARE_K_RE = new RegExp(String.raw`\b(\d{2,3})\s?[kK]\s*(?:-|–|—|to)\s*
 
 const NOT_PAY_AFTER = /^\s*(?:\+\s*)?(?:m\b|mm\b|b\b|bn\b|million|billion|in (?:funding|revenue|sales|arr)|signing|sign-on|bonus|relocation|stipend|budget|of (?:funding|revenue))/i
 // "$100/month education budget", "$500 home office stipend": a perk a few words on.
-const NOT_PAY_SOON = /^[^.\n]{0,30}?\b(?:budget|stipend|allowance|reimburse\w*|credit|bonus|perk)s?\b/i
+// Only the amount's own noun: "$100/month education budget", "$500 home office stipend". Not
+// "$150,000 plus annual bonus": there the perk is an extra on top of a real salary.
+const NOT_PAY_SOON = /^(?:[ \t]*\/[ \t]*(?:mo|month|year|yr|week|wk))?(?:[ \t]+[a-z-]+){0,2}[ \t]+(?:budget|stipend|allowance|reimbursement|credit|perk)s?\b/i
 const NOT_PAY_BEFORE = /(raised|funding|funded|revenue|valuation|valued|series [a-e]|bonus|stipend|budget|reimburse\w*|allowance|credit|401k|match)[^.\n]{0,30}$/i
 const PAY_WORD_BEFORE = /(salary|pay|compensation|wage|rate|range|base|earn|ote|annual|hourly|per year|per hour)[^.\n]{0,50}$/i
 

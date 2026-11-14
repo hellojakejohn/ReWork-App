@@ -29,6 +29,7 @@ export type EventName =
   | 'checkout_completed' // { offer }
   | 'limit_hit' // { kind }
   | 'download' // { format, doc }
+  | 'apply_resume_attached' // { format, doc } the extension fetched the tailored PDF to attach to a form
   | 'account_deleted'
   | 'token_burn_quote' // { nonce, amountRaw, decimals, priceUsd, expiresAt } deleted when claimed (src/lib/token-burn.ts)
   | 'token_burn' // { usd, days, priceUsd } a burn granted Pro

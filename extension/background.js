@@ -21,7 +21,7 @@ async function getPacket() {
 
 async function resumeFile(packet) {
   try {
-    const url = ORIGIN + "/api/resumes/" + encodeURIComponent(packet.resumeId) + "/download?template=classic&applicationId=" + encodeURIComponent(packet.applicationId)
+    const url = ORIGIN + "/api/resumes/" + encodeURIComponent(packet.resumeId) + "/download?template=classic&via=apply&applicationId=" + encodeURIComponent(packet.applicationId)
     const res = await fetch(url, { credentials: "include" })
     if (!res.ok) return undefined
     const bytes = new Uint8Array(await res.arrayBuffer())
@@ -34,13 +34,36 @@ async function resumeFile(packet) {
   }
 }
 
-async function looksLikeForm(tabId) {
+// Job boards where the button means "save this job", never "fill": their search and
+// job-alert boxes would otherwise get the person's email and phone.
+const SAVE_ONLY = /(^|\.)(linkedin\.com|indeed\.com|glassdoor\.com|ziprecruiter\.com|monster\.com|simplyhired\.com|google\.com)$/i
+
+function hostOf(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "")
+  } catch (e) {
+    return ""
+  }
+}
+
+// An application form: on the job's own site, or a page with a resume upload plus a name or
+// email field. A newsletter box or a search bar is neither.
+async function isApplicationForm(tab, packet) {
+  const host = hostOf(tab.url || "")
+  if (!host || SAVE_ONLY.test(host)) return false
+  const jobHost = hostOf(packet.jobUrl || "")
   try {
     const [r] = await chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      func: () => document.querySelectorAll('input[type="email"], input[type="tel"], input[type="file"], input[autocomplete*="name"], input[name*="name" i], textarea').length,
+      target: { tabId: tab.id },
+      func: () => ({
+        file: document.querySelectorAll('input[type="file"]').length,
+        who: document.querySelectorAll('input[type="email"], input[autocomplete*="name"], input[name*="name" i], input[id*="name" i]').length,
+      }),
     })
-    return !!r && r.result >= 2
+    const f = r && r.result
+    if (!f) return false
+    if (jobHost && (host === jobHost || host.endsWith("." + jobHost) || jobHost.endsWith("." + host))) return f.who + f.file >= 2
+    return f.file >= 1 && f.who >= 1
   } catch (e) {
     return false
   }
@@ -55,7 +78,7 @@ async function fill(tabId, packet) {
 chrome.action.onClicked.addListener(async (tab) => {
   if (!tab.id) return
   const packet = await getPacket()
-  if (packet && (await looksLikeForm(tab.id))) {
+  if (packet && (await isApplicationForm(tab, packet))) {
     try {
       await fill(tab.id, packet)
       return

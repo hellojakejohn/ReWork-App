@@ -199,6 +199,7 @@ export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage
         description: job.description,
         jobUrl: job.url || undefined,
         applicationId: job.applicationId,
+        matchId: job.matchId,
         targetKeywords,
       }),
     })
@@ -338,7 +339,7 @@ async function postJson(url: string, body: unknown): Promise<Response> {
 
 export async function checkFit(resumeId: string, job: JobDraft): Promise<{ ok: true; keywords: string[]; coverage: FitCoverage } | Failure> {
   try {
-    const res = await postJson(`/api/resumes/${resumeId}/skill-check`, { title: job.title, company: job.company, description: job.description })
+    const res = await postJson(`/api/resumes/${resumeId}/skill-check`, { title: job.title, company: job.company, description: job.description, matchId: job.matchId })
     if (!res.ok) return failure(res, "Couldn't check this job's keywords.")
     const data = await res.json()
     return { ok: true, keywords: data.keywords ?? [], coverage: data.coverage }

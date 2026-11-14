@@ -136,7 +136,7 @@ describe('workdayLocation', () => {
 })
 
 describe('titleRelevant', () => {
-  const p = (titles: string[]) => ({ titleWords: new Set<string>(), titles: titles.map((t) => [...new Set(titleWords(t))]), skills: [], years: 5, homeState: 'MN' })
+  const p = (titles: string[]) => resumeProfile({ contact: { location: 'Saint Paul, MN' }, experience: [], skills: [], projects: [], education: [] } as never, { targetTitles: titles })
   it('needs a field word, not just the role word', () => {
     expect(titleRelevant('Recruiting Coordinator', p(['Logistics Coordinator']))).toBe(false)
     expect(titleRelevant('Senior Logistics Coordinator', p(['Logistics Coordinator']))).toBe(true)
@@ -154,11 +154,16 @@ describe('titleRelevant', () => {
 })
 
 describe('titleRelevant for designers', () => {
-  const p = (titles: string[]) => ({ titleWords: new Set<string>(), titles: titles.map((t) => [...new Set(titleWords(t))]), skills: [], years: 5, homeState: 'MN' })
+  const p = (titles: string[]) => resumeProfile({ contact: { location: 'Saint Paul, MN' }, experience: [], skills: [], projects: [], education: [] } as never, { targetTitles: titles })
   it('keeps design fields apart', () => {
     expect(titleRelevant('Senior Product Designer', p(['Instructional Designer']))).toBe(false)
     expect(titleRelevant('Senior Instructional Designer', p(['Instructional Designer']))).toBe(true)
     expect(titleRelevant('Product Designer', p(['UX Designer']))).toBe(true)
+  })
+  it('needs the same role when both titles name one', () => {
+    expect(titleRelevant('Product Designer', p(['Product Manager']))).toBe(false)
+    expect(titleRelevant('Senior Product Manager', p(['Product Manager']))).toBe(true)
+    expect(titleRelevant('Product Manager', p(['UI Engineer']))).toBe(false)
   })
 })
 

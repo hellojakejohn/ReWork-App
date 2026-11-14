@@ -29,8 +29,13 @@ function variants(term: string): string[] {
 }
 
 /** Drops simple endings so tests, testing and tested all read "test". Short words stay. */
+// Fields whose name only looks like a verb + "ing": "account" or "go-to-market" doesn't show
+// Accounting or Marketing.
+const WHOLE = new Set(['accounting', 'marketing', 'banking', 'advertising', 'publishing', 'housing'])
+
 export function stem(word: string): string {
   let w = word.toLowerCase()
+  if (WHOLE.has(w)) return w
   if (w.length < 4) return w
   if (/ies$/.test(w)) return `${w.slice(0, -3)}y`
   if (/(?:ss|sh|ch|x)es$/.test(w)) return w.slice(0, -2)

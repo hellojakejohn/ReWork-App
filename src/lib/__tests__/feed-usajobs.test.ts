@@ -72,6 +72,7 @@ describe('closeStaleSearched', () => {
     const db: any = { job: { updateMany: async (q: any) => { calls.push(q); return { count: 2 } } } }
     expect(await closeStaleSearched(db, now)).toBe(4)
     expect(calls[0].where).toMatchObject({ source: 'workday', closedAt: null })
+    expect(calls[0].where.matches.none.OR).toHaveLength(2)
     expect(calls[0].where.lastSeenAt.lt.toISOString()).toBe('2026-10-15T12:00:00.000Z')
     expect(calls[1].where.lastSeenAt.lt.toISOString()).toBe('2026-10-31T12:00:00.000Z')
   })

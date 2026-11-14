@@ -15,6 +15,8 @@ export interface ResumeProfile {
   titleWords: Set<string>
   /** Each title they want (or held), as its own words: for titleFit. */
   titles?: string[][]
+  /** Each wanted title's role words ("manager", "coordinator"), parallel to titles: for titleRelevant. */
+  roles?: string[][]
   skills: string[]
   years: number
   homeState: string | null
@@ -45,8 +47,6 @@ const SAME: Record<string, string> = {
   'back-end': 'back',
   fullstack: 'full',
   'full-stack': 'full',
-  ux: 'product',
-  ui: 'product',
   rn: 'nurse',
   rns: 'nurse',
   nurses: 'nurse',
@@ -61,7 +61,7 @@ const ROLE_WORDS = new Set([
 ])
 // Not role words on purpose: engineer, scientist, support. "Backend Engineer" is in the field
 // of "Software Engineer", which shares only "engineer" with it. Designer is: a Product
-// Designer job is no match for "Instructional Designer" (UX and UI read as product).
+// Designer job is no match for "Instructional Designer".
 // Senior titles a person with fewer years is unlikely to land (they still see them lower).
 const SENIOR_RE = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|vice president|chief)\b/i
 const JUNIOR_RE = /\b(intern|internship|new grad|junior|jr\.?|entry[- ]level|apprentice)\b/i
@@ -71,6 +71,8 @@ export function titleWords(title: string): string[] {
     .toLowerCase()
     // "General Manager" and "Assistant Manager" are one title, not "general" + a level.
     .replace(/\b(general|assistant|deputy) manager\b/g, 'gm')
+    // One field, three names.
+    .replace(/\b(?:product|ui\/ux|ux\/ui|ux|ui) designer\b/g, 'ux designer')
     .replace(/[()[\],/|:&+]/g, ' ')
     .split(/\s+/)
     .map((w) => w.replace(/^[-.]+|[-.]+$/g, ''))
@@ -147,7 +149,15 @@ function yearsOf(resume: ParsedResume, now = new Date()): number {
 export function resumeProfile(resume: ParsedResume, prefs: FeedPrefs = {}): ResumeProfile {
   const titles = prefs.targetTitles?.length ? prefs.targetTitles : resume.experience.slice(0, 2).map((e) => e.title)
   const skills = [...new Set([...resume.skills.flatMap((g) => g.items), ...resume.projects.flatMap((p) => p.tech)].map((s) => s.trim()).filter(Boolean))]
-  return { titleWords: new Set(titles.flatMap(titleWords)), titles: titles.map((t) => [...new Set(titleWords(t))]).filter((t) => t.length), skills, years: yearsOf(resume), homeState: usState(resume.contact.location) }
+  const kept = titles.filter((t) => titleWords(t).length)
+  return {
+    titleWords: new Set(titles.flatMap(titleWords)),
+    titles: kept.map((t) => [...new Set(titleWords(t))]),
+    roles: kept.map(roleWords),
+    skills,
+    years: yearsOf(resume),
+    homeState: usState(resume.contact.location),
+  }
 }
 
 /**
@@ -168,10 +178,22 @@ export function titleFit(jobTitle: string, profile: ResumeProfile): number {
  */
 export function titleRelevant(jobTitle: string, profile: ResumeProfile): boolean {
   const job = new Set(titleWords(jobTitle))
-  return (profile.titles ?? [[...profile.titleWords]]).some((t) => {
+  const jobRoles = roleWords(jobTitle)
+  return (profile.titles ?? [[...profile.titleWords]]).some((t, i) => {
     const field = t.filter((w) => !ROLE_WORDS.has(w))
-    return (field.length ? field : t).some((w) => job.has(w))
+    if (!(field.length ? field : t).some((w) => job.has(w))) return false
+    // Both name a role and they differ: "Product Designer" is not in the field of "Product Manager".
+    const want = profile.roles?.[i] ?? []
+    return !want.length || !jobRoles.length || want.some((r) => jobRoles.includes(r))
   })
+}
+
+/** A title's role words, including the "manager" that titleWords() drops as a level. */
+function roleWords(title: string): string[] {
+  return title
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => ROLE_WORDS.has(w) || w === 'manager')
 }
 
 export function prescore(job: { title: string; location: string; description: string }, profile: ResumeProfile, prefs: FeedPrefs = {}): Prescore {

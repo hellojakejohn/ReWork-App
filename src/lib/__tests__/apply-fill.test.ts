@@ -57,3 +57,12 @@ describe('answers and names', () => {
     expect(valueFor('coverLetter', packet, '')).toBe('Dear team')
   })
 })
+
+describe('fieldKind never-answer words', () => {
+  it('blocks age, but not words that only end in "age"', async () => {
+    const { fieldKind } = await import('@/lib/apply-fill')
+    expect(fieldKind({ text: 'Age', tag: 'input', type: 'text' })).toBeNull()
+    expect(fieldKind({ text: 'Message to the hiring manager', tag: 'textarea', type: 'textarea' })).toBe('question')
+    expect(fieldKind({ text: 'Which languages do you speak?', tag: 'textarea', type: 'textarea' })).toBe('question')
+  })
+})

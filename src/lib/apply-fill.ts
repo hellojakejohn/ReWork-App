@@ -11,6 +11,8 @@ export interface ApplyPacket {
   applicationId: string
   jobTitle: string
   company: string
+  /** The job's own link: the extension fills a form there without asking more. */
+  jobUrl?: string
   contact: {
     firstName: string
     lastName: string
@@ -65,7 +67,7 @@ export function fieldKind(f: { text: string; tag: 'input' | 'textarea'; type: st
   }
   if (['checkbox', 'radio', 'hidden', 'submit', 'button', 'password', 'date', 'number', 'search'].includes(type)) return null
   // Questions we never answer for anyone.
-  if (/salary|compensation|pay expectation|sponsor|visa|authori[sz]ed|gender|race|ethnic|veteran|disabilit|pronoun|birth|age\b|ssn|social security|referr|how did you hear|password/.test(t)) return null
+  if (/salary|compensation|pay expectation|sponsor|visa|authori[sz]ed|gender|race|ethnic|veteran|disabilit|pronoun|birth|\bage\b|ssn|social security|referr|how did you hear|password/.test(t)) return null
 
   if (ac === 'given-name' || /\bfirst name\b|\bgiven name\b|\bfname\b|^first$/.test(t)) return 'firstName'
   if (ac === 'family-name' || /\blast name\b|\bsurname\b|\bfamily name\b|\blname\b|^last$/.test(t)) return 'lastName'

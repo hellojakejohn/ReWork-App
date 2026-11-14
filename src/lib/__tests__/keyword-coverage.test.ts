@@ -135,4 +135,9 @@ describe('other words for career changers', () => {
     expect(keywordCoverage(['presentations'], 'Administrative Assistant\nMidway Family Dental\n2017-02\npresent').missing).toEqual(['presentations'])
     expect(keywordCoverage(['presentations'], 'Gave monthly presentations to the board').present).toEqual(['presentations'])
   })
+
+  it('does not read a field from a look-alike word', () => {
+    expect(keywordCoverage(['Accounting', 'Marketing'], 'Grew key account revenue 20%\nLed the go-to-market plan').missing).toEqual(['Accounting', 'Marketing'])
+    expect(keywordCoverage(['Accounting'], 'Accounting Clerk').present).toEqual(['Accounting'])
+  })
 })

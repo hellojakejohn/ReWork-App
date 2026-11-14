@@ -20,7 +20,7 @@ export async function latestApplyPacket(userId: string, now = new Date()): Promi
   if (typeof applicationId !== 'string') return null
   const app = await prisma.jobApplication.findFirst({
     where: { id: applicationId, userId },
-    select: { id: true, resumeId: true, jobTitle: true, company: true, coverLetter: true, suggestions: true, resume: true },
+    select: { id: true, resumeId: true, jobTitle: true, company: true, jobUrl: true, coverLetter: true, suggestions: true, resume: true },
   })
   if (!app) return null
 
@@ -42,6 +42,7 @@ export async function latestApplyPacket(userId: string, now = new Date()): Promi
     resumeId: app.resumeId,
     jobTitle: app.jobTitle,
     company: app.company,
+    jobUrl: app.jobUrl ?? '',
     contact: { firstName, lastName, fullName: contact.fullName, email: contact.email, phone: contact.phone, location: contact.location, linkedin, github, website },
     coverLetter: typeof letter === 'string' ? letter : '',
     answers,
