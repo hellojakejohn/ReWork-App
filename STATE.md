@@ -223,15 +223,18 @@ Tuning ideas not done yet:
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
   openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
-- Out of scope for launch: job feed, post-a-job, crypto payments, interview prep.
+- Out of scope for launch: post-a-job, crypto payments.
 - Not yet verified live: Save to ReWork on signed-in LinkedIn, the extension in real Chrome,
   Indeed's /viewjob page (bot check). `docs/test-run.md` covers them.
 - The read-only Supabase connector in Claude sessions points at another project (TripQuest),
   so prod numbers come from `/admin`, not that connector.
 
-## Next session: launch week
-`docs/handoff-2026-11-02.md` has the day-by-day plan to Fri Nov 6 (website first, token at
-midday CT). Stripe live setup (with Jake at the computer, ~20 min) is `docs/launch-audit.md`
+## Next session: launch (target Mon Nov 16, Thanksgiving at the latest)
+Jake's hand steps, in order, live in `docs/jake-todo.md`; his end-to-end run is
+`docs/test-run.md`. As of Nov 13: PRs 44, 45, 46 merged and live. PR 47 (matches on upload,
+apply assist) has main merged in and waits on the job feed SQL; merge it right after Jake
+pastes it, then he runs the pull-jobs cron once from Vercel.
+Stripe live setup (with Jake at the computer, ~20 min) is `docs/launch-audit.md`
 "What Jake must do" items 4 to 6:
 1. Stripe live mode: products/prices $15/month and $29 one-time; put `sk_live_` key and
    both price ids in Vercel Production (Jake pastes secrets himself, never in chat).
@@ -242,3 +245,4 @@ midday CT). Stripe live setup (with Jake at the computer, ~20 min) is `docs/laun
 4. Clear test billing data in the prod DB (SQL in the audit, counts first).
 5. Redeploy, `/api/health` as admin must be `ok: true`.
 6. One real $29 pass and one $15 subscription, then refund/cancel.
+Local shell defaults to Node 18; tests need Node 22 (`.nvmrc`, `nvm use`).

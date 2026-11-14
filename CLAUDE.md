@@ -39,6 +39,7 @@
 - `src/lib/ai-cap.ts` + `src/lib/ai-inflight.ts` - AI cap, kill switch, global daily ceiling, per-user in-flight limit
 - `src/lib/token-burn.ts` + `src/components/token/` - burn $REWORK for 30 days of Pro (off unless `REWORK_MINT` is set; own `AI_BURN_DAILY_USD` ceiling)
 - `src/instrumentation.ts` - server errors to `events` (shown in `/admin`)
+- `docs/jake-todo.md` - Jake's hand steps (dashboards, money, secrets), in order; `docs/test-run.md` - his end-to-end run
 - `docs/PROJECT.md` - the whole project on one page; `docs/launch-audit.md`, `docs/token-plan.md` - launch go/no-go and the token plan; `docs/job-feed-plan.md` - the job feed (next big feature) and other post-launch ideas
 - `scripts/eval-models.ts` - real-model quality eval (private resumes in `scripts/fixtures/private/`, output in `eval-results/`, both gitignored)
 - `src/lib/save-job-script.ts` + `src/lib/saved-job.ts` + `src/app/save/` - Save to ReWork (LinkedIn/Indeed read in the user's browser); `extension/` is the Chrome extension
