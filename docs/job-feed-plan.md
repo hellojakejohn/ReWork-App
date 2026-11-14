@@ -146,10 +146,10 @@ Quick wins:
 - **Copy for LinkedIn:** the tailored summary and top bullets as plain text in one tap.
 
 Medium:
-- **Application answers:** paste "Why do you want to work here?" and get an answer built only
+- **Application answers** (built Nov 8, PR pending): paste "Why do you want to work here?" and get an answer built only
   from your resume, through the prose fact guard (`src/lib/text-facts.ts`). Fits the feed's
   per-job buttons.
-- **Interview prep from the job:** the 5 likely questions and which of your bullets answer each.
+- **Interview prep from the job** (built Nov 8, PR pending): the 5 likely questions and which of your bullets answer each.
 - **Weekly email:** applied this week, follow-ups due, new matches. Needs an email provider.
 
 Parked:
