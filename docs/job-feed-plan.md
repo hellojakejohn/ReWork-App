@@ -1,6 +1,6 @@
 # Job feed: jobs that match you
 
-Written 2026-11-07 with Jake. Status: **idea, not started.** First big feature after launch.
+Written 2026-11-07 with Jake. Status: **spike done Nov 8 (results below)**, MVP not started. First big feature after launch.
 Out of scope for launch (docs/PROJECT.md), so it starts once launch week is calm.
 
 ## The idea
@@ -68,6 +68,49 @@ a settled decision). Users can still bring those in with Save to ReWork.
 
 Cost to measure in the spike: Sonnet keyword extraction per job (rough guess: well under a
 cent) x new jobs per day. Put it behind its own daily ceiling, like `AI_FREE_DAILY_USD`.
+
+## Spike results (Nov 8)
+
+Run it again: `npm run feed:spike -- pull`, `-- rank` (both free), `-- score --max-usd 2`
+(billed). Code: `src/lib/feed/` (board lists, prefilter), `scripts/feed-spike.ts`. Test people
+are the 3 public fixtures, all in Saint Paul, remote or on-site in MN only.
+
+**Pulling is free and fast.** 49 boards (34 Greenhouse, 5 Lever, 10 Ashby) gave 11,726 jobs
+in 45 s, using the resolver's own parsers. 5 boards were empty (moved ATS). 60% list pay.
+Of those, 1,749 are US remote or Minnesota after collapsing one role listed in many cities.
+
+**Keywords cost $0.011 a job** (43 jobs, $0.48, median 2 s). 1,000 new jobs a day is about
+$11/day before the prefilter, a few dollars after it. Fine behind its own daily ceiling.
+
+**Tech matches are real.** Frontend dev: Ramp, Reddit, OpenAI, Notion frontend roles, 10 of
+15 at 20%+. Solidity to backend: Linear, PostHog, OpenAI, Spotify full-stack, 11 of 15 at
+20%+. For scale: the same resumes score 46% and 59% on the jobs they were built for, so the
+feed's best (31-35%) is a bit below a hand-picked job, before tailoring.
+
+**Career changers get almost nothing.** With no target title the restaurant manager gets one
+real job (sweetgreen GM in Minneapolis, 29%). With "Operations Coordinator" as the target the
+tech boards give ops jobs that need Salesforce, SOX or trust and safety: 0-11% match, against
+36% on the right kind of job. Fixes: (1) ask "what job do you want next" on each resume
+card, (2) add sources with non-tech jobs (Adzuna, USAJobs, local employers), (3) say plainly
+when the feed has nothing good instead of showing 0% jobs.
+
+**The free prefilter ranks loosely.** Rank agreement with the real match: 0.50 for the
+frontend dev, about 0 for the backend switch, negative for the career changer (it puts
+"Operations" titles first even when the work is unrelated). It's fine as a cheap gate (only
+jobs scoring 30+ get extracted) but the feed must sort by the real match, never the
+prefilter.
+
+**Found and fixed on the way (live app too):** the scam check flagged 53 of 11,726 normal
+posts ("processing costs", "GPU training costs", "send, receive, and move crypto", "does NOT
+charge any fee"). Now 0.
+
+**Still open for the MVP:**
+- Ghost "old posting" signal: 69% of board jobs are 30+ days old (big companies keep roles
+  open), so in the feed it would fire on most jobs. Use "gone from the board" instead.
+- Keywords sometimes name the company's own product ("Supabase", "Codex", "GitLab Duo") or
+  the job's own title ("frontend engineering" missed for a Frontend Developer). Those count as
+  missing and pull scores down. Worth a prompt tweak checked with `npm run eval:match`.
+- Board list: 49 hand-picked companies is tech-heavy. Need a few hundred, by industry.
 
 ## MVP (about a week)
 
