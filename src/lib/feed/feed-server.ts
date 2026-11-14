@@ -8,7 +8,7 @@ import { getAccess } from '@/lib/entitlements'
 import { masterToParsed } from '@/lib/master-resume'
 import { FEED_RUNS_PER_DAY, FREE_FEED_MATCHES, PRO_FEED_MATCHES } from '@/lib/plans'
 import { track } from '@/lib/track'
-import { isWorkplace, listMatches, runMatch, type MatchPrefs, type MatchRun, type Workplace } from './match'
+import { isWorkplace, listMatches, MATCH_TOP, runMatch, type MatchPrefs, type MatchRun, type Workplace } from './match'
 
 /**
  * Today's ceiling on what the feed spends on job keywords, for everyone together. Separate
@@ -73,7 +73,7 @@ export async function matchForResume(userId: string, resume: { id: string } & Pa
   if ((await feedRunsToday(userId, resume.id)) >= FEED_RUNS_PER_DAY) {
     return { ok: false, status: 429, error: `You've refreshed this resume's matches ${FEED_RUNS_PER_DAY} times today. New jobs come in every morning.` }
   }
-  const ai = await getAIBudget(userId)
+  const [ai, { limit }] = await Promise.all([getAIBudget(userId), matchLimit(userId)])
   const ceiling = feedDailyCeilingUsd()
   let spentAtStart = ceiling > 0 ? await feedSpentToday() : 0
   // Unreadable spend: go ahead without buying keywords (jobs already done still match).
@@ -85,7 +85,8 @@ export async function matchForResume(userId: string, resume: { id: string } & Pa
   let spentThisRun = (): number => 0
   const canSpend = (): boolean => canBuy && (ceiling === 0 || spentAtStart! + spentThisRun() < ceiling)
   const { run, usage } = collectUsage<MatchRun>(
-    () => runMatch({ db: prisma, canSpend }, { userId, resumeId: resume.id, resume: masterToParsed(resume), prefs }),
+    // Free sees 5 but we score 25, so "N more with Pro" is real; Pro scores up to its 50.
+    () => runMatch({ db: prisma, canSpend, top: Math.max(MATCH_TOP, limit) }, { userId, resumeId: resume.id, resume: masterToParsed(resume), prefs }),
     { ...ai.scope, slot: undefined }
   )
   spentThisRun = () => usage().costUsd

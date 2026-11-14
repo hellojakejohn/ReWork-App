@@ -43,6 +43,8 @@ export interface MatchDeps {
   /** Asked before each model call: false once a spend ceiling is reached or AI is paused. */
   canSpend?: () => Promise<boolean> | boolean
   workdayBoards?: WorkdayBoard[]
+  /** How many jobs to score this run (Pro sees up to 50). Default MATCH_TOP. */
+  top?: number
   /** USAJOBS key and email; null turns it off (tests). Default: from the env. */
   usajobs?: { key: string; email: string } | null
   now?: Date
@@ -180,7 +182,7 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
     })
     .filter((x) => x.score >= MIN_PRESCORE)
     .sort((a, b) => b.score - a.score)
-    .slice(0, MATCH_TOP)
+    .slice(0, deps.top ?? MATCH_TOP)
 
   // Step 3: text and keywords where missing. A few at a time; each job is done once, ever.
   const ready: { id: string; prescore: number; titleFit: number; keywords: string[] }[] = []
