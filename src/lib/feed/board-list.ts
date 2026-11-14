@@ -15,9 +15,12 @@ const GREENHOUSE = [
     'pagerduty', 'ripple', 'roblox', 'rubrik', 'scaleai', 'seatgeek', 'sofi', 'sumologic',
     'tripadvisor', 'udemy', 'upstart', 'verkada', 'yext', 'zocdoc', 'block', 'taskrabbit',
     'everlane', 'mejuri', 'parachutehome', 'harrys', 'stitchfix', 'onemedical',
+    // Nov 14: health care and service jobs (checked live).
+    'blankstreet', 'cloverhealth', 'honor', 'omadahealth', 'talkspace', 'doordashusa', 'oura', 'instawork',
 ]
 const LEVER = [
     'palantir', 'spotify', 'zoox', 'gopuff', 'jumpcloud', 'anchorage', 'ro', 'veeva', 'tala',
+    'lyrahealth', 'pointclickcare', 'everlywell', 'aledade', 'grailbio',
 ]
 const ASHBY = [
     'ramp', 'notion', 'linear', 'openai', 'supabase', 'posthog', 'replit', 'cursor', 'ashby',
