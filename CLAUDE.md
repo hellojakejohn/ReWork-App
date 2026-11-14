@@ -26,6 +26,7 @@
 - `src/lib/receipt.ts` + `src/components/flow/receipt.tsx` - the Result card's "Your receipt" and left-out claims (counts from the tailor report, never hardcoded)
 - `src/lib/resume-docx.ts` - Word export (Classic structure, ATS-safe: no tables/text boxes)
 - `src/lib/cover-letter.ts` + `src/lib/text-facts.ts` - cover letters and the prose fact guard
+- `src/lib/app-answers.ts` + `src/lib/interview-prep.ts` - application answers and interview prep (Result card's Questions and Interview tabs; saved in `suggestions`, FREE counted from events in `src/lib/answers-quota.ts`)
 - `src/lib/evidence.ts` - evidence interview (questions, answer-only rewrites, apply to master)
 - `src/lib/skill-check.ts` + `src/components/flow/skill-check.tsx` - free fit check and skill check (job keywords, answers placed from the user's note only, `guardAddition`, apply to master)
 - `src/lib/keyword-coverage.ts` + `src/lib/job-keywords.ts` - the Job match (exact words, "in other words", missing; weighted; one list per job post). `npm run eval:match` checks it with the real model (billed: ask for a budget)

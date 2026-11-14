@@ -169,6 +169,8 @@ vi.mock('@/lib/fact-guard', () => ({ factGuard: vi.fn(() => ({ cleaned: { summar
 vi.mock('@/lib/keyword-coverage', () => ({ coverageReport: vi.fn(() => ({ master: { score: 0, present: [], missing: [] }, tailored: { score: 0, present: [], missing: [] } })) }))
 vi.mock('@/lib/tailor-changes', () => ({ buildChanges: vi.fn(() => []), applyChangeDecision: vi.fn((s: any) => s) }))
 vi.mock('@/lib/cover-letter', async (orig) => ({ ...(await orig<any>()), generateCoverLetter: vi.fn(async () => ({ text: 'letter', tone: 'professional' })) }))
+vi.mock('@/lib/interview-prep', async (orig) => ({ ...(await orig<any>()), generateInterviewPrep: vi.fn(async () => ({ version: 1, questions: [], askThem: [] })) }))
+vi.mock('@/lib/app-answers', async (orig) => ({ ...(await orig<any>()), generateAnswer: vi.fn(async () => ({ id: 'x', question: 'q', answer: 'a' })) }))
 vi.mock('@/lib/evidence', async (orig) => ({
   ...(await orig<any>()),
   generateQuestions: vi.fn(async () => []),
@@ -204,7 +206,7 @@ function seed() {
         id: 'appB', userId: B.id, resumeId: 'resB', jobTitle: h.B_SECRET, company: h.B_SECRET, jobUrl: null, jobDescription: h.B_SECRET,
         status: 'OPTIMIZED', statusUpdatedAt: now, appliedAt: null, responseAt: null, notes: h.B_SECRET, followUpAt: null,
         optimizedStructured: { contactInfo: { fullName: h.B_SECRET }, workExperience: work('B') }, originalContent: { contactInfo: { fullName: h.B_SECRET } },
-        suggestions: { changes: [{ id: 'chgB', status: 'pending' }] }, coverLetter: { text: h.B_SECRET, tone: 'professional' },
+        suggestions: { changes: [{ id: 'chgB', status: 'pending' }], answers: [{ id: 'ansB', question: h.B_SECRET, answer: h.B_SECRET }] }, coverLetter: { text: h.B_SECRET, tone: 'professional' },
         createdAt: now, updatedAt: now, matchScore: 0, categoryScores: null,
       },
     ],
@@ -250,6 +252,12 @@ const ROUTES: Case[] = [
   ['cover letter download', '@/app/api/resumes/applications/[id]/cover-letter/download/route', 'GET', '/api/resumes/applications/appB/cover-letter/download', undefined, 'appB'],
   ['cover letter POST', '@/app/api/resumes/applications/[id]/cover-letter/route', 'POST', '/api/resumes/applications/appB/cover-letter', { tone: 'professional' }, 'appB'],
   ['cover letter PATCH', '@/app/api/resumes/applications/[id]/cover-letter/route', 'PATCH', '/api/resumes/applications/appB/cover-letter', { text: 'pwned' }, 'appB'],
+  ['answers GET', '@/app/api/resumes/applications/[id]/answers/route', 'GET', '/api/resumes/applications/appB/answers', undefined, 'appB'],
+  ['answers POST', '@/app/api/resumes/applications/[id]/answers/route', 'POST', '/api/resumes/applications/appB/answers', { question: 'Why do you want to work here?' }, 'appB'],
+  ['answers PATCH', '@/app/api/resumes/applications/[id]/answers/route', 'PATCH', '/api/resumes/applications/appB/answers', { answerId: 'ansB', text: 'pwned' }, 'appB'],
+  ['answers DELETE', '@/app/api/resumes/applications/[id]/answers/route', 'DELETE', '/api/resumes/applications/appB/answers', { answerId: 'ansB' }, 'appB'],
+  ['interview prep GET', '@/app/api/resumes/applications/[id]/interview-prep/route', 'GET', '/api/resumes/applications/appB/interview-prep', undefined, 'appB'],
+  ['interview prep POST', '@/app/api/resumes/applications/[id]/interview-prep/route', 'POST', '/api/resumes/applications/appB/interview-prep', {}, 'appB'],
   ['application GET', '@/app/api/resumes/applications/[id]/route', 'GET', '/api/resumes/applications/appB', undefined, 'appB'],
   ['application PATCH', '@/app/api/resumes/applications/[id]/route', 'PATCH', '/api/resumes/applications/appB', { changeId: 'chgB', status: 'accepted' }, 'appB'],
   ['applications list', '@/app/api/resumes/applications/route', 'GET', '/api/resumes/applications'],

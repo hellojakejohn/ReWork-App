@@ -10,6 +10,8 @@ import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shar
 import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
 import type { FitCoverage, SkillAddition, SkillAnswer } from "@/lib/skill-check-shared"
 import type { JobFacts } from "@/lib/job-checks"
+import type { AnswerLength, StoredAnswer } from "@/lib/app-answers-shared"
+import type { StoredInterviewPrep } from "@/lib/interview-prep-shared"
 
 export type { MasterResumeDTO, ApplicationDetailDTO, ApplicationSummaryDTO, TrackerCardDTO }
 
@@ -426,6 +428,92 @@ export async function deleteTracked(id: string): Promise<{ ok: true } | Failure>
   try {
     const res = await fetch(`/api/tracker/${id}`, { method: "DELETE" })
     return res.ok ? { ok: true } : failure(res, "Couldn't delete that.")
+  } catch {
+    return NETWORK
+  }
+}
+
+// ---------- application answers ----------
+
+const answersUrl = (applicationId: string) => `/api/resumes/applications/${applicationId}/answers`
+
+export async function loadAnswersQuota(applicationId: string): Promise<{ ok: true; answersQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(answersUrl(applicationId), { cache: "no-store" })
+    if (!res.ok) return failure(res, "Couldn't load your answers.")
+    return { ok: true, answersQuota: (await res.json()).answersQuota }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function writeAnswer(
+  applicationId: string,
+  question: string,
+  length: AnswerLength
+): Promise<{ ok: true; answers: StoredAnswer[]; answersQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(answersUrl(applicationId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, length }),
+    })
+    if (!res.ok) return failure(res, "We couldn't write that answer. Please try again.")
+    const data = await res.json()
+    return { ok: true, answers: data.answers, answersQuota: data.answersQuota }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function saveAnswer(applicationId: string, answerId: string, text: string): Promise<{ ok: true; answers: StoredAnswer[] } | Failure> {
+  try {
+    const res = await fetch(answersUrl(applicationId), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answerId, text }),
+    })
+    if (!res.ok) return failure(res, "Couldn't save that answer.")
+    return { ok: true, answers: (await res.json()).answers }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function deleteAnswer(applicationId: string, answerId: string): Promise<{ ok: true; answers: StoredAnswer[] } | Failure> {
+  try {
+    const res = await fetch(answersUrl(applicationId), {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answerId }),
+    })
+    if (!res.ok) return failure(res, "Couldn't delete that answer.")
+    return { ok: true, answers: (await res.json()).answers }
+  } catch {
+    return NETWORK
+  }
+}
+
+// ---------- interview prep ----------
+
+const prepUrl = (applicationId: string) => `/api/resumes/applications/${applicationId}/interview-prep`
+
+export async function loadPrepQuota(applicationId: string): Promise<{ ok: true; prepQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(prepUrl(applicationId), { cache: "no-store" })
+    if (!res.ok) return failure(res, "Couldn't load your interview prep.")
+    return { ok: true, prepQuota: (await res.json()).prepQuota }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function buildInterviewPrep(applicationId: string): Promise<{ ok: true; interviewPrep: StoredInterviewPrep; prepQuota: Quota } | Failure> {
+  try {
+    const res = await fetch(prepUrl(applicationId), { method: "POST" })
+    if (!res.ok) return failure(res, "We couldn't build your interview prep. Please try again.")
+    const data = await res.json()
+    return { ok: true, interviewPrep: data.interviewPrep, prepQuota: data.prepQuota }
   } catch {
     return NETWORK
   }
