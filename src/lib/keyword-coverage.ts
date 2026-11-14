@@ -5,9 +5,12 @@
 //   counts if either is there. The score is the weighted share of these: keywords come
 //   most important first, the first counts 1 and the last 0.5 (keywordWeight).
 // - related: shown in other words. Word forms ("Front-End" = "front end" = "frontends",
-//   "Unit Testing" = "unit tests", "web and mobile applications" for "Web Applications")
-//   and a short list of honest implications (PostgreSQL shows SQL). True, so the tailor
-//   may use the job's wording for them, which moves them to present.
+//   "Unit Testing" = "unit tests", "web and mobile applications" for "Web Applications"),
+//   the same words in another order or form within one line ("processed vendor invoices"
+//   for "Invoice Processing"), the thing right after a verb of running it ("ran weekly
+//   inventory" for "Inventory Management") and a short list of honest implications
+//   (PostgreSQL shows SQL). True, so the tailor may use the job's wording for them, which
+//   moves them to present.
 // - missing: not shown at all. Only the user's own answers can add these.
 import type { KeywordCoverage, TailorInput, TailorOutput } from '@/types/tailor'
 import { containsTerm, tailorInputText, tailorOutputText } from '@/lib/resume-text'
@@ -86,6 +89,70 @@ function formMatch(textWords: string[], keyword: string): boolean {
   return false
 }
 
+const FILLER = new Set(['and', 'or', 'of', 'the', 'a', 'an', 'to', 'for', 'in', 'on', 'with', 'at', 'by'])
+
+/**
+ * Looser than stem(), only for "in other words": processing/processed, management/managed,
+ * coordination/coordinated, documentation/documented all share a root. Short results fall
+ * back to stem() so "nation" never reads as "n".
+ */
+export function root(word: string): string {
+  const s = stem(word)
+  if (s.length < 5) return s
+  let r = s.replace(/(?:ations?|ions?)$/, '')
+  // management -> manage, but document stays document
+  if (r === s && /ments?$/.test(s) && s.replace(/ments?$/, '').length >= 5) r = s.replace(/ments?$/, '')
+  if (r.length > 4) r = r.replace(/e$/, '')
+  if (r.length > 5) r = r.replace(/at$/, '')
+  return r.length >= 4 ? r : s
+}
+
+/** A resume's lines (bullets, sentences) as root lists: words only count together inside one. */
+function rootLines(text: string): string[][] {
+  return text
+    .split(/\n|[.;!?](?:\s|$)/)
+    .map((line) => wordsOf(line).map(root))
+    .filter((line) => line.length > 0)
+}
+
+function contentRoots(keyword: string): string[] {
+  return wordsOf(keyword).filter((w) => !FILLER.has(w)).map(root)
+}
+
+/** Every root in `want` inside one window of `size` words of `line`. */
+function inWindow(line: string[], want: string[], size: number): boolean {
+  for (let i = 0; i < line.length; i++) {
+    const win = line.slice(i, i + size)
+    if (want.every((r) => win.includes(r))) return true
+  }
+  return false
+}
+
+/**
+ * The keyword's words in another order or form, in one line: "processed vendor invoices" for
+ * "Invoice Processing", "scheduled staff" for "Staff Scheduling". At most 3 words between.
+ */
+function reorderedMatch(lines: string[][], keyword: string): boolean {
+  const want = contentRoots(keyword)
+  if (want.length === 0 || want.length > 4 || want.some((r) => r.length < 4)) return false
+  return lines.some((line) => inWindow(line, want, want.length + 3))
+}
+
+// "Ran weekly inventory" shows "Inventory Management": the thing, right after a verb of
+// running it. Only these endings, and only these verbs.
+const MANAGING_NOUNS = new Set(['manag', 'administr', 'coordin', 'oversight'])
+const MANAGING_VERBS = new Set(
+  ['ran', 'run', 'running', 'managed', 'managing', 'led', 'leading', 'oversaw', 'overseeing', 'owned', 'handled', 'handling', 'coordinated', 'coordinating', 'directed', 'supervised', 'administered', 'organized', 'maintained'].map(root)
+)
+
+function managedMatch(lines: string[][], keyword: string): boolean {
+  const want = contentRoots(keyword)
+  if (want.length < 2 || !MANAGING_NOUNS.has(want[want.length - 1])) return false
+  const thing = want.slice(0, -1)
+  if (thing.some((r) => r.length < 4)) return false
+  return lines.some((line) => line.some((w, i) => MANAGING_VERBS.has(w) && inWindow(line.slice(i + 1, i + 5), thing, 4)))
+}
+
 const SQL_DATABASES = ['PostgreSQL', 'Postgres', 'MySQL', 'SQLite', 'SQL Server', 'T-SQL', 'MSSQL', 'MariaDB', 'PL/SQL', 'Supabase']
 const NOSQL_DATABASES = ['MongoDB', 'DynamoDB', 'Firestore', 'Cassandra', 'Redis', 'Couchbase']
 
@@ -123,7 +190,9 @@ export function hasExactKeyword(text: string, keyword: string): boolean {
 export function hasKeyword(text: string, keyword: string): boolean {
   if (hasExactKeyword(text, keyword)) return true
   const words = wordsOf(text)
-  return options(keyword).some((option) => formMatch(words, option) || impliedBy(text, option).length > 0)
+  if (options(keyword).some((option) => formMatch(words, option) || impliedBy(text, option).length > 0)) return true
+  const lines = rootLines(text)
+  return options(keyword).some((option) => reorderedMatch(lines, option) || managedMatch(lines, option))
 }
 
 /** Weight of the keyword at `index` of `count`: 1 for the first, down to 0.5 for the last. */

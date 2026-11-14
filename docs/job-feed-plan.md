@@ -251,3 +251,15 @@ Parked:
 3. Feed spike: one source, a few hundred jobs, real scoring against Jake's resumes, measure
    extraction cost and match quality.
 4. Feed MVP on Home, then Application answers as a per-job button.
+
+## Career changers: "in other words" (Nov 14)
+
+The match counted only the job's exact words, so "processed vendor invoices" didn't show
+"Invoice Processing" and "ran weekly inventory" didn't show "Inventory Management".
+`keyword-coverage.ts` now also reads the same words in another order or form within one line
+(`root()`), and the thing right after a verb of running it, for "X management / coordination /
+administration". Meaning-only matches (guest complaints for Customer Service) stay missing: the
+person says so in "Have you done any of these?". The tailor already puts "in other words"
+keywords in the job's words, and the feed now ranks by that reachable score (shown % unchanged).
+Real check (`npm run eval:match`, $0.44): restaurant manager to Operations Coordinator 36% -> 53%
+(was 41%), developer support 64% -> 71%, no other case lower, fact guard clean.

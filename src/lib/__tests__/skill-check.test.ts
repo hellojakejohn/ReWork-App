@@ -81,7 +81,7 @@ describe('skill groups', () => {
     expect(next.skills.at(-1)).toEqual({ group: 'Data', items: ['data visualization'] })
   })
   it('a rejected bullet keeps the group the model picked', () => {
-    const a = guardAddition(resume, { keyword: 'prototyping', level: 'yes', note: 'made prototypes' }, { kind: 'bullet', target: 'proj-1', group: 'Design', text: 'Made prototypes' })
+    const a = guardAddition(resume, { keyword: 'prototyping', level: 'yes', note: 'made prototypes' }, { kind: 'bullet', target: 'proj-1', group: 'Design', text: 'Drew mockups' })
     expect(a).toMatchObject({ kind: 'skill', target: 'Design' })
   })
 })

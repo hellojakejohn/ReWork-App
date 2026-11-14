@@ -8,6 +8,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { matchAtsUrl, parseAtsResponse } from '@/lib/job-resolve/ats'
 import { extractJobKeywords, fitCoverage } from '@/lib/skill-check'
+import { weightedScore } from '@/lib/keyword-coverage'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { parseWorkdaySearch, roleKey, workdaySearchRequest, type WorkdayBoard } from './boards'
 import { WORKDAY_BOARDS } from './board-list'
@@ -65,12 +66,14 @@ export function workdayQueries(titles: string[], workplace: Workplace, homeState
 }
 
 /**
- * The list order: the real match, plus half the title fit. A career changer who asks for
- * "Operations Coordinator" sees Operations Coordinator jobs first even when few of their words
- * show yet, ahead of a Data Analyst job that happens to share two of them.
+ * The list order: what the resume can honestly reach for this job (its words plus what it
+ * shows in other words, which a tailor puts in the job's words), plus half the title fit. A
+ * career changer who asks for "Operations Coordinator" sees Operations Coordinator jobs first
+ * even when few of their exact words show yet, ahead of a Data Analyst job that happens to
+ * share two of them.
  */
-export function matchRank(score: number, titleFit: number): number {
-  return score + Math.round(titleFit / 2)
+export function matchRank(reach: number, titleFit: number): number {
+  return reach + Math.round(titleFit / 2)
 }
 
 /** What we search for: their target titles, else their latest job title. */
@@ -201,7 +204,8 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
   // Step 4: the real Job match, saved. Saved / dismissed / tailored marks stay as they are.
   for (const r of ready) {
     const cov = fitCoverage(r.keywords, resume)
-    const data = { score: cov.score, rank: matchRank(cov.score, r.titleFit), prescore: r.prescore, present: cov.present, related: cov.related, missing: cov.missing }
+    const reach = weightedScore(r.keywords, [...cov.present, ...cov.related])
+    const data = { score: cov.score, rank: matchRank(reach, r.titleFit), prescore: r.prescore, present: cov.present, related: cov.related, missing: cov.missing }
     await db.jobMatch.upsert({ where: { resumeId_jobId: { resumeId, jobId: r.id } }, create: { userId, resumeId, jobId: r.id, ...data }, update: data })
   }
   run.scored = ready.length
