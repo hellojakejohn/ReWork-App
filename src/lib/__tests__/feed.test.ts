@@ -161,3 +161,11 @@ describe('titleRelevant for designers', () => {
     expect(titleRelevant('Product Designer', p(['UX Designer']))).toBe(true)
   })
 })
+
+describe('workdayLocation, home as remote', () => {
+  it('reads "Home" as Remote', () => {
+    const b = { company: 'Prime Therapeutics', tenant: 'primetherapeutics', host: 'x', site: 'y' }
+    expect(workdayLocation(b, 'Home', '/job/Home/Analyst_R1')).toBe('Remote')
+    expect(isRemote(workdayLocation(b, 'Home', '/job/Home/Analyst_R1'), '')).toBe(true)
+  })
+})

@@ -86,4 +86,10 @@ export const WORKDAY_BOARDS: WorkdayBoard[] = [
   { company: 'Thrivent', tenant: 'thrivent', host: 'thrivent.wd5.myworkdayjobs.com', site: 'External' },
   { company: 'Travelers', tenant: 'travelers', host: 'travelers.wd5.myworkdayjobs.com', site: 'External' },
   { company: 'Wells Fargo', tenant: 'wf', host: 'wf.wd1.myworkdayjobs.com', site: 'WellsFargoJobs' },
+  // Added Nov 14 (checked live). Skipped: Banner Health (places are hospital names, no state)
+  // and Mosaic (mostly Brazil and Canada, towns without a state).
+  { company: 'Graco', tenant: 'graco', host: 'graco.wd501.myworkdayjobs.com', site: 'graco_Careers' },
+  { company: 'Pentair', tenant: 'pentair', host: 'pentair.wd5.myworkdayjobs.com', site: 'pentair_Careers' },
+  { company: 'Prime Therapeutics', tenant: 'primetherapeutics', host: 'primetherapeutics.wd1.myworkdayjobs.com', site: 'primetherapeuticscareers' },
+  { company: 'Werner Enterprises', tenant: 'werner', host: 'werner.wd501.myworkdayjobs.com', site: 'werner' },
 ]

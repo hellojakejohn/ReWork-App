@@ -116,6 +116,8 @@ export function workdayPostedAt(postedOn: string, now = new Date()): Date | null
  */
 export function workdayLocation(b: WorkdayBoard, locationsText: string, path: string): string {
   let place = locationsText.trim()
+  // "Home" and "Virtual" are how some employers say remote (Prime Therapeutics).
+  if (/^(?:home|virtual|work from home|wfh)$/i.test(place)) place = 'Remote'
   if (!place || /^\d+ locations$/i.test(place)) {
     const slug = path.split('/')[2] ?? ''
     const fromPath = slug.replace(/---/g, ' - ').replace(/-/g, ' ').trim()
