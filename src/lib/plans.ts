@@ -229,11 +229,11 @@ export const FREE_FEATURES = [
 ]
 
 // The landing page's one-line plan cards.
-export const FREE_PLAN_SHORT = `${FREE_TAILORS_PER_MONTH} tailors, ${FREE_COVER_LETTERS_PER_MONTH} cover letter, ${FREE_TRACKER_APPLICATIONS} tracked jobs`
+export const FREE_PLAN_SHORT = `Your top ${FREE_FEED_MATCHES} job matches, ${FREE_TAILORS_PER_MONTH} tailors, ${FREE_COVER_LETTERS_PER_MONTH} cover letter, ${FREE_TRACKER_APPLICATIONS} tracked jobs`
 
 // Copy used across landing page, settings, status bar, FAQ.
-export const FREE_PLAN_SUMMARY = `${FREE_TAILORS_PER_MONTH} tailored resumes and ${FREE_COVER_LETTERS_PER_MONTH} cover letter per month, a tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs, PDF downloads`
-export const PRO_PLAN_SUMMARY = `Tailoring, cover letters and tracking for your whole search (fair use), plus the evidence interview and Word downloads: ${PRICING.pass.amount} once for a 3-month Job Hunt Pass, or ${PRICING.monthly.display}`
+export const FREE_PLAN_SUMMARY = `your top ${FREE_FEED_MATCHES} job matches; ${FREE_TAILORS_PER_MONTH} tailored resumes, ${FREE_COVER_LETTERS_PER_MONTH} cover letter, ${FREE_ANSWERS_PER_MONTH} application answers and ${FREE_INTERVIEW_PREPS_PER_MONTH} interview prep per month; a tracker for up to ${FREE_TRACKER_APPLICATIONS} jobs; PDF downloads`
+export const PRO_PLAN_SUMMARY = `Up to ${PRO_FEED_MATCHES} job matches per resume, plus tailoring, cover letters, application answers, interview prep and tracking for your whole search (fair use), plus the evidence interview and Word downloads: ${PRICING.pass.amount} once for a 3-month Job Hunt Pass, or ${PRICING.monthly.display}`
 
 // The two ways to pay, for limit messages ("Go Pro: ...").
 export const GO_PRO_OFFERS = `${PRICING.pass.display}, never renews, or ${PRICING.monthly.display}`
