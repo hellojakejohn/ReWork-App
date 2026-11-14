@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       summary={
         <ul className="list-disc space-y-1 pl-5">
           <li>ReWork is run by one person, Jakob Johnson, in Saint Paul, Minnesota.</li>
-          <li>We store your resume, the jobs you tailor for, and what we write for you, so you can come back to it.</li>
+          <li>We store your resume, your job matches, the jobs you tailor for, and what we write for you, so you can come back to it.</li>
           <li>Resume and job text is sent to Anthropic’s paid Claude API to do the rewriting. Anthropic doesn’t use API data to train its models.</li>
           <li>We don’t sell your data, show ads, or share your resume with employers.</li>
           <li>You can download everything or delete your account any time from Settings, Your data.</li>
@@ -47,7 +47,12 @@ export default function PrivacyPage() {
             that you paste.
           </li>
           <li>
-            <strong>What we generate for you.</strong> Tailored resumes, cover letters, and your answers in the evidence interview.
+            <strong>Your job match settings and matches.</strong> The job titles you want next, whether you want remote or nearby work, and the
+            jobs we matched to each resume, with what you saved or dismissed.
+          </li>
+          <li>
+            <strong>What we generate for you.</strong> Tailored resumes, cover letters, answers to application questions, interview prep, and
+            your answers in the evidence interview.
           </li>
           <li>
             <strong>Your application tracker.</strong> Status, notes and follow-up dates you enter.
@@ -74,7 +79,10 @@ export default function PrivacyPage() {
 
       <Section title="How we use it">
         <ul>
-          <li>To run the service: read your resume, tailor it to a job, check the result against your original, write cover letters, and keep your history and tracker.</li>
+          <li>
+            To run the service: read your resume, find open jobs that fit it, tailor it to a job, check the result against your original, write
+            cover letters and answers, and keep your history and tracker.
+          </li>
           <li>To handle billing and plan limits.</li>
           <li>To find and fix problems, prevent abuse, and understand which parts of the product people use.</li>
           <li>To reply when you contact us.</li>
@@ -96,7 +104,8 @@ export default function PrivacyPage() {
             <strong>Vercel</strong>: hosts the website and API, keeps request logs, and provides cookieless page-view analytics.
           </li>
           <li>
-            <strong>Anthropic</strong>: when you parse a resume, tailor, write a cover letter, run the evidence interview or fetch some job pages,
+            <strong>Anthropic</strong>: when you parse a resume, tailor, write a cover letter or an application answer, build interview prep, run
+            the evidence interview or fetch some job pages,
             the relevant text is sent to Anthropic’s Claude API to generate the result. Under its commercial API terms, data sent through the API is
             not used to train its models. Anthropic may keep API data for a limited time to monitor for abuse, under its own policy (see{" "}
             <a href="https://www.anthropic.com/legal/privacy" rel="noopener noreferrer">Anthropic’s privacy policy</a>). We never send your
@@ -114,9 +123,21 @@ export default function PrivacyPage() {
           from our server, not from you.
         </p>
         <p>
+          <strong>Job matches.</strong> We collect public job postings from employers&apos; own job boards (Greenhouse, Lever, Ashby and Workday)
+          into a shared list. To match you, we compare your resume with those postings on our server, and some posting text is sent to Anthropic
+          to pick out the skills each job asks for. Employers don&apos;t see your resume or know you were matched; nothing is sent to them
+          until you apply yourself.
+        </p>
+        <p>
           The Save to ReWork button (a bookmark or our Chrome extension) works the other way round: when you click it on a job page, it reads
           the job title, company, location and description from that page in your own browser and opens ReWork with them. It runs only when you
           click it, reads nothing else from the page, and sends nothing anywhere except to ReWork.
+        </p>
+        <p>
+          When you press Apply in ReWork and then click the extension on the employer&apos;s application form, it gets your application kit
+          from ReWork (your contact details, tailored resume, cover letter and saved answers) and types them into the empty fields of that form.
+          It never submits the form, never changes what you already typed, and leaves dropdowns, checkboxes and questions about salary,
+          sponsorship, work authorization and demographics to you. What you then submit goes to that employer under their own privacy policy.
         </p>
       </Section>
 
@@ -129,7 +150,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Deleting your account</strong> (Settings, Your data, Delete my account) cancels any Pro subscription, deletes your uploaded
-            files, and deletes your account, resumes, tailored versions, cover letters, tracker and feedback from our database right away. Database
+            files, and deletes your account, resumes, job matches, tailored versions, cover letters, answers, tracker and feedback from our database right away. Database
             backups held by Supabase age out on their normal schedule.
           </li>
           <li>Usage events are kept after account deletion with the link to you removed, so they can’t be tied back to you.</li>

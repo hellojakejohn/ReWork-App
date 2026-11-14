@@ -42,3 +42,18 @@ describe('payFromText', () => {
     expect(payFromText('$120,000 - $150,000 per year')).toMatchObject({ min: 120000, max: 150000, period: 'year', currency: '$' })
   })
 })
+
+describe('perks are not pay', () => {
+  it('skips a budget, stipend or allowance a few words after the amount', () => {
+    expect(payFromText('Perks:\n - $100/month education budget with conferences covered')).toBeNull()
+    expect(payFromText('We offer a $500 home office stipend.')).toBeNull()
+    expect(payFromText('Salary: $170K - $230K\n\nPerks: $100/month education budget')?.label).toBe('$170k to $230k a year')
+    expect(payFromText('Salary: $170K - $230K\n\nPerks: free lunch')?.label).toBe('$170k to $230k a year')
+    expect(payFromText('Salary: $120,000 - $150,000 plus annual bonus')?.label).toBe('$120k to $150k a year')
+    expect(payFromText('Pay: $25/hour + tuition reimbursement')?.label).toBe('$25 an hour')
+  })
+  it('skips a small monthly figure', () => {
+    expect(payFromText('Phone: $50 a month')).toBeNull()
+    expect(payFromText('Pay: $4,500 a month')?.label).toBe('$4.5k a month')
+  })
+})

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { dedupeJobs, parseBoardList, roleKey } from '@/lib/feed/boards'
-import { isRemote, locationCountry, prescore, resumeProfile, titleWords, usState } from '@/lib/feed/prefilter'
+import { dedupeJobs, parseBoardList, roleKey, workdayLocation } from '@/lib/feed/boards'
+import { isRemote, locationCountry, prescore, resumeProfile, titleFit, titleRelevant, titleWords, usState } from '@/lib/feed/prefilter'
 import type { ParsedResume } from '@/types/parsed-resume'
 
 const body = 'Build the checkout UI in React and TypeScript. You will work with design on our component library. '.repeat(3)
@@ -48,6 +48,16 @@ describe('locations', () => {
     expect(usState('San Francisco')).toBe('CA')
     expect(isRemote('Remote - United States')).toBe(true)
     expect(locationCountry('Remote - US')).toBe('us')
+    // Workday styles (Nov 9 check: these were read as other countries).
+    expect(usState('MN - St. Paul')).toBe('MN')
+    expect(usState('MO-ST. LOUIS, 100 S 4TH ST')).toBe('MO')
+    expect(usState('SD, Sioux Falls')).toBe('SD')
+    expect(usState('USA - Hutchinson KS 67501')).toBe('KS')
+    expect(usState('ON, Mississauga')).toBe(null)
+    expect(usState('LON - London')).toBe(null)
+    expect(locationCountry('AL - Birmingham')).toBe('us')
+    expect(locationCountry('3 Locations')).toBe('unknown')
+    expect(locationCountry('CAN, ON, Mississauga')).toBe('other')
     expect(locationCountry('Remote')).toBe('unknown')
     expect(locationCountry('Warsaw')).toBe('other')
     expect(locationCountry('Gurugram')).toBe('other')
@@ -92,5 +102,75 @@ describe('prescore', () => {
     const target = { targetTitles: ['Operations Coordinator'] }
     expect(prescore(job, resumeProfile(gm, target), target).title).toBe(100)
     expect(prescore({ ...job, title: 'Associate General Counsel' }, resumeProfile(gm)).title).toBe(0)
+  })
+})
+
+describe('titleFit', () => {
+  const profile = resumeProfile(
+    { contact: { fullName: '', headline: '', email: '', phone: '', location: '', links: [] }, summary: '', skills: [], experience: [], projects: [], education: [], certifications: [], extraSections: [] },
+    { targetTitles: ['Operations Coordinator', 'Frontend Developer'] }
+  )
+  it('is how much of a wanted title the job title covers', () => {
+    expect(titleFit('Operations Work Coordinator - St Paul', profile)).toBe(100)
+    expect(titleFit('Cyber Operations Lead, Critical Harm Operations', profile)).toBe(50)
+    expect(titleFit('Senior Operations Associate', profile)).toBe(50)
+    expect(titleFit('Front End Developer', profile)).toBe(100)
+    expect(titleFit('Account Executive', profile)).toBe(0)
+  })
+})
+
+describe('workdayLocation', () => {
+  const b = { company: 'X', tenant: 'x', host: 'x.wd1.myworkdayjobs.com', site: 'S' }
+  it('reads the main place from the link when the text says "N Locations"', () => {
+    const loc = workdayLocation(b, '9 Locations', '/job/Mounds-View-Minnesota-United-States-of-America/Engineer_R1')
+    expect(loc).toBe('Mounds View Minnesota United States of America (and more)')
+    expect(usState(loc)).toBe('MN')
+    expect(usState(workdayLocation(b, '', '/job/TX---Houston/Analyst_R2'))).toBe('TX')
+    expect(usState(workdayLocation(b, '2 Locations', '/job/Seattle-WA-USA/PM_R3'))).toBe('WA')
+    expect(workdayLocation(b, 'Saint Paul, MN', '/job/x/y')).toBe('Saint Paul, MN')
+  })
+  it('adds the state for one-state employers that list sites by name', () => {
+    const loc = workdayLocation({ ...b, state: 'MN' }, 'Abbott Northwestern Hospital', '/job/Abbott-Northwestern-Hospital/RN_R4')
+    expect(usState(loc)).toBe('MN')
+  })
+})
+
+describe('titleRelevant', () => {
+  const p = (titles: string[]) => resumeProfile({ contact: { location: 'Saint Paul, MN' }, experience: [], skills: [], projects: [], education: [] } as never, { targetTitles: titles })
+  it('needs a field word, not just the role word', () => {
+    expect(titleRelevant('Recruiting Coordinator', p(['Logistics Coordinator']))).toBe(false)
+    expect(titleRelevant('Senior Logistics Coordinator', p(['Logistics Coordinator']))).toBe(true)
+    expect(titleRelevant('Care Coordinator RN', p(['RN Care Coordinator']))).toBe(true)
+    expect(titleRelevant('Registered Nurse - Med Surg', p(['RN Care Coordinator']))).toBe(true)
+    expect(titleRelevant('Recruiting Coordinator', p(['RN Care Coordinator']))).toBe(false)
+    expect(titleRelevant('Lifecycle Marketing Coordinator', p(['Marketing Coordinator']))).toBe(true)
+  })
+  it('keeps role-only titles and tech titles working', () => {
+    expect(titleRelevant('Lead Accountant', p(['Senior Accountant']))).toBe(true)
+    expect(titleRelevant('Backend Engineer', p(['Software Engineer']))).toBe(true)
+    expect(titleRelevant('Customer Success Account Manager', p(['Customer Success Manager']))).toBe(true)
+    expect(titleRelevant('Executive Assistant to the CEO', p(['Executive Assistant']))).toBe(true)
+  })
+})
+
+describe('titleRelevant for designers', () => {
+  const p = (titles: string[]) => resumeProfile({ contact: { location: 'Saint Paul, MN' }, experience: [], skills: [], projects: [], education: [] } as never, { targetTitles: titles })
+  it('keeps design fields apart', () => {
+    expect(titleRelevant('Senior Product Designer', p(['Instructional Designer']))).toBe(false)
+    expect(titleRelevant('Senior Instructional Designer', p(['Instructional Designer']))).toBe(true)
+    expect(titleRelevant('Product Designer', p(['UX Designer']))).toBe(true)
+  })
+  it('needs the same role when both titles name one', () => {
+    expect(titleRelevant('Product Designer', p(['Product Manager']))).toBe(false)
+    expect(titleRelevant('Senior Product Manager', p(['Product Manager']))).toBe(true)
+    expect(titleRelevant('Product Manager', p(['UI Engineer']))).toBe(false)
+  })
+})
+
+describe('workdayLocation, home as remote', () => {
+  it('reads "Home" as Remote', () => {
+    const b = { company: 'Prime Therapeutics', tenant: 'primetherapeutics', host: 'x', site: 'y' }
+    expect(workdayLocation(b, 'Home', '/job/Home/Analyst_R1')).toBe('Remote')
+    expect(isRemote(workdayLocation(b, 'Home', '/job/Home/Analyst_R1'), '')).toBe(true)
   })
 })

@@ -1,0 +1,83 @@
+{
+ "name": "Elementary teacher -> Instructional Designer (career change)",
+ "job": {
+  "title": "Instructional Designer",
+  "company": "Thrivent",
+  "description": "Thrivent's Learning team is looking for an Instructional Designer to build training for our financial advisors and member service staff.\n\nWhat you'll do:\n- Design and develop e-learning courses, job aids and instructor-led training\n- Apply adult learning principles and the ADDIE model\n- Partner with subject matter experts to define learning objectives\n- Build courses in Articulate Storyline and Rise and publish them to our LMS\n- Measure training effectiveness and improve courses based on data\n- Write storyboards and scripts for video\n\nWhat you bring:\n- 2+ years designing training or curriculum\n- Experience with Articulate 360 or similar authoring tools\n- Knowledge of adult learning theory\n- Strong writing and project management skills\n- Experience with an LMS"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Emily",
+   "lastName": "Carter",
+   "email": "emily@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Elementary teacher with 7 years of experience planning lessons, using data to adjust instruction, and leading teacher training.",
+   "keyStrengths": [],
+   "careerLevel": "mid"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "4th Grade Teacher",
+    "company": "Saint Paul Public Schools",
+    "startDate": "2018-08",
+    "endDate": "present",
+    "location": "Saint Paul, MN",
+    "isCurrentRole": true,
+    "achievements": [
+     "Planned and taught daily lessons in reading, math and science for classes of 28 students",
+     "Raised the share of students meeting the state reading standard from 54% to 71% in two years",
+     "Built a Google Classroom course with weekly videos and quizzes used by 4 grade-level teachers",
+     "Led 6 after-school workshops for 40 teachers on using Seesaw and Google Forms",
+     "Used assessment data to group students and adjust lessons every 3 weeks",
+     "Wrote the school's new-teacher onboarding guide"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Student Teacher",
+    "company": "Roseville Area Schools",
+    "startDate": "2017-09",
+    "endDate": "2018-05",
+    "location": "Roseville, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Co-taught 2nd grade and designed a 4-week unit on plant life cycles"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "BA",
+    "field": "Elementary Education",
+    "institution": "University of Minnesota",
+    "graduationYear": "2018"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "Google Classroom",
+    "Seesaw",
+    "Google Forms",
+    "Canva"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Lesson planning",
+    "Data-driven instruction",
+    "Presenting"
+   ],
+   "certifications": [
+    "Minnesota Teaching License, K-6"
+   ]
+  },
+  "projects": []
+ }
+}

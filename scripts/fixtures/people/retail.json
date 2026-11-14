@@ -1,0 +1,78 @@
+{
+ "name": "Retail store manager -> Customer Success Manager (career change)",
+ "job": {
+  "title": "Customer Success Manager",
+  "company": "Jamf",
+  "description": "Jamf is hiring a Customer Success Manager to help schools and businesses get the most from our Apple device management software.\n\nResponsibilities:\n- Own a book of 60+ customer accounts after onboarding\n- Drive adoption, renewals and expansion\n- Run quarterly business reviews with customer leaders\n- Track health scores and spot churn risk early\n- Work with Sales and Support to resolve escalations\n- Capture customer feedback for the product team\n\nRequirements:\n- 3+ years in customer success, account management or a customer-facing leadership role\n- Strong relationship building and communication\n- Experience with Salesforce or Gainsight\n- Comfort learning technical products\n- SaaS experience a plus"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Jasmine",
+   "lastName": "Lee",
+   "email": "jasmine@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Retail store manager with 8 years leading teams, growing sales and turning unhappy customers into regulars.",
+   "keyStrengths": [],
+   "careerLevel": "senior"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "Store Manager",
+    "company": "Best Buy",
+    "startDate": "2019-05",
+    "endDate": "present",
+    "location": "Roseville, MN",
+    "isCurrentRole": true,
+    "achievements": [
+     "Ran a store with $14M in annual sales and a team of 45",
+     "Grew membership sign-ups 35% year over year by coaching the team on the conversation",
+     "Raised the store's customer satisfaction score from 78 to 86",
+     "Handled escalated customer issues and returns over $500",
+     "Hired and trained 3 assistant managers, 2 since promoted to store manager"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Assistant Store Manager",
+    "company": "Target",
+    "startDate": "2016-03",
+    "endDate": "2019-04",
+    "location": "Saint Paul, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Led the guest service team and ran weekly sales huddles"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "BA",
+    "field": "Communication Studies",
+    "institution": "Hamline University",
+    "graduationYear": "2015"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "Excel",
+    "Salesforce"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Coaching",
+    "Customer experience",
+    "Hiring"
+   ],
+   "certifications": []
+  },
+  "projects": []
+ }
+}

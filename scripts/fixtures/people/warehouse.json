@@ -1,0 +1,82 @@
+{
+ "name": "Warehouse lead -> Logistics Coordinator",
+ "job": {
+  "title": "Logistics Coordinator",
+  "company": "C.H. Robinson",
+  "description": "C.H. Robinson is looking for a Logistics Coordinator to manage freight moving for our customers.\n\nWhat you'll do:\n- Schedule and track truckload shipments from pickup to delivery\n- Communicate with carriers, drivers and customers about status and delays\n- Solve problems like missed pickups and damaged freight\n- Enter and update loads in our TMS\n- Build carrier relationships and negotiate rates\n- Report on on-time performance and costs\n\nWhat you bring:\n- 1+ years in logistics, transportation, warehouse or customer service\n- Strong communication and problem-solving skills\n- Comfort with Excel and new software\n- Ability to work in a fast-paced environment\n- Bachelor's degree preferred, or equivalent experience"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Luis",
+   "lastName": "Garcia",
+   "email": "luis@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Warehouse shift lead with 6 years in distribution, running pick and pack teams and keeping orders on time.",
+   "keyStrengths": [],
+   "careerLevel": "mid"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "Shift Lead",
+    "company": "Target Distribution Center",
+    "startDate": "2020-04",
+    "endDate": "present",
+    "location": "Cottage Grove, MN",
+    "isCurrentRole": true,
+    "achievements": [
+     "Led a night shift team of 22 in picking, packing and loading",
+     "Kept on-time shipping at 98% during peak season",
+     "Scheduled trucks and dock doors with 6 regional carriers",
+     "Tracked inventory in Manhattan WMS and ran weekly cycle counts",
+     "Trained 35 new associates on safety and equipment",
+     "Cut mis-picks by 20% by reorganizing slotting for fast movers"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Warehouse Associate",
+    "company": "Amazon",
+    "startDate": "2018-02",
+    "endDate": "2020-03",
+    "location": "Shakopee, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Picked and packed 1,000+ units per shift",
+     "Certified forklift and reach truck operator"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "High School Diploma",
+    "field": "",
+    "institution": "Harding Senior High School",
+    "graduationYear": "2017"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "Manhattan WMS",
+    "Excel"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Team leadership",
+    "Safety"
+   ],
+   "certifications": [
+    "Forklift certified",
+    "OSHA 10"
+   ]
+  },
+  "projects": []
+ }
+}
