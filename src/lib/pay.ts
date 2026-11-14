@@ -24,6 +24,8 @@ const PAY_RE = new RegExp(
 const BARE_K_RE = new RegExp(String.raw`\b(\d{2,3})\s?[kK]\s*(?:-|–|—|to)\s*(\d{2,3})\s?[kK]\b(?:${PERIOD})?`, 'g')
 
 const NOT_PAY_AFTER = /^\s*(?:\+\s*)?(?:m\b|mm\b|b\b|bn\b|million|billion|in (?:funding|revenue|sales|arr)|signing|sign-on|bonus|relocation|stipend|budget|of (?:funding|revenue))/i
+// "$100/month education budget", "$500 home office stipend": a perk a few words on.
+const NOT_PAY_SOON = /^[^.\n]{0,30}?\b(?:budget|stipend|allowance|reimburse\w*|credit|bonus|perk)s?\b/i
 const NOT_PAY_BEFORE = /(raised|funding|funded|revenue|valuation|valued|series [a-e]|bonus|stipend|budget|reimburse\w*|allowance|credit|401k|match)[^.\n]{0,30}$/i
 const PAY_WORD_BEFORE = /(salary|pay|compensation|wage|rate|range|base|earn|ote|annual|hourly|per year|per hour)[^.\n]{0,50}$/i
 
@@ -73,7 +75,7 @@ interface Candidate {
 function accept(text: string, index: number, end: number, min: number, max: number, currency: string, periodWord: string | undefined): Candidate | null {
   const before = text.slice(Math.max(0, index - 60), index)
   const after = text.slice(end, end + 30)
-  if (NOT_PAY_AFTER.test(after) || NOT_PAY_BEFORE.test(before)) return null
+  if (NOT_PAY_AFTER.test(after) || NOT_PAY_BEFORE.test(before) || NOT_PAY_SOON.test(text.slice(end, end + 40))) return null
   if (max < min) [min, max] = [max, min]
   if (min < 7 || max > 2_000_000 || max > min * 4) return null
   const said = periodOf(periodWord)
@@ -82,6 +84,8 @@ function accept(text: string, index: number, end: number, min: number, max: numb
   // A lone yearly figure under $20k or an hourly one over $300 is almost never pay.
   if (period === 'year' && max < 15000) return null
   if (period === 'hour' && max > 500) return null
+  // A monthly figure under $1,000 is a perk or a fee, not a salary.
+  if (period === 'month' && max < 1000) return null
   return { pay: { min, max, currency, period }, explicit: !!said || PAY_WORD_BEFORE.test(before) || min !== max }
 }
 

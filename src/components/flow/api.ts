@@ -449,6 +449,8 @@ export interface FeedMatchDTO {
   present: string[]
   related: string[]
   missing: string[]
+  /** What tailoring can honestly reach (its words plus what it shows in other words). */
+  reach: number
   savedAt: string | null
   applicationId: string | null
   isNew: boolean

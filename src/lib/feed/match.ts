@@ -12,7 +12,7 @@ import { weightedScore } from '@/lib/keyword-coverage'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { parseWorkdaySearch, roleKey, workdaySearchRequest, type WorkdayBoard } from './boards'
 import { WORKDAY_BOARDS } from './board-list'
-import { prescore, resumeProfile, stateName, titleFit, usState } from './prefilter'
+import { prescore, resumeProfile, stateName, titleFit, titleRelevant, usState } from './prefilter'
 import { syncBoard, toJobRow } from './sync'
 import { payFromText } from '@/lib/pay'
 
@@ -152,7 +152,7 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
   const seenRole = new Set<string>()
   const byTitle = open
     .map((j) => ({ j, s: prescore({ title: j.title, location: j.location, description: '' }, profile) }))
-    .filter((x) => x.s.title > 0)
+    .filter((x) => x.s.title > 0 && titleRelevant(x.j.title, profile))
     .sort((a, b) => b.s.score - a.s.score)
     .filter((x) => !seenRole.has(roleKey(x.j)) && !!seenRole.add(roleKey(x.j)))
     .slice(0, TITLE_POOL)
@@ -225,6 +225,8 @@ export interface MatchDTO {
   present: string[]
   related: string[]
   missing: string[]
+  /** What a tailor can honestly reach: its words plus what it shows in other words. */
+  reach: number
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
@@ -239,23 +241,24 @@ export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: st
       where,
       orderBy: [{ rank: 'desc' }, { score: 'desc' }, { prescore: 'desc' }],
       take,
-      include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true } } },
+      include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true, keywords: true } } },
     }),
     db.jobMatch.count({ where }),
   ])
   return {
     total,
-    matches: rows.map((m) => ({
+    matches: rows.map(({ job: { keywords, ...job }, ...m }) => ({
       id: m.id,
       jobId: m.jobId,
       score: m.score,
       present: m.present,
       related: m.related,
       missing: m.missing,
+      reach: Math.max(m.score, weightedScore(keywords, [...m.present, ...m.related])),
       savedAt: m.savedAt?.toISOString() ?? null,
       applicationId: m.applicationId,
       isNew: !m.seenAt,
-      job: { ...m.job, postedAt: m.job.postedAt?.toISOString() ?? null },
+      job: { ...job, postedAt: job.postedAt?.toISOString() ?? null },
     })),
   }
 }

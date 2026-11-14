@@ -1,5 +1,5 @@
 // Matches on upload, chunk 6: the real-data check. BILLED (ask Jake for a budget).
-//   npm run feed:check -- --max-usd 2
+//   npm run feed:check -- --max-usd 2 [--people]
 // Runs the real pipeline (runMatch) end to end: today's boards (pullListBoards), the Workday
 // search, description fetches and real keyword calls, on an in-memory copy of the tables.
 // No database reads or writes. Output in eval-results/feed/check-*.json (gitignored).
@@ -74,10 +74,20 @@ interface Person {
 
 // Everyone lives in Saint Paul, MN and answers the one question as the screen prefills it
 // (their latest title), "Remote or near me". The career changer types the job they want.
+// --people: the non-tech test people in fixtures/people, each asking for their fixture job's title.
+const PEOPLE = argv.includes('--people')
+
 function people(): Person[] {
   const out: Person[] = []
-  for (const f of readdirSync(path.join(HERE, 'fixtures')).filter((f) => f.endsWith('.json')).sort()) {
-    const resume = masterToParsed(JSON.parse(readFileSync(path.join(HERE, 'fixtures', f), 'utf8')).resume)
+  const dir = path.join(HERE, 'fixtures', PEOPLE ? 'people' : '')
+  for (const f of readdirSync(dir).filter((f) => f.endsWith('.json')).sort()) {
+    const fx = JSON.parse(readFileSync(path.join(dir, f), 'utf8'))
+    const resume = masterToParsed(fx.resume)
+    if (PEOPLE) {
+      resume.contact.location = 'Saint Paul, MN'
+      out.push({ name: `${f.replace(/\.json$/, '')} (as "${fx.job.title}")`, resume, prefs: { targetTitles: [fx.job.title], workplace: 'both' } })
+      continue
+    }
     resume.contact.location = 'Saint Paul, MN'
     const name = f.replace(/\.json$/, '')
     const latest = resume.experience[0]?.title ?? ''

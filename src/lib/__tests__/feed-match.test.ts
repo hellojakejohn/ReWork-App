@@ -149,3 +149,14 @@ describe('workdayQueries and matchRank', () => {
     expect(matchRank(40, 50)).toBeGreaterThan(matchRank(5, 100))
   })
 })
+
+describe('listMatches reach', () => {
+  it('adds what tailoring can reach: its words plus other words, never below the score', async () => {
+    const { listMatches } = await import('@/lib/feed/match')
+    const row = (over: Row) => ({ id: 'm1', jobId: 'j1', score: 0, present: [], related: [], missing: [], savedAt: null, applicationId: null, seenAt: null, job: { title: 'Executive Assistant', company: 'Acme', location: 'Remote', remote: true, payLabel: null, postedAt: null, url: 'https://x', keywords: ['Excel', 'Word', 'Concur', 'travel'] }, ...over })
+    const db = { jobMatch: { findMany: async () => [row({ related: ['Excel', 'Word'], missing: ['Concur', 'travel'] }), row({ id: 'm2', score: 40, present: ['Excel'] })], count: async () => 2 } }
+    const { matches } = await listMatches(db as never, 'u', 'r', 10)
+    expect(matches.map((m) => m.reach)).toEqual([61, 40])
+    expect('keywords' in matches[0].job).toBe(false)
+  })
+})

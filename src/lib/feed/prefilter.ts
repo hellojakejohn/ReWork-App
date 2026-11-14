@@ -45,7 +45,23 @@ const SAME: Record<string, string> = {
   'back-end': 'back',
   fullstack: 'full',
   'full-stack': 'full',
+  ux: 'product',
+  ui: 'product',
+  rn: 'nurse',
+  rns: 'nurse',
+  nurses: 'nurse',
 }
+
+// The role word of a title ("Coordinator", "Assistant"). Sharing only this says nothing
+// about the field: a Recruiting Coordinator job is no match for "Logistics Coordinator".
+const ROLE_WORDS = new Set([
+  'coordinator', 'assistant', 'specialist', 'analyst', 'representative', 'rep', 'administrator', 'officer', 'consultant',
+  'advisor', 'agent', 'technician', 'clerk', 'partner', 'generalist', 'supervisor', 'owner', 'strategist', 'planner',
+  'producer', 'operator', 'worker', 'professional', 'designer',
+])
+// Not role words on purpose: engineer, scientist, support. "Backend Engineer" is in the field
+// of "Software Engineer", which shares only "engineer" with it. Designer is: a Product
+// Designer job is no match for "Instructional Designer" (UX and UI read as product).
 // Senior titles a person with fewer years is unlikely to land (they still see them lower).
 const SENIOR_RE = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|vice president|chief)\b/i
 const JUNIOR_RE = /\b(intern|internship|new grad|junior|jr\.?|entry[- ]level|apprentice)\b/i
@@ -143,6 +159,19 @@ export function titleFit(jobTitle: string, profile: ResumeProfile): number {
   const job = new Set(titleWords(jobTitle))
   const best = Math.max(0, ...(profile.titles ?? [[...profile.titleWords]]).map((t) => (t.length ? t.filter((w) => job.has(w)).length / t.length : 0)))
   return Math.round(best * 100)
+}
+
+/**
+ * Is this job title in the field of a title they want? It must share a field word when their
+ * title has one ("logistics" of "Logistics Coordinator", "care" or "nurse" of "RN Care
+ * Coordinator"), else the role word ("Accountant"). The gate for which jobs can be a match.
+ */
+export function titleRelevant(jobTitle: string, profile: ResumeProfile): boolean {
+  const job = new Set(titleWords(jobTitle))
+  return (profile.titles ?? [[...profile.titleWords]]).some((t) => {
+    const field = t.filter((w) => !ROLE_WORDS.has(w))
+    return (field.length ? field : t).some((w) => job.has(w))
+  })
 }
 
 export function prescore(job: { title: string; location: string; description: string }, profile: ResumeProfile, prefs: FeedPrefs = {}): Prescore {

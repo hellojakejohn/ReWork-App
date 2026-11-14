@@ -160,6 +160,12 @@ export function matchAtsUrl(input: string | URL): AtsMatch | null {
 }
 
 const s = (v: unknown) => (typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '')
+/** Ashby keeps the salary in its own field: put it on top of the text so pay reads from it. */
+function withPayLine(description: string, salary: string): string {
+  if (!salary || description.includes(salary)) return description
+  return `Salary: ${salary}\n\n${description}`
+}
+
 const joinLoc = (...parts: unknown[]) => [...new Set(parts.map(s).filter(Boolean))].join(', ')
 
 function section(title: string, html: string): string {
@@ -210,7 +216,10 @@ export function parseAtsResponse(match: AtsMatch, data: Json, pageUrl: string): 
         title: s(posting.title),
         company: s(data?.organizationName) || match.company,
         location: posting.isRemote && !/remote/i.test(s(posting.location)) ? joinLoc(posting.location, 'Remote') : s(posting.location),
-        description: posting.descriptionHtml ? htmlToText(s(posting.descriptionHtml), { strip: false }) : s(posting.descriptionPlain),
+        description: withPayLine(
+          posting.descriptionHtml ? htmlToText(s(posting.descriptionHtml), { strip: false }) : s(posting.descriptionPlain),
+          s(posting.compensation?.scrapeableCompensationSalarySummary)
+        ),
         facts: { posted: isoDate(posting.publishedAt), pay: !!s(posting.compensation?.compensationTierSummary) },
       })
     }

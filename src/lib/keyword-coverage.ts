@@ -89,7 +89,16 @@ function formMatch(textWords: string[], keyword: string): boolean {
   return false
 }
 
-const FILLER = new Set(['and', 'or', 'of', 'the', 'a', 'an', 'to', 'for', 'in', 'on', 'with', 'at', 'by'])
+// Small words, and the generic ones job posts tack on ("administrative experience",
+// "Excel skills"): the rest of the keyword is what has to show.
+const FILLER = new Set(['and', 'or', 'of', 'the', 'a', 'an', 'to', 'for', 'in', 'on', 'with', 'at', 'by', 'experience', 'skills', 'skill', 'knowledge', 'proficiency', 'background'])
+
+// Irregular past forms resumes use, read as the plain verb ("Wrote the guide" shows Writing).
+const IRREGULAR: Record<string, string> = {
+  wrote: 'write', written: 'write', taught: 'teach', built: 'build', led: 'lead', ran: 'run', drove: 'drive',
+  sold: 'sell', bought: 'buy', spoke: 'speak', made: 'make', grew: 'grow', gave: 'give', kept: 'keep',
+  met: 'meet', sent: 'send', spent: 'spend', began: 'begin', chose: 'choose', won: 'win', oversaw: 'oversee',
+}
 
 /**
  * Looser than stem(), only for "in other words": processing/processed, management/managed,
@@ -97,7 +106,7 @@ const FILLER = new Set(['and', 'or', 'of', 'the', 'a', 'an', 'to', 'for', 'in', 
  * back to stem() so "nation" never reads as "n".
  */
 export function root(word: string): string {
-  const s = stem(word)
+  const s = stem(IRREGULAR[word.toLowerCase()] ?? word)
   if (s.length < 5) return s
   let r = s.replace(/(?:ations?|ions?)$/, '')
   // management -> manage, but document stays document
@@ -107,10 +116,14 @@ export function root(word: string): string {
   return r.length >= 4 ? r : s
 }
 
+const DATE_LINE = /^(?:present|current|now|today|ongoing|\d{1,2}[/-]\d{4}|\d{4}(?:[/-]\d{1,2})?|[a-z]{3,9}\.? \d{4})$/i
+
 /** A resume's lines (bullets, sentences) as root lists: words only count together inside one. */
 function rootLines(text: string): string[][] {
   return text
     .split(/\n|[.;!?](?:\s|$)/)
+    // An end date ("Present", "2021-06") is not a skill: "present" must never show "Presentations".
+    .filter((line) => !DATE_LINE.test(line.trim()))
     .map((line) => wordsOf(line).map(root))
     .filter((line) => line.length > 0)
 }
@@ -155,6 +168,7 @@ function managedMatch(lines: string[][], keyword: string): boolean {
 
 const SQL_DATABASES = ['PostgreSQL', 'Postgres', 'MySQL', 'SQLite', 'SQL Server', 'T-SQL', 'MSSQL', 'MariaDB', 'PL/SQL', 'Supabase']
 const NOSQL_DATABASES = ['MongoDB', 'DynamoDB', 'Firestore', 'Cassandra', 'Redis', 'Couchbase']
+const MS_OFFICE = ['Microsoft Office', 'MS Office', 'Microsoft 365', 'Office 365', 'M365']
 
 /**
  * Keywords a resume shows through a more specific name. Only true implications: anyone
@@ -171,6 +185,15 @@ const IMPLIED: Record<string, string[]> = {
   restful: ['REST', 'REST API', 'REST APIs'],
   restfulapi: ['REST API', 'REST APIs'],
   restapi: ['RESTful API', 'RESTful APIs'],
+  // Microsoft Office is these programs, so listing it shows each one.
+  word: MS_OFFICE,
+  microsoftword: MS_OFFICE,
+  excel: MS_OFFICE,
+  microsoftexcel: MS_OFFICE,
+  powerpoint: MS_OFFICE,
+  microsoftpowerpoint: MS_OFFICE,
+  outlook: MS_OFFICE,
+  microsoftoutlook: MS_OFFICE,
 }
 
 /** The more specific names in `text` that show `keyword` ("PostgreSQL" for "SQL"). */

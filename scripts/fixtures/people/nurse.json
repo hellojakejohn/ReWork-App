@@ -1,0 +1,83 @@
+{
+ "name": "Med-surg RN -> Care Coordinator RN",
+ "job": {
+  "title": "RN Care Coordinator",
+  "company": "HealthPartners",
+  "description": "HealthPartners is hiring an RN Care Coordinator to support members with complex and chronic conditions across our primary care clinics.\n\nResponsibilities:\n- Coordinate care for a panel of members with chronic conditions such as heart failure, diabetes and COPD\n- Complete assessments and build individualized care plans with patients and providers\n- Manage transitions of care after hospital discharge, including follow-up calls within 48 hours\n- Provide patient education on medications and self-management\n- Connect members to community resources and social services\n- Document in Epic and track quality measures\n\nRequirements:\n- Current Minnesota RN license\n- BSN preferred\n- 3+ years of clinical nursing experience\n- Care coordination or case management experience preferred\n- Strong communication and motivational interviewing skills\n- Certified Case Manager (CCM) a plus"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Priya",
+   "lastName": "Shah",
+   "email": "priya@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Registered nurse with 5 years on a 32-bed medical-surgical unit, focused on safe discharges and patient education.",
+   "keyStrengths": [],
+   "careerLevel": "mid"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "Registered Nurse, Medical-Surgical",
+    "company": "Regions Hospital",
+    "startDate": "2021-06",
+    "endDate": "present",
+    "location": "Saint Paul, MN",
+    "isCurrentRole": true,
+    "achievements": [
+     "Cared for 5 to 6 patients per shift on a 32-bed medical-surgical unit",
+     "Led discharge teaching for patients going home on new medications and wound care",
+     "Charge nurse 2 shifts a week, assigning patients and handling staffing gaps",
+     "Cut 30-day readmissions for heart failure patients on the unit by 12% as part of a discharge phone-call pilot",
+     "Precepted 9 new graduate nurses through orientation",
+     "Documented care in Epic and completed medication reconciliation on admission"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Nursing Assistant",
+    "company": "Fairview Southdale Hospital",
+    "startDate": "2019-01",
+    "endDate": "2021-05",
+    "location": "Edina, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Took vitals and helped patients with daily care on a 24-bed telemetry unit",
+     "Trained 4 new nursing assistants on unit routines"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "BSN",
+    "field": "Nursing",
+    "institution": "St. Catherine University",
+    "graduationYear": "2021"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "Epic"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Patient education",
+    "Discharge planning",
+    "Precepting"
+   ],
+   "certifications": [
+    "RN, Minnesota",
+    "BLS",
+    "ACLS"
+   ]
+  },
+  "projects": []
+ }
+}

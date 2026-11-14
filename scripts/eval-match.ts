@@ -1,4 +1,4 @@
-// Match eval: npm run eval:match [-- --max-usd 1 --out eval-results/match --only private/]
+// Match eval: npm run eval:match [-- --max-usd 1 --out eval-results/match --only private/ --people]
 //
 // Runs the production tailor path for real (billed): fit-check keywords -> tailor aimed at
 // them -> fact guard -> coverage, and reports before/after, what's still missing and what
@@ -44,12 +44,15 @@ const readJson = (p: string) => JSON.parse(readFileSync(p, 'utf8'))
 
 async function main() {
   const cases: { name: string; job: TailorJob; resume: () => Promise<MasterResume> }[] = []
-  for (const f of readdirSync(FIXTURES).filter((f) => f.endsWith('.json')).sort()) {
-    const fx = readJson(path.join(FIXTURES, f)) as { name: string; job: TailorJob; resume: MasterResume }
+  // --people: only the non-tech test people in fixtures/people (nurse, teacher, ...).
+  const people = argv.includes('--people')
+  const dir = people ? path.join(FIXTURES, 'people') : FIXTURES
+  for (const f of readdirSync(dir).filter((f) => f.endsWith('.json')).sort()) {
+    const fx = readJson(path.join(dir, f)) as { name: string; job: TailorJob; resume: MasterResume }
     cases.push({ name: fx.name, job: fx.job, resume: async () => fx.resume })
   }
   const privateDir = path.join(FIXTURES, 'private')
-  if (existsSync(privateDir)) {
+  if (!people && existsSync(privateDir)) {
     const jobs = [
       readJson(path.join(FIXTURES, 'jobs', 'greenhouse-swe.json')).job as TailorJob,
       readJson(path.join(FIXTURES, 'jobs', 'dev-support-web3.json')).job as TailorJob,

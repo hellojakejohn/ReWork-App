@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dedupeJobs, parseBoardList, roleKey, workdayLocation } from '@/lib/feed/boards'
-import { isRemote, locationCountry, prescore, resumeProfile, titleFit, titleWords, usState } from '@/lib/feed/prefilter'
+import { isRemote, locationCountry, prescore, resumeProfile, titleFit, titleRelevant, titleWords, usState } from '@/lib/feed/prefilter'
 import type { ParsedResume } from '@/types/parsed-resume'
 
 const body = 'Build the checkout UI in React and TypeScript. You will work with design on our component library. '.repeat(3)
@@ -132,5 +132,32 @@ describe('workdayLocation', () => {
   it('adds the state for one-state employers that list sites by name', () => {
     const loc = workdayLocation({ ...b, state: 'MN' }, 'Abbott Northwestern Hospital', '/job/Abbott-Northwestern-Hospital/RN_R4')
     expect(usState(loc)).toBe('MN')
+  })
+})
+
+describe('titleRelevant', () => {
+  const p = (titles: string[]) => ({ titleWords: new Set<string>(), titles: titles.map((t) => [...new Set(titleWords(t))]), skills: [], years: 5, homeState: 'MN' })
+  it('needs a field word, not just the role word', () => {
+    expect(titleRelevant('Recruiting Coordinator', p(['Logistics Coordinator']))).toBe(false)
+    expect(titleRelevant('Senior Logistics Coordinator', p(['Logistics Coordinator']))).toBe(true)
+    expect(titleRelevant('Care Coordinator RN', p(['RN Care Coordinator']))).toBe(true)
+    expect(titleRelevant('Registered Nurse - Med Surg', p(['RN Care Coordinator']))).toBe(true)
+    expect(titleRelevant('Recruiting Coordinator', p(['RN Care Coordinator']))).toBe(false)
+    expect(titleRelevant('Lifecycle Marketing Coordinator', p(['Marketing Coordinator']))).toBe(true)
+  })
+  it('keeps role-only titles and tech titles working', () => {
+    expect(titleRelevant('Lead Accountant', p(['Senior Accountant']))).toBe(true)
+    expect(titleRelevant('Backend Engineer', p(['Software Engineer']))).toBe(true)
+    expect(titleRelevant('Customer Success Account Manager', p(['Customer Success Manager']))).toBe(true)
+    expect(titleRelevant('Executive Assistant to the CEO', p(['Executive Assistant']))).toBe(true)
+  })
+})
+
+describe('titleRelevant for designers', () => {
+  const p = (titles: string[]) => ({ titleWords: new Set<string>(), titles: titles.map((t) => [...new Set(titleWords(t))]), skills: [], years: 5, homeState: 'MN' })
+  it('keeps design fields apart', () => {
+    expect(titleRelevant('Senior Product Designer', p(['Instructional Designer']))).toBe(false)
+    expect(titleRelevant('Senior Instructional Designer', p(['Instructional Designer']))).toBe(true)
+    expect(titleRelevant('Product Designer', p(['UX Designer']))).toBe(true)
   })
 })

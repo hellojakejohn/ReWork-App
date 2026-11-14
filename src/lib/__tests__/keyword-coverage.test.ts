@@ -122,4 +122,17 @@ describe('other words for career changers', () => {
   it('leaves exact words as present', () => {
     expect(keywordCoverage(['vendors'], restaurant).present).toEqual(['vendors'])
   })
+
+  it('reads generic job-post words as filler, irregular verbs, and Microsoft Office as its programs', () => {
+    const admin = 'Administrative Assistant\nWrote the new-hire guide for the front desk\nMicrosoft Office, Dentrix'
+    const c = keywordCoverage(['administrative experience', 'writing', 'Word', 'Excel', 'PowerPoint', 'Concur', 'experience'], admin)
+    expect(c.related).toEqual(['administrative experience', 'writing', 'Word', 'Excel', 'PowerPoint'])
+    expect(c.missing).toEqual(['Concur', 'experience'])
+    expect(root('taught')).toBe(root('teaching'))
+  })
+
+  it('never reads an end date as a skill', () => {
+    expect(keywordCoverage(['presentations'], 'Administrative Assistant\nMidway Family Dental\n2017-02\npresent').missing).toEqual(['presentations'])
+    expect(keywordCoverage(['presentations'], 'Gave monthly presentations to the board').present).toEqual(['presentations'])
+  })
 })

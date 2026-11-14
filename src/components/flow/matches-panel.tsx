@@ -233,6 +233,11 @@ export function MatchesPanel({
                       </span>
                     )}
                   </p>
+                  {m.reach >= m.score + 5 && (
+                    <p className="mt-1 text-xs font-medium text-success" title="Your resume already shows more of this job's skills in other words. Tailoring puts them in the job's words.">
+                      Tailoring can lift this to {m.reach}%
+                    </p>
+                  )}
                   {!compact && m.missing.length > 0 && <p className="mt-1 text-xs text-text-muted">Missing: {m.missing.slice(0, 4).join(", ")}</p>}
                 </div>
               </div>

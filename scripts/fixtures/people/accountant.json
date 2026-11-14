@@ -1,0 +1,78 @@
+{
+ "name": "Staff accountant -> Senior Accountant",
+ "job": {
+  "title": "Senior Accountant",
+  "company": "General Mills",
+  "description": "General Mills is hiring a Senior Accountant for our corporate accounting team in Minneapolis.\n\nResponsibilities:\n- Lead parts of the monthly, quarterly and annual close\n- Prepare and review account reconciliations and journal entries\n- Perform variance analysis and explain results to finance partners\n- Support internal controls and SOX compliance testing\n- Coordinate with external auditors\n- Identify process improvements and automation opportunities\n\nQualifications:\n- Bachelor's degree in Accounting\n- 4+ years of accounting experience, public accounting or large company preferred\n- CPA or working toward CPA preferred\n- Strong Excel skills; SAP experience a plus\n- Knowledge of US GAAP"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Daniel",
+   "lastName": "Okafor",
+   "email": "daniel@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Staff accountant with 4 years of month-end close, reconciliations and audit support at a mid-size manufacturer.",
+   "keyStrengths": [],
+   "careerLevel": "mid"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "Staff Accountant",
+    "company": "Upper Midwest Manufacturing",
+    "startDate": "2021-03",
+    "endDate": "present",
+    "location": "Shakopee, MN",
+    "isCurrentRole": true,
+    "achievements": [
+     "Owned 40 balance sheet reconciliations each month-end close",
+     "Cut the monthly close from 9 to 6 business days by building reconciliation templates in Excel",
+     "Prepared journal entries for accruals, prepaids and fixed assets in NetSuite",
+     "Supported the annual external audit, preparing 60+ PBC schedules",
+     "Prepared monthly sales tax filings for 12 states"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Accounting Clerk",
+    "company": "Lakeside Dental Group",
+    "startDate": "2019-06",
+    "endDate": "2021-02",
+    "location": "Woodbury, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Processed 300+ vendor invoices a month and ran weekly check runs"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "BS",
+    "field": "Accounting",
+    "institution": "Minnesota State University, Mankato",
+    "graduationYear": "2019"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "NetSuite",
+    "Excel",
+    "QuickBooks"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Reconciliations",
+    "Month-end close"
+   ],
+   "certifications": []
+  },
+  "projects": []
+ }
+}
