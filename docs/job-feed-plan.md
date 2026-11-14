@@ -263,3 +263,19 @@ person says so in "Have you done any of these?". The tailor already puts "in oth
 keywords in the job's words, and the feed now ranks by that reachable score (shown % unchanged).
 Real check (`npm run eval:match`, $0.44): restaurant manager to Operations Coordinator 36% -> 53%
 (was 41%), developer support 64% -> 71%, no other case lower, fact guard clean.
+
+## More jobs (Nov 14)
+
+QA on 7 non-tech test people (`scripts/fixtures/people`, `--people` on `eval:match` and
+`feed:check`) showed thin lists outside tech: the 116 boards are mostly tech companies.
+- **USAJOBS** (`src/lib/feed/usajobs.ts`): federal jobs searched at match time next to Workday,
+  in the person's state and remote. Off until `USAJOBS_API_KEY` and `USAJOBS_EMAIL` are set.
+  Built from the documented response fields; not yet run against the live API (no key).
+- **Workday**: +4 employers (Graco, Pentair, Prime Therapeutics, Werner). Banner Health and
+  Mosaic skipped (places without a state). Probing ~60 more names found few public sites;
+  Workday's weekend maintenance (wd1, some wd5) made Allina and Essentia unreachable on Nov 14.
+- **Stale jobs**: searched jobs never closed before. The daily pull now closes Workday jobs
+  unseen for 30 days and USAJOBS ones unseen for 14.
+- **Adzuna** (every kind of job, all states) needs a commercial licence; Jake's call.
+- **SmartRecruiters** public postings work for few companies without a known id list
+  (Equinox 734 US jobs, Bosch 352); not added yet.
