@@ -5,11 +5,11 @@ Tick them off here or just tell Claude "done with N".
 
 ## Now (unblocks PR 47, job matches)
 
-1. [ ] **Paste the job feed SQL in Supabase.** Copy it with
+1. [x] **Paste the job feed SQL in Supabase.** (done Nov 14) Copy it with
    `pbcopy < prisma/migrations/20261109000000_job_feed/migration.sql`, paste it into the
    Supabase SQL editor (ReWork project), run it. It only adds 3 new tables: safe any time.
    Then tell Claude, who merges PR 47 and checks prod.
-2. [ ] **Fill the job list once** (after 47 is live): Vercel, ReWork project, Settings,
+2. [x] **Fill the job list once** (done Nov 14: 23,880 jobs, 137 boards) (after 47 is live): Vercel, ReWork project, Settings,
    Cron Jobs, `/api/cron/pull-jobs`, Run. Takes a few minutes. Otherwise matches stay
    empty until the daily pull at 6:30 am CT.
 
@@ -25,10 +25,12 @@ Tick them off here or just tell Claude "done with N".
 
 ## Before taking money (about 20 min, best with Claude)
 
-3. [ ] **Stripe live mode**: the $15/month and $29 one-time prices, their ids in Vercel
+3. [x] **Stripe live mode** (checked Nov 14 in the dashboard: live products $29 and $15/mo,
+   live webhook active with 10 events, portal set up. Still confirm Vercel uses the live
+   keys via step 5.) Optional: add Terms and Privacy links in the portal settings.: the $15/month and $29 one-time prices, their ids in Vercel
    Production env, the webhook (API version 2026-02-25.clover, 10 events), the customer
    portal, one subscription per customer. Full list: `docs/launch-audit.md` item 4.
-4. [ ] **Clear test billing data** in the prod DB (SQL in `docs/launch-audit.md` item 5;
+4. [x] **Clear test billing data** (nothing to clear on Nov 14: no Stripe customers, only 1 COMP) in the prod DB (SQL in `docs/launch-audit.md` item 5;
    run the counts first).
 5. [ ] **Open `/api/health` signed in as admin**: it should say `ok: true`.
 6. [ ] **Anthropic Console**: a hard monthly spend limit on the workspace, if not set yet.
@@ -56,3 +58,4 @@ Tick them off here or just tell Claude "done with N".
 ## Done
 
 - 2026-11-13: PRs 44, 45, 46 merged and live.
+- 2026-11-14: PR 47 (job matches) merged and live.
