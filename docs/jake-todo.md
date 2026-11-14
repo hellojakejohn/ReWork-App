@@ -13,6 +13,16 @@ Tick them off here or just tell Claude "done with N".
    Cron Jobs, `/api/cron/pull-jobs`, Run. Takes a few minutes. Otherwise matches stay
    empty until the daily pull at 6:30 am CT.
 
+## More jobs (anytime, free)
+
+2a. [ ] **USAJOBS key** (federal jobs: VA hospitals, logistics, admin, accounting). Request
+   a free key at developer.usajobs.gov with the email you want on file. Then in Vercel
+   Production env add `USAJOBS_API_KEY` (the key) and `USAJOBS_EMAIL` (that same email), and
+   redeploy. Off until both are set. Tell Claude, who checks it with the test people.
+2b. [ ] **Decide on Adzuna** (millions of jobs of every kind, all states). Its free key is a
+   14-day trial; a product that makes money needs a licence from Adzuna (ask them for a quote
+   at developer.adzuna.com). Claude can build it once there's a deal.
+
 ## Before taking money (about 20 min, best with Claude)
 
 3. [ ] **Stripe live mode**: the $15/month and $29 one-time prices, their ids in Vercel
