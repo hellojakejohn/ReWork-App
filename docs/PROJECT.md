@@ -82,7 +82,7 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
   Admin link in the account menu (#34), app icon and favicon from the wordmark (#35).
 - AI: Anthropic only. Opus 5.5 everywhere, Sonnet 5.5 for the free tier and as a one-time
   retry when Opus declines.
-- Launch blocker: Stripe live setup (prod key is an invalid test key). Domain:
+- Stripe is live (checked Nov 14: live prices, webhook, portal; `/api/health` green). Domain:
   rework.careers picked, not bought yet; not a blocker (the site runs on
   rework.hellojakejohn.com until the move).
 - Launch plan and Jake's checklist: `docs/handoff-2026-11-02.md`.
@@ -103,10 +103,11 @@ Survey sources: Resume Genius, iHire, Greenhouse, TopResume (see `docs/handoff-2
 
 ## Roadmap
 
-**Before launch (Fri Nov 6, 2026)**
-1. Stripe live setup, clear test billing data, one real pass + one subscription, refund
-   (`STATE.md` "Next session", `docs/launch-audit.md` items 4 to 6).
-2. Jake's test run (`docs/test-run.md`, 20 steps; step 17, signed-in LinkedIn, is the big
+**Before launch (Mon Nov 16, 2026; Thanksgiving at the latest)**. Jake's list:
+`docs/jake-todo.md`.
+1. Done Nov 14: Stripe live, no test billing data, health green. Left: one real pass + one
+   subscription, then refund and cancel.
+2. Jake's test run (`docs/test-run.md`, 28 steps plus money; signed-in LinkedIn is the big
    untested one). Record it with the demo files in `docs/demo/` for launch posts.
 3. Chrome Web Store: Jake pays the $5 developer fee and uploads `extension-dist.zip`
    (`extension/README.md`); review usually takes a few days.
@@ -127,9 +128,9 @@ the $2 daily ceilings if free users hit them; feedback email to Jake; fix what u
 **Nice before launch, else week 1**: tracker follow-up nudges ("7 days, no reply: here's a short
 follow-up"); landing headline on speed plus the match.
 
-**In for launch (Jake, Nov 8): matches on upload** (the job feed as the main flow: upload a
-resume, ReWork shows the jobs that fit, one tap tailors, writes the letter and tracks it).
-Launch waits for it (about a week). Build plan, sources and spike results:
+**Matches on upload: live Nov 14** (PR 47; the job feed as the main flow: upload a resume,
+ReWork shows the jobs that fit, one tap tailors, writes the letter and tracks it). About 24k
+jobs from 137 boards plus Workday search; USAJOBS waits on Jake's key. Build plan, sources and spike results:
 `docs/job-feed-plan.md`.
 
 **Month 1**: real tailor output on the landing; follow-up reminder emails (needs an email

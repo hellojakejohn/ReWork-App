@@ -1,6 +1,6 @@
 # ReWork Project State
 
-Current truth as of `main` on 2026-11-01 evening (PRs #7 to #38 merged). Launch handoff: `docs/handoff-2026-11-02.md`. History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
+Current truth as of `main` on 2026-11-14 (PRs up to #47 merged; #48 is the launch docs). Launch handoff: `docs/handoff-2026-11-02.md`. History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
 ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
@@ -113,6 +113,8 @@ table owner).
 and no table grants for Supabase's anon/authenticated roles) applied. Everything in the
 folder is now applied. New tables: enable RLS and repeat the REVOKE (Supabase grants those
 roles on new tables by default).
+2026-11-14: `20261109000000_job_feed` applied (jobs, job_matches, feed_prefs; RLS on, REVOKE
+done). Everything in the folder is applied again.
 
 Daily ceilings still fail open if `events` can't be read (DB blip); the AI cap fails closed for FREE.
 
@@ -223,22 +225,36 @@ Tuning ideas not done yet:
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
   openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
-- Out of scope for launch: job feed, post-a-job, crypto payments, interview prep.
+- Out of scope for launch: post-a-job, crypto payments.
 - Not yet verified live: Save to ReWork on signed-in LinkedIn, the extension in real Chrome,
   Indeed's /viewjob page (bot check). `docs/test-run.md` covers them.
 - The read-only Supabase connector in Claude sessions points at another project (TripQuest),
   so prod numbers come from `/admin`, not that connector.
 
-## Next session: launch week
-`docs/handoff-2026-11-02.md` has the day-by-day plan to Fri Nov 6 (website first, token at
-midday CT). Stripe live setup (with Jake at the computer, ~20 min) is `docs/launch-audit.md`
-"What Jake must do" items 4 to 6:
-1. Stripe live mode: products/prices $15/month and $29 one-time; put `sk_live_` key and
-   both price ids in Vercel Production (Jake pastes secrets himself, never in chat).
-2. Webhook `https://<live domain>/api/stripe/webhook` on API version 2026-02-25.clover with
-   the 10 listed events; `whsec_` into Vercel. Stripe doesn't follow redirects, so if the
-   domain moves to rework.careers later, change the endpoint URL the same day.
-3. Portal (only the $15 price, cancel at period end), checkout one-subscription setting.
-4. Clear test billing data in the prod DB (SQL in the audit, counts first).
-5. Redeploy, `/api/health` as admin must be `ok: true`.
-6. One real $29 pass and one $15 subscription, then refund/cancel.
+## Job feed (matches on upload, live Nov 14)
+- Upload a resume, see the jobs that fit (`src/lib/feed/`, plan in `docs/job-feed-plan.md`).
+- Daily pull at 6:30am CT (`/api/cron/pull-jobs`): Greenhouse, Lever, Ashby boards
+  (`board-list.ts`) plus SmartRecruiters company lists. First run Nov 14: 23,880 open jobs from
+  137 boards (Greenhouse 15,290, Ashby 3,123, Lever 3,031, SmartRecruiters 2,436); about 6,000
+  remote, 15,000 with a US state.
+- At match time: Workday search by title (not pulled) and USAJOBS (off until
+  `USAJOBS_API_KEY` and `USAJOBS_EMAIL` are set). Searched jobs close after 30 days unseen
+  (USAJOBS 14), unless saved or tailored.
+- Rank = reach (exact + other words) plus half the title fit; the % shown is exact words.
+  "Tailoring can lift this to N%" when reach is 5+ points higher.
+- Audit and what's still open: `docs/audit-2026-11-14.md`.
+
+## Next session: launch (target Mon Nov 16, Thanksgiving at the latest)
+Jake's hand steps live in `docs/jake-todo.md`; his end-to-end run is `docs/test-run.md`.
+Done Nov 14: PR 47 merged, job feed SQL applied, first job pull (23,880 jobs), Stripe live
+checked in the dashboard (live $29 and $15 prices, live webhook with 10 events, portal),
+no test billing data to clear, `/api/health` all green on live keys.
+Left, in order:
+1. Anthropic Console hard monthly spend limit (Jake).
+2. Jake's end-to-end test (`docs/test-run.md`) on prod with a fresh Google account; fix what
+   he finds.
+3. One real $29 pass and one $15 subscription, then refund and cancel.
+4. Quick clicks: uptime monitor, Terms/Privacy links in the Stripe portal, Web Analytics.
+5. After launch: USAJOBS key, Chrome Web Store upload (build from main), Adzuna decision.
+   No marketing until the end-to-end test passes.
+Local shell defaults to Node 18; tests need Node 22 (`.nvmrc`, `nvm use`).
