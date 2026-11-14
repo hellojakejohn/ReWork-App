@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/prisma', () => ({ prisma: { $queryRaw: vi.fn(async () => [{ '?column?': 1 }]) } }))
 vi.mock('@/lib/entitlements', () => ({ expireEntitlements: vi.fn(async () => ({ expired: 0, users: 0 })) }))
 vi.mock('@/lib/feed/sync', () => ({ closeStaleSearched: vi.fn(async () => 0), pullListBoards: vi.fn(async () => ({ boards: 0, ok: 0, failed: [], skipped: 0, listed: 0, added: 0, closed: 0, ms: 0 })) }))
+vi.mock('@/lib/feed/smartrecruiters', () => ({ pullAllSmartRecruiters: vi.fn(async () => ({ ok: 0, failed: [], listed: 0, added: 0, closed: 0 })) }))
 vi.mock('@/lib/track', () => ({ track: vi.fn(async () => {}) }))
 
 import { GET as keepalive } from '@/app/api/keepalive/route'

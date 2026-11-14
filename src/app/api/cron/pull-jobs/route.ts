@@ -3,6 +3,7 @@ import { cronAuthorized } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 import { LIST_BOARDS } from '@/lib/feed/board-list'
 import { closeStaleSearched, pullListBoards } from '@/lib/feed/sync'
+import { pullAllSmartRecruiters } from '@/lib/feed/smartrecruiters'
 import { track } from '@/lib/track'
 
 export const dynamic = 'force-dynamic'
@@ -16,8 +17,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
   try {
-    const pulled = await pullListBoards(prisma, LIST_BOARDS)
-    const summary = { ...pulled, staleClosed: await closeStaleSearched(prisma) }
+    const [pulled, smartRecruiters] = await Promise.all([pullListBoards(prisma, LIST_BOARDS), pullAllSmartRecruiters(prisma)])
+    const summary = {
+      ...pulled,
+      failed: [...pulled.failed, ...smartRecruiters.failed],
+      listed: pulled.listed + smartRecruiters.listed,
+      added: pulled.added + smartRecruiters.added,
+      closed: pulled.closed + smartRecruiters.closed,
+      staleClosed: await closeStaleSearched(prisma),
+    }
     await track('feed_pull', { ...summary, failed: summary.failed.length })
     return NextResponse.json({ ok: true, summary, at: new Date().toISOString() })
   } catch (e) {

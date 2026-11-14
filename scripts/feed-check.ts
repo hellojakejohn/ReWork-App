@@ -9,6 +9,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LIST_BOARDS } from '@/lib/feed/board-list'
 import { pullListBoards } from '@/lib/feed/sync'
+import { pullAllSmartRecruiters } from '@/lib/feed/smartrecruiters'
 import { runMatch, type MatchPrefs } from '@/lib/feed/match'
 import { masterToParsed } from '@/lib/master-resume'
 import { collectUsage } from '@/lib/ai-usage'
@@ -105,6 +106,8 @@ async function main() {
   const pull = await pullListBoards(db, LIST_BOARDS, { deadlineMs: 600_000 })
   console.log(`  ${pull.ok} ok, ${pull.failed.length} failed, ${pull.listed} jobs in ${Math.round(pull.ms / 1000)}s`)
   for (const f of pull.failed) console.log(`  failed: ${f}`)
+  const sr = await pullAllSmartRecruiters(db)
+  console.log(`  SmartRecruiters: ${sr.ok} ok, ${sr.listed} jobs${sr.failed.length ? `, failed ${sr.failed.join('; ')}` : ''}`)
 
   // Keywords the spike already bought (same job ids): the shared once-per-job cache.
   const cache = path.join(OUT, 'keywords.json')
