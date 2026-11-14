@@ -69,6 +69,16 @@ export async function exportAccountData(userId: string) {
   if (!user) return null
 
   const { resumes, applications, entitlements, feedback, events, ...profile } = user
+  // Separate reads that fail soft: the feed tables may not exist yet.
+  const [jobPreferences, jobMatches] = await Promise.all([
+    prisma.feedPrefs.findMany({ where: { userId }, select: { resumeId: true, targetTitles: true, workplace: true, matchedAt: true } }).catch(() => []),
+    prisma.jobMatch
+      .findMany({
+        where: { userId },
+        select: { resumeId: true, score: true, missing: true, savedAt: true, dismissedAt: true, createdAt: true, job: { select: { title: true, company: true, location: true, url: true } } },
+      })
+      .catch(() => []),
+  ])
   return {
     exportedAt: new Date().toISOString(),
     about:
@@ -81,6 +91,8 @@ export async function exportAccountData(userId: string) {
     })),
     applications: applications.map(({ optimizedStructured, ...a }) => ({ ...a, tailoredResume: optimizedStructured })),
     feedback,
+    jobPreferences,
+    jobMatches,
     activity: events,
   }
 }

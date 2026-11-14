@@ -1,7 +1,7 @@
 # Job feed: jobs that match you
 
-Written 2026-11-07 with Jake. Status: **spike done Nov 8 (results below)**, MVP not started. First big feature after launch.
-Out of scope for launch (docs/PROJECT.md), so it starts once launch week is calm.
+Written 2026-11-07 with Jake. Status: **spike done Nov 8 (results below). Nov 8: Jake moved it
+before launch as "matches on upload"** (build plan below). Launch waits for it.
 
 ## The idea
 
@@ -68,6 +68,92 @@ a settled decision). Users can still bring those in with Save to ReWork.
 
 Cost to measure in the spike: Sonnet keyword extraction per job (rough guess: well under a
 cent) x new jobs per day. Put it behind its own daily ceiling, like `AI_FREE_DAILY_USD`.
+
+## Build plan: matches on upload (decided Nov 8, before launch)
+
+The new main flow: **upload a resume -> one question -> "Top matches for you" -> tap a job ->
+tailor, letter, answers -> tracker.** Pasting a link stays as the backup. A feed job never
+needs a link fetch: we already hold its full text, so LinkedIn and Indeed stop mattering.
+
+The one question, right after the upload: **"What job do you want next?"** (prefilled from
+the latest title; career changers type theirs) plus **Remote / near me / both**. Stored on
+the resume, editable on its card.
+
+Sources, all free and within their rules:
+- Greenhouse, Lever, Ashby boards (built in the spike): tech and startups.
+- **Workday** (checked Nov 8: Target 2,000+ jobs, 3M 781, public list API, no key): big
+  employers, retail, health, manufacturing, banks. The non-tech answer. The list has title and
+  location only; the full text is a second call, made only for jobs that pass someone's
+  prefilter.
+- SmartRecruiters (public list, e.g. Bosch 5,000+): later if Workday isn't enough.
+- Company list: a few hundred boards in a checked-in file, grown over time, weighted to US
+  employers across industries (Minnesota heavy at first is fine: it's who we test with).
+
+Chunks (each tested, small commits, one PR):
+1. **Tables** (SQL for Jake to paste): `jobs` (key, source, board, company, title, location,
+   remote, us_state, pay label, posted, description, url, keywords, first/last seen, closed)
+   and `job_matches` (user, resume, job, score, present/missing, seen, dismissed, saved).
+   Resume gets `feed_prefs` (target titles, remote/near me).
+2. **Daily pull** cron: boards in batches (fits the 300 s limit), upsert by key, mark jobs
+   gone from the board as closed (the real ghost signal, instead of "30+ days old").
+3. **Matching**: free prefilter over open jobs -> top 40 -> keywords (once per job, shared, own
+   daily ceiling `AI_FEED_DAILY_USD`) -> real Job match -> save top matches. Runs after an
+   upload, when prefs change, and after each daily pull. Sorted by the real match.
+4. **Upload flow UI**: the question, then "Top matches" on the Resume card / Home: title,
+   company, place, pay, match %, top missing skills, Tailor (fills the Job card with the full
+   text), Not for me, Save to tracker. "Nothing good yet" said plainly, with what to change.
+5. **Limits**: Free sees the top 5, Pro the full list (prices unchanged). `/admin`: jobs per
+   source, matches shown, tailors started from a match, feed AI spend.
+6. **Real-data check** before merge: the three fixtures plus Jake's own resumes, budget asked.
+7. **Apply assist** (after 1-6): "Apply" opens the real application page and the Chrome
+   extension fills it (contact, tailored resume, letter, saved answers); the user checks and
+   clicks Submit, and the tracker marks it Applied. No auto-submit: ATS apply APIs need the
+   employer's key, bots break site terms and hit CAPTCHAs, and recruiters flag mass applies.
+
+Built Nov 8 on `matches-on-upload`: chunks 1-5 and 7. Chunk 6 ran Nov 9 (below). Apply assist needs extension 0.2.0 uploaded to the Web Store (new host permission:
+ReWork itself), and can't reach forms framed from another site (open the board's own page).
+
+Chunk 1 SQL: `prisma/migrations/20261109000000_job_feed/migration.sql` (checked Nov 8 on a
+throwaway Postgres: runs twice clean, cascades on resume delete, RLS on, no anon access).
+Download my data should include feed prefs and matches (chunk 3).
+
+Jake's part: paste the SQL (chunk 1), set `AI_FEED_DAILY_USD` in Vercel, look at the screens.
+
+## Real-data check (Nov 9, chunk 6)
+
+`npm run feed:check -- --max-usd N` (billed) runs the real `runMatch` on today's boards, the
+Workday search and real keyword calls, on an in-memory copy of the tables. Three fixtures plus
+the restaurant manager asking for "Operations Coordinator", all in Saint Paul, "Remote or near
+me". Spent $1.06 of the $2 budget over four runs.
+
+- Pull: 116 of 116 boards, about 19,950 jobs, 31-37 s. A match run takes 13-24 s.
+- Cost: about $0.15 for a new resume (12-14 keyword calls), $0 for the same resume again, and
+  $0.02-0.03 once others have bought the same jobs. Most of a day's spend is the first users.
+- Tech resumes: good lists (frontend: Ramp, Reddit, OpenAI frontend roles at 23-35%).
+- Found and fixed:
+  1. **The job they asked for came last.** The list sorted by skill words only, so the
+     restaurant manager's best job (Xcel Energy "Operations Work Coordinator", St Paul) was
+     #19 at 0%, under data analyst and recruiting jobs. Now the order is `matchRank`: the real
+     match plus half of `titleFit` (how much of the wanted title the job title covers). It is
+     #1 now. New `rank` column on `job_matches` (the SQL is safe to paste over the old one).
+  2. **Workday ignores where you live**: one page per employer was mostly other countries
+     (29 of 406 jobs in the area). Now we also search "{title} {state}" and "{title} Remote"
+     (`workdayQueries`): 61 more in-area jobs, and Target store leader jobs for the GM.
+- Still true: a career changer's list is thin and the % is low (5-11%), because their words
+  don't match a new field's words yet. That is honest; the Skill check and tailoring are the
+  answer. A restaurant GM asking for "General Manager" gets 3 jobs: these boards hire few.
+- **More employers (Nov 9, same day):** Workday went from 31 to 48 employers, adding health
+  care (Allina, Essentia, Sanford, Elevance, Cigna, McKesson, Baxter, J&J), retail and food
+  (Nordstrom, General Mills, Land O'Lakes, Sysco), logistics (C.H. Robinson, Ryder, J.B. Hunt),
+  Polaris, Thrivent, Travelers and Wells Fargo. Dropped Chipotle and Kohl's (their places are
+  store numbers) and FedEx (that site is Latin America only). Not on public Workday search:
+  Walmart, Comcast, Best Buy US, UnitedHealth, Mayo, Fairview, HealthPartners, Cargill.
+  Also fixed: Allina and Nordstrom answer only with an `accept-language` header; places like
+  "MN - St. Paul", "SD, Sioux Falls" and "3 Locations" were read as other countries
+  (`workdayLocation` now reads the main place from the job link).
+  Result: the career changer's top 4 are Operations Coordinator jobs in Minnesota (Wells
+  Fargo x2, Xcel, C.H. Robinson); the GM also gets a Land O'Lakes General Manager. Runs take
+  8-16 s. Total spent on the check: $1.06 of $2.
 
 ## Spike results (Nov 8)
 
@@ -165,3 +251,31 @@ Parked:
 3. Feed spike: one source, a few hundred jobs, real scoring against Jake's resumes, measure
    extraction cost and match quality.
 4. Feed MVP on Home, then Application answers as a per-job button.
+
+## Career changers: "in other words" (Nov 14)
+
+The match counted only the job's exact words, so "processed vendor invoices" didn't show
+"Invoice Processing" and "ran weekly inventory" didn't show "Inventory Management".
+`keyword-coverage.ts` now also reads the same words in another order or form within one line
+(`root()`), and the thing right after a verb of running it, for "X management / coordination /
+administration". Meaning-only matches (guest complaints for Customer Service) stay missing: the
+person says so in "Have you done any of these?". The tailor already puts "in other words"
+keywords in the job's words, and the feed now ranks by that reachable score (shown % unchanged).
+Real check (`npm run eval:match`, $0.44): restaurant manager to Operations Coordinator 36% -> 53%
+(was 41%), developer support 64% -> 71%, no other case lower, fact guard clean.
+
+## More jobs (Nov 14)
+
+QA on 7 non-tech test people (`scripts/fixtures/people`, `--people` on `eval:match` and
+`feed:check`) showed thin lists outside tech: the 116 boards are mostly tech companies.
+- **USAJOBS** (`src/lib/feed/usajobs.ts`): federal jobs searched at match time next to Workday,
+  in the person's state and remote. Off until `USAJOBS_API_KEY` and `USAJOBS_EMAIL` are set.
+  Built from the documented response fields; not yet run against the live API (no key).
+- **Workday**: +4 employers (Graco, Pentair, Prime Therapeutics, Werner). Banner Health and
+  Mosaic skipped (places without a state). Probing ~60 more names found few public sites;
+  Workday's weekend maintenance (wd1, some wd5) made Allina and Essentia unreachable on Nov 14.
+- **Stale jobs**: searched jobs never closed before. The daily pull now closes Workday jobs
+  unseen for 30 days and USAJOBS ones unseen for 14.
+- **Adzuna** (every kind of job, all states) needs a commercial licence; Jake's call.
+- **SmartRecruiters** public postings work for few companies without a known id list
+  (Equinox 734 US jobs, Bosch 352); not added yet.

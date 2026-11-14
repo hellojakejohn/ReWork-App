@@ -1,8 +1,10 @@
 // Builds the Chrome extension: extension/ plus save-job.js (the bookmarklet script for the
-// production origin) into extension-dist/, zipped as extension-dist.zip for the Web Store.
+// production origin) and apply-fill.js (the application form filler, src/lib/apply-fill.ts)
+// into extension-dist/, zipped as extension-dist.zip for the Web Store.
 // Run: npx tsx scripts/build-extension.ts
 import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
+import { buildSync } from 'esbuild'
 import path from 'node:path'
 import { saveJobScript } from '../src/lib/save-job-script'
 
@@ -21,5 +23,6 @@ cpSync(path.join(root, 'extension'), out, {
   filter: (src) => !skip.includes(path.relative(path.join(root, 'extension'), src).split(path.sep)[0]),
 })
 writeFileSync(path.join(out, 'save-job.js'), saveJobScript(ORIGIN))
+buildSync({ entryPoints: [path.join(root, 'src/lib/apply-fill-entry.ts')], bundle: true, format: 'iife', target: 'chrome110', minify: true, outfile: path.join(out, 'apply-fill.js') })
 execFileSync('zip', ['-qr', zip, '.'], { cwd: out })
 console.log(`Built ${path.relative(root, out)}/ and ${path.relative(root, zip)}`)

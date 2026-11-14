@@ -30,7 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const ai = ctx.ai!
 
   // A job already tailored keeps its list: same keywords, no model call.
-  const saved = await savedJobKeywords(ctx.userId, job.description)
+  const saved = await savedJobKeywords(ctx.userId, job.description, typeof body?.matchId === 'string' ? body.matchId : null)
   if (saved) {
     const coverage = fitCoverage(saved, masterToParsed(ctx.resume))
     await track('skill_check', { step: 'keywords', ok: true, keywords: saved.length, score: coverage.score, reused: true }, ctx.userId)

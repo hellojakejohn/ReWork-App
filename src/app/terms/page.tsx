@@ -41,9 +41,15 @@ export default function TermsPage() {
 
       <Section title="What ReWork does">
         <p>
-          ReWork reads your resume, tailors it to a job posting you choose, writes cover letters, runs an evidence interview to strengthen your
-          bullets with facts you provide, tracks your applications, and exports PDF and Word files. Rewrites are checked against your original
-          resume and your own answers, and anything we can’t match is flagged or removed.
+          ReWork reads your resume, suggests open jobs that fit it, tailors it to a job posting you choose, writes cover letters and answers to
+          application questions, prepares you for interviews, runs an evidence interview to strengthen your bullets with facts you provide, tracks
+          your applications, and exports PDF and Word files. Rewrites are checked against your original resume and your own answers, and anything
+          we can’t match is flagged or removed.
+        </p>
+        <p>
+          Job matches come from employers&apos; public job boards. We don&apos;t check that a posting is real, still open, or what it says it is,
+          and a match score is our estimate, not a prediction of your chances. Our Chrome extension can fill an application form for you, but it
+          never submits it: what you send is your decision.
         </p>
         <p>
           That check reduces mistakes; it doesn’t eliminate them. <strong>You’re responsible for reviewing everything before you send it to an

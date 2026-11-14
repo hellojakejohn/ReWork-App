@@ -31,6 +31,7 @@ const figma: SkillAnswer = { keyword: 'Figma', level: 'some', note: 'took a 3-ho
 describe('keywords and fit', () => {
   it('cleans the model list', () => {
     expect(cleanKeywords(['Figma', 'figma', '- Sketch.', '', 'a very long phrase that is not a keyword at all'])).toEqual(['Figma', 'Sketch'])
+    expect(cleanKeywords(["Bachelor's degree", 'Degree', '5+ years', '3 years of experience', 'High school diploma', 'SaaS experience', 'Excel skills', 'CPA', 'RN license', 'MBA'])).toEqual(['SaaS', 'Excel', 'CPA', 'RN license'])
   })
   it('scores the resume like the tailor does', () => {
     const fit = fitCoverage(['React', 'Figma', 'TypeScript', 'user research'], resume)
@@ -81,7 +82,7 @@ describe('skill groups', () => {
     expect(next.skills.at(-1)).toEqual({ group: 'Data', items: ['data visualization'] })
   })
   it('a rejected bullet keeps the group the model picked', () => {
-    const a = guardAddition(resume, { keyword: 'prototyping', level: 'yes', note: 'made prototypes' }, { kind: 'bullet', target: 'proj-1', group: 'Design', text: 'Made prototypes' })
+    const a = guardAddition(resume, { keyword: 'prototyping', level: 'yes', note: 'made prototypes' }, { kind: 'bullet', target: 'proj-1', group: 'Design', text: 'Drew mockups' })
     expect(a).toMatchObject({ kind: 'skill', target: 'Design' })
   })
 })
