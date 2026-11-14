@@ -15,12 +15,17 @@ export interface SmartRecruitersBoard {
   company: string
 }
 
-// Checked live Nov 14 (US postings). Non-tech heavy: fitness clubs, manufacturing, credit.
+// Checked live Nov 14 (US postings): fitness clubs, car rental, manufacturing, media, credit, tech.
 export const SMARTRECRUITERS_BOARDS: SmartRecruitersBoard[] = [
   { id: 'Equinox', company: 'Equinox' },
   { id: 'BoschGroup', company: 'Bosch' },
   { id: 'WesternDigital', company: 'Western Digital' },
   { id: 'Experian', company: 'Experian' },
+  { id: 'Sixt', company: 'Sixt' },
+  { id: 'ServiceNow', company: 'ServiceNow' },
+  { id: 'NBCUniversal3', company: 'NBCUniversal' },
+  { id: 'AveryDennison', company: 'Avery Dennison' },
+  { id: 'Continental', company: 'Continental' },
 ]
 
 const PAGE = 100
