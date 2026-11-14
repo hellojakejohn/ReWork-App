@@ -13,8 +13,9 @@ import { TRACKER_COLUMNS, columnOf, trackerStats, type TrackerColumn } from "@/l
 import { summarizeResume } from "@/lib/master-resume"
 import { dueLine, followUpDue } from "@/lib/follow-up"
 import { FollowUpDialog } from "@/components/tracker/follow-up-dialog"
-import { loadTracker, renameMaster, updateTracked, type ApplicationSummaryDTO, type MasterResumeDTO, type Quota, type TrackerCardDTO } from "./api"
+import { loadTracker, renameMaster, updateTracked, type ApplicationSummaryDTO, type JobDraft, type MasterResumeDTO, type Quota, type TrackerCardDTO } from "./api"
 import { Card } from "./ui"
+import { MatchesPanel } from "./matches-panel"
 
 const RECENT = 5
 
@@ -30,6 +31,8 @@ export function HomeCard({
   masters,
   onOpenApplication,
   onOpenRecent,
+  onPickMatch,
+  onUpgrade,
 }: {
   active: MasterResumeDTO | null
   masters: MasterResumeDTO[]
@@ -42,6 +45,8 @@ export function HomeCard({
   onRenamed: (master: MasterResumeDTO) => void
   onOpenApplication: (id: string) => void
   onOpenRecent: () => void
+  onPickMatch: (job: JobDraft) => void
+  onUpgrade: (reason?: string) => void
 }) {
   const { data: session } = useSession()
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] ?? ""
@@ -107,12 +112,12 @@ export function HomeCard({
             Welcome back{firstName ? `, ${firstName}` : ""}.
           </h2>
           <p className="text-sm text-text-muted">
-            Paste a job link and get a tailored resume in about a minute.{tailorsLeft ? ` ${tailorsLeft}.` : ""}
+            Pick a job that fits you, or paste one you found, and get a tailored resume in about a minute.{tailorsLeft ? ` ${tailorsLeft}.` : ""}
           </p>
         </div>
 
         <Button className="h-12 w-full text-base" onClick={onNewJob}>
-          Tailor for a new job <ArrowRight className="h-4 w-4" />
+          Find a job to tailor for <ArrowRight className="h-4 w-4" />
         </Button>
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -120,6 +125,8 @@ export function HomeCard({
           <Stat label="Applied this week" value={stats?.appliedThisWeek} />
           <Stat label="Interviews" value={stats?.interviews} />
         </div>
+
+        {active && isActiveStep && <MatchesPanel compact resumeId={active.id} home={active.resume.contact.location} onPick={onPickMatch} onUpgrade={onUpgrade} onSeeAll={onNewJob} />}
 
         {followUps.length > 0 && (
           <section className="space-y-2">

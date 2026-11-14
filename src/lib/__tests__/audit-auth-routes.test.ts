@@ -210,6 +210,9 @@ function seed() {
         createdAt: now, updatedAt: now, matchScore: 0, categoryScores: null,
       },
     ],
+    job: [{ id: 'jobB', title: h.B_SECRET, company: 'Co', location: '', description: h.B_SECRET, url: 'u', closedAt: null }],
+    jobMatch: [{ id: 'matchB', userId: B.id, resumeId: 'resB', jobId: 'jobB', score: 50, prescore: 50, present: [], related: [], missing: [h.B_SECRET], seenAt: null }],
+    feedPrefs: [{ resumeId: 'resB', userId: B.id, targetTitles: [h.B_SECRET], workplace: 'both' }],
   }
 }
 
@@ -269,6 +272,12 @@ const ROUTES: Case[] = [
   ['tracker DELETE', '@/app/api/tracker/[id]/route', 'DELETE', '/api/tracker/appB', undefined, 'appB'],
   ['tracker GET', '@/app/api/tracker/route', 'GET', '/api/tracker'],
   ['tracker POST', '@/app/api/tracker/route', 'POST', '/api/tracker', { title: 't', company: 'c', resumeId: 'resB' }],
+  ['apply start', '@/app/api/apply/start/route', 'POST', '/api/apply/start', { applicationId: 'appB' }],
+  ['apply packet', '@/app/api/apply/packet/route', 'GET', '/api/apply/packet'],
+  ['feed GET', '@/app/api/feed/route', 'GET', '/api/feed?resumeId=resB'],
+  ['feed POST', '@/app/api/feed/route', 'POST', '/api/feed', { resumeId: 'resB', targetTitles: ['x'], workplace: 'remote' }],
+  ['feed match GET', '@/app/api/feed/matches/[id]/route', 'GET', '/api/feed/matches/matchB', undefined, 'matchB'],
+  ['feed match PATCH', '@/app/api/feed/matches/[id]/route', 'PATCH', '/api/feed/matches/matchB', { action: 'dismiss' }, 'matchB'],
 ]
 
 async function call([, mod, method, url, body, id]: Case) {
@@ -301,7 +310,7 @@ describe('signed out: every API route refuses before touching the database', () 
   })
 
   it('crons -> 401 without the bearer secret', async () => {
-    for (const mod of ['@/app/api/keepalive/route', '@/app/api/cron/expire-entitlements/route']) {
+    for (const mod of ['@/app/api/keepalive/route', '@/app/api/cron/expire-entitlements/route', '@/app/api/cron/pull-jobs/route']) {
       const { GET } = await import(/* @vite-ignore */ mod)
       const res = await GET(new Request('http://localhost/x'))
       expect(res.status).toBe(401)

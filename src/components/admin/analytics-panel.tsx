@@ -10,6 +10,8 @@ const EVENT_ORDER = [
   "resume_parsed",
   "job_fetched",
   "tailored",
+  "feed_match",
+  "feed_pull",
   "cover_letter_generated",
   "evidence_completed",
   "download",
@@ -88,6 +90,45 @@ export function AnalyticsPanel() {
               <div className="text-sm text-text-muted">AI spend estimate, {report.days} days</div>
             </div>
           </div>
+
+          {report.feed && (
+            <div className={box}>
+              <h3 className="mb-3 text-sm font-semibold">Job matches</h3>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+                <div>
+                  <div className="text-2xl font-bold">{report.feed.openJobs.toLocaleString()}</div>
+                  <div className="text-sm text-text-muted">Open jobs ({report.feed.withKeywords} with keywords)</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{report.feed.runs}</div>
+                  <div className="text-sm text-text-muted">Match runs, {report.feed.runUsers} people</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{report.feed.tailoredFromMatch}</div>
+                  <div className="text-sm text-text-muted">Tailored from a match</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">
+                    {report.feed.saved} / {report.feed.dismissed}
+                  </div>
+                  <div className="text-sm text-text-muted">Saved / not for me</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{usd(report.feed.spendUsd)}</div>
+                  <div className="text-sm text-text-muted">Keyword spend, {report.days} days</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{report.feed.lastPull ? `${report.feed.lastPull.ok}/${report.feed.lastPull.boards}` : "–"}</div>
+                  <div className="text-sm text-text-muted">
+                    {report.feed.lastPull
+                      ? `Boards read ${new Date(report.feed.lastPull.at).toLocaleDateString()}: +${report.feed.lastPull.added} new, ${report.feed.lastPull.closed} closed${report.feed.lastPull.failed ? `, ${report.feed.lastPull.failed} failed` : ""}`
+                      : "No daily pull yet"}
+                  </div>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-text-muted">By source: {report.feed.openBySource.map((s) => `${s.source} ${s.jobs.toLocaleString()}`).join(", ") || "none yet"}</p>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="overflow-x-auto rounded-card bg-surface">

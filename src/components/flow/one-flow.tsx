@@ -19,6 +19,7 @@ import type { TemplateId } from "@/lib/resume-templates"
 import {
   loadApplication,
   loadDashboard,
+  markMatch,
   type ApplicationDetailDTO,
   type ApplicationSummaryDTO,
   type JobDraft,
@@ -289,6 +290,7 @@ export function OneFlow() {
 
   const onTailored = (app: ApplicationDetailDTO, remaining: number | null) => {
     setApplication(app)
+    if (job?.matchId) void markMatch(job.matchId, "tailored", app.id)
     setApplications((list) => [
       {
         id: app.id,
@@ -357,6 +359,9 @@ export function OneFlow() {
       key="job"
       job={job}
       isActiveStep={step === 1}
+      resumeId={resumeConfirmed && active ? active.id : null}
+      home={active?.resume.contact.location ?? ""}
+      onUpgrade={(reason) => setUpgrade({ open: true, reason })}
       onBack={() => go(0)}
       onConfirm={(j) => {
         setJob(j)
@@ -448,6 +453,12 @@ export function OneFlow() {
               onRenamed={(m) => setMasters((list) => list.map((x) => (x.id === m.id ? m : x)))}
               onOpenApplication={(id) => void openApplication(id)}
               onOpenRecent={() => setRecentOpen(true)}
+              onPickMatch={(j) => {
+                setApplication(null)
+                setJob(j)
+                go(2)
+              }}
+              onUpgrade={(reason) => setUpgrade({ open: true, reason })}
             />
           </section>
         )}

@@ -32,6 +32,8 @@ export interface JobDraft {
   applicationId?: string
   /** Posting date, applicants and so on from the link or Save to ReWork (ghost-job signs). Not saved. */
   facts?: JobFacts
+  /** Picked from Top matches: the match gets marked tailored once the resume is done. */
+  matchId?: string
 }
 
 export type Failure = { ok: false; error: string; status: number; upgradeRequired?: boolean }
@@ -197,6 +199,7 @@ export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage
         description: job.description,
         jobUrl: job.url || undefined,
         applicationId: job.applicationId,
+        matchId: job.matchId,
         targetKeywords,
       }),
     })
@@ -336,7 +339,7 @@ async function postJson(url: string, body: unknown): Promise<Response> {
 
 export async function checkFit(resumeId: string, job: JobDraft): Promise<{ ok: true; keywords: string[]; coverage: FitCoverage } | Failure> {
   try {
-    const res = await postJson(`/api/resumes/${resumeId}/skill-check`, { title: job.title, company: job.company, description: job.description })
+    const res = await postJson(`/api/resumes/${resumeId}/skill-check`, { title: job.title, company: job.company, description: job.description, matchId: job.matchId })
     if (!res.ok) return failure(res, "Couldn't check this job's keywords.")
     const data = await res.json()
     return { ok: true, keywords: data.keywords ?? [], coverage: data.coverage }
@@ -428,6 +431,96 @@ export async function deleteTracked(id: string): Promise<{ ok: true } | Failure>
   try {
     const res = await fetch(`/api/tracker/${id}`, { method: "DELETE" })
     return res.ok ? { ok: true } : failure(res, "Couldn't delete that.")
+  } catch {
+    return NETWORK
+  }
+}
+
+// ---------- matches on upload (src/app/api/feed) ----------
+
+export type Workplace = "remote" | "near" | "both"
+export interface FeedPrefsDTO {
+  targetTitles: string[]
+  workplace: Workplace
+}
+export interface FeedMatchDTO {
+  id: string
+  jobId: string
+  score: number
+  present: string[]
+  related: string[]
+  missing: string[]
+  /** What tailoring can honestly reach (its words plus what it shows in other words). */
+  reach: number
+  savedAt: string | null
+  applicationId: string | null
+  isNew: boolean
+  job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string }
+}
+export interface FeedDTO {
+  prefs: FeedPrefsDTO | null
+  suggestedTitles: string[]
+  matchedAt: string | null
+  matches: FeedMatchDTO[]
+  total: number
+  limit: number
+  isPro: boolean
+  /** The feed tables aren't there yet: hide the feed. */
+  unavailable?: boolean
+}
+
+export async function loadFeed(resumeId: string): Promise<({ ok: true } & FeedDTO) | Failure> {
+  try {
+    const res = await fetch(`/api/feed?resumeId=${encodeURIComponent(resumeId)}`)
+    if (!res.ok) return failure(res, "Couldn't load your job matches.")
+    return { ok: true, ...(await res.json()) }
+  } catch {
+    return NETWORK
+  }
+}
+
+/** Saves the answer and looks for jobs (takes a while the first time: up to a minute). */
+export async function findMatches(resumeId: string, prefs: FeedPrefsDTO): Promise<({ ok: true } & FeedDTO) | (Failure & Partial<FeedDTO>)> {
+  try {
+    const res = await postJson("/api/feed", { resumeId, ...prefs })
+    if (!res.ok) {
+      const data = await res.clone().json().catch(() => ({}))
+      return { ...(data.matches ? data : {}), ...(await failure(res, "Couldn't look for jobs just now.")) }
+    }
+    return { ok: true, ...(await res.json()) }
+  } catch {
+    return NETWORK
+  }
+}
+
+/** The full job behind a match, ready for the Tailor card. */
+export async function openMatch(id: string): Promise<{ ok: true; job: JobDraft & { closed: boolean } } | Failure> {
+  try {
+    const res = await fetch(`/api/feed/matches/${id}`)
+    if (!res.ok) return failure(res, "Couldn't open this job.")
+    const { job } = await res.json()
+    return { ok: true, job: { url: job.url ?? "", title: job.title, company: job.company, location: job.location ?? "", description: job.description ?? "", matchId: id, closed: !!job.closed } }
+  } catch {
+    return NETWORK
+  }
+}
+
+export async function markMatch(id: string, action: "save" | "unsave" | "dismiss" | "seen" | "tailored", applicationId?: string): Promise<{ ok: true } | Failure> {
+  try {
+    const res = await fetch(`/api/feed/matches/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, applicationId }) })
+    if (!res.ok) return failure(res, "Couldn't update this match.")
+    return { ok: true }
+  } catch {
+    return NETWORK
+  }
+}
+
+/** Apply pressed: the extension will fill this job's form (src/app/api/apply). */
+export async function startApply(applicationId: string): Promise<{ ok: true } | Failure> {
+  try {
+    const res = await postJson("/api/apply/start", { applicationId })
+    if (!res.ok) return failure(res, "Couldn't get your application kit ready.")
+    return { ok: true }
   } catch {
     return NETWORK
   }

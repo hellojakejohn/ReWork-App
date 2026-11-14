@@ -88,7 +88,7 @@ export async function POST(
 
   const userId = resume.userId;
   // No fit list (it hadn't finished, or failed): reuse this job's list from a past tailor.
-  targetKeywords ??= (await savedJobKeywords(userId, actualJobDescription)) ?? undefined;
+  targetKeywords ??= (await savedJobKeywords(userId, actualJobDescription, typeof requestData.matchId === 'string' ? requestData.matchId : null)) ?? undefined;
 
   const rate = checkRateLimit(`tailor:${userId}`);
   if (!rate.allowed) {

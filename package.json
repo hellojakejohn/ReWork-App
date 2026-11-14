@@ -13,6 +13,7 @@
     "eval:models": "tsx --tsconfig tsconfig.json scripts/eval-models.ts",
     "eval:match": "tsx --tsconfig tsconfig.json scripts/eval-match.ts",
     "feed:spike": "tsx --tsconfig tsconfig.json scripts/feed-spike.ts",
+    "feed:check": "tsx --tsconfig tsconfig.json scripts/feed-check.ts",
     "smoke:answers": "tsx --tsconfig tsconfig.json scripts/smoke-answers.ts"
   },
   "dependencies": {

@@ -30,6 +30,7 @@
 - `src/lib/evidence.ts` - evidence interview (questions, answer-only rewrites, apply to master)
 - `src/lib/skill-check.ts` + `src/components/flow/skill-check.tsx` - free fit check and skill check (job keywords, answers placed from the user's note only, `guardAddition`, apply to master)
 - `src/lib/keyword-coverage.ts` + `src/lib/job-keywords.ts` - the Job match (exact words, "in other words", missing; weighted; one list per job post). `npm run eval:match` checks it with the real model (billed: ask for a budget)
+- `src/lib/feed/` + `docs/job-feed-plan.md` - matches on upload: company boards (`board-list.ts`), prefilter, `sync.ts` (daily pull at `/api/cron/pull-jobs`, closes jobs gone from a board); Workday is searched by title, not pulled
 - `src/lib/job-checks.ts` - job title cleanup, "this ad is about another company" and job-scam warnings (`scamSignals`, no AI)
 - `src/lib/tracker.ts` + `src/components/tracker/` - application tracker at `/dashboard/tracker`
 - `src/lib/plans.ts` - every plan limit and all pricing copy; `src/lib/tailor-quota.ts` meters tailors and cover letters
@@ -41,6 +42,7 @@
 - `src/instrumentation.ts` - server errors to `events` (shown in `/admin`)
 - `docs/PROJECT.md` - the whole project on one page; `docs/launch-audit.md`, `docs/token-plan.md` - launch go/no-go and the token plan; `docs/job-feed-plan.md` - the job feed (next big feature) and other post-launch ideas
 - `scripts/eval-models.ts` - real-model quality eval (private resumes in `scripts/fixtures/private/`, output in `eval-results/`, both gitignored)
+- `src/lib/apply-fill.ts` + `src/lib/apply-packet.ts` + `src/components/flow/apply-box.tsx` - apply assist: Result card Apply, then the extension fills the form (never submits)
 - `src/lib/save-job-script.ts` + `src/lib/saved-job.ts` + `src/app/save/` - Save to ReWork (LinkedIn/Indeed read in the user's browser); `extension/` is the Chrome extension
 - `src/lib/account.ts` - Download my data / Delete my account (Stripe cancel first)
 - `src/app/page.tsx` + `src/components/site/` - landing, legal pages, public header/footer (no auth JS); session pages live in `src/app/(app)/`

@@ -25,6 +25,54 @@ export interface AnalyticsReport {
   spendTotalUsd: number
   spendByModel: { provider: string; model: string; calls: number; tokensIn: number; tokensOut: number; cachedIn: number; costUsd: number }[]
   pro: { activeUsers: number; subscriptions: number; passes: number; comps: number; mrrUsd: number; passRevenue30dUsd: number }
+  /** Matches on upload. Null until the feed tables exist. */
+  feed: FeedStats | null
+}
+
+export interface FeedStats {
+  openJobs: number
+  openBySource: { source: string; jobs: number }[]
+  withKeywords: number
+  lastPull: { at: string; ok: number; boards: number; failed: number; added: number; closed: number; ms: number } | null
+  runs: number
+  runUsers: number
+  spendUsd: number
+  tailoredFromMatch: number
+  saved: number
+  dismissed: number
+}
+
+/** The feed's numbers for /admin. Null when its tables aren't there yet. */
+export async function feedStats(since: Date): Promise<FeedStats | null> {
+  try {
+    const [bySource, withKeywords, lastPull, runs, runUsers, spend, tailored, saved, dismissed] = await Promise.all([
+      prisma.job.groupBy({ by: ['source'], where: { closedAt: null }, _count: { _all: true } }),
+      prisma.job.count({ where: { closedAt: null, keywordsAt: { not: null } } }),
+      prisma.event.findFirst({ where: { name: 'feed_pull' }, orderBy: { createdAt: 'desc' }, select: { props: true, createdAt: true } }),
+      prisma.event.count({ where: { name: 'feed_match', createdAt: { gte: since } } }),
+      prisma.event.findMany({ where: { name: 'feed_match', createdAt: { gte: since } }, distinct: ['userId'], select: { userId: true } }),
+      prisma.$queryRaw<{ spent: number }[]>`SELECT COALESCE(SUM((props->>'feedUsd')::numeric), 0)::float8 AS spent FROM "events" WHERE name = 'feed_match' AND "createdAt" >= ${since}`,
+      prisma.jobMatch.count({ where: { applicationId: { not: null }, updatedAt: { gte: since } } }),
+      prisma.jobMatch.count({ where: { savedAt: { gte: since } } }),
+      prisma.jobMatch.count({ where: { dismissedAt: { gte: since } } }),
+    ])
+    const p = (lastPull?.props ?? {}) as Record<string, number>
+    const openBySource = bySource.map((g) => ({ source: g.source, jobs: g._count._all })).sort((a, b) => b.jobs - a.jobs)
+    return {
+      openJobs: openBySource.reduce((n, s) => n + s.jobs, 0),
+      openBySource,
+      withKeywords,
+      lastPull: lastPull ? { at: lastPull.createdAt.toISOString(), ok: p.ok ?? 0, boards: p.boards ?? 0, failed: p.failed ?? 0, added: p.added ?? 0, closed: p.closed ?? 0, ms: p.ms ?? 0 } : null,
+      runs,
+      runUsers: runUsers.length,
+      spendUsd: Math.round(Number(spend[0]?.spent ?? 0) * 100) / 100,
+      tailoredFromMatch: tailored,
+      saved,
+      dismissed,
+    }
+  } catch {
+    return null
+  }
 }
 
 const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 1000) / 10 : null)
@@ -151,5 +199,6 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
       mrrUsd: subscriptions * PRICING.monthly.priceUsd,
       passRevenue30dUsd: passesSold30d * PRICING.pass.priceUsd,
     },
+    feed: await feedStats(since),
   }
 }

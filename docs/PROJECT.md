@@ -34,7 +34,7 @@ prose fact guard; free fit check + skill check on the Tailor card; evidence inte
 and Word export; Stripe pass + subscription; admin analytics; Download my data / Delete my
 account; Burn $REWORK for Pro (off until `REWORK_MINT` is set).
 
-Out for launch: job feed, post-a-job, crypto payments in checkout, interview prep, resume
+Out for launch: post-a-job, crypto payments in checkout, interview prep, resume
 builder from scratch, contacts CRM.
 
 ## Monetization
@@ -127,9 +127,10 @@ the $2 daily ceilings if free users hit them; feedback email to Jake; fix what u
 **Nice before launch, else week 1**: tracker follow-up nudges ("7 days, no reply: here's a short
 follow-up"); landing headline on speed plus the match.
 
-**First big feature after launch: the job feed** ("jobs that match you": ReWork finds and
-ranks jobs against your resumes, then one tap tailors, writes the letter and tracks it). Plan,
-sources, costs, MVP and the other Nov 7 ideas: `docs/job-feed-plan.md`.
+**In for launch (Jake, Nov 8): matches on upload** (the job feed as the main flow: upload a
+resume, ReWork shows the jobs that fit, one tap tailors, writes the letter and tracks it).
+Launch waits for it (about a week). Build plan, sources and spike results:
+`docs/job-feed-plan.md`.
 
 **Month 1**: real tailor output on the landing; follow-up reminder emails (needs an email
 provider); admin feedback view; one more template; durable rate limit if abuse shows.

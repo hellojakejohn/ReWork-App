@@ -13,6 +13,10 @@ export interface FeedPrefs {
 
 export interface ResumeProfile {
   titleWords: Set<string>
+  /** Each title they want (or held), as its own words: for titleFit. */
+  titles?: string[][]
+  /** Each wanted title's role words ("manager", "coordinator"), parallel to titles: for titleRelevant. */
+  roles?: string[][]
   skills: string[]
   years: number
   homeState: string | null
@@ -43,7 +47,21 @@ const SAME: Record<string, string> = {
   'back-end': 'back',
   fullstack: 'full',
   'full-stack': 'full',
+  rn: 'nurse',
+  rns: 'nurse',
+  nurses: 'nurse',
 }
+
+// The role word of a title ("Coordinator", "Assistant"). Sharing only this says nothing
+// about the field: a Recruiting Coordinator job is no match for "Logistics Coordinator".
+const ROLE_WORDS = new Set([
+  'coordinator', 'assistant', 'specialist', 'analyst', 'representative', 'rep', 'administrator', 'officer', 'consultant',
+  'advisor', 'agent', 'technician', 'clerk', 'partner', 'generalist', 'supervisor', 'owner', 'strategist', 'planner',
+  'producer', 'operator', 'worker', 'professional', 'designer',
+])
+// Not role words on purpose: engineer, scientist, support. "Backend Engineer" is in the field
+// of "Software Engineer", which shares only "engineer" with it. Designer is: a Product
+// Designer job is no match for "Instructional Designer".
 // Senior titles a person with fewer years is unlikely to land (they still see them lower).
 const SENIOR_RE = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|vice president|chief)\b/i
 const JUNIOR_RE = /\b(intern|internship|new grad|junior|jr\.?|entry[- ]level|apprentice)\b/i
@@ -53,6 +71,8 @@ export function titleWords(title: string): string[] {
     .toLowerCase()
     // "General Manager" and "Assistant Manager" are one title, not "general" + a level.
     .replace(/\b(general|assistant|deputy) manager\b/g, 'gm')
+    // One field, three names.
+    .replace(/\b(?:product|ui\/ux|ux\/ui|ux|ui) designer\b/g, 'ux designer')
     .replace(/[()[\],/|:&+]/g, ' ')
     .split(/\s+/)
     .map((w) => w.replace(/^[-.]+|[-.]+$/g, ''))
@@ -70,10 +90,21 @@ const US_STATES: Record<string, string> = {
 }
 const CODES = new Set(Object.values(US_STATES))
 
+/** "MN" -> "Minnesota" (for search text). */
+export function stateName(code: string): string | null {
+  if (code === 'DC') return 'Washington DC'
+  const name = Object.entries(US_STATES).find(([, c]) => c === code)?.[0]
+  return name ? name.replace(/\b[a-z]/g, (ch) => ch.toUpperCase()) : null
+}
+
 export function usState(location: string): string | null {
   if (/\b(d\.c\.?|dc|district of columbia)(?![a-z])/i.test(location)) return 'DC'
   const code = location.match(/,\s*([A-Z]{2})\b/)?.[1]
   if (code && CODES.has(code)) return code
+  // Workday styles: "MN - St. Paul", "MO-ST. LOUIS, 100 S 4TH ST", "SD, Sioux Falls",
+  // "USA - Hutchinson KS 67501".
+  const lead = location.match(/^\s*([A-Z]{2})\s*[-,]\s*[A-Za-z]/)?.[1] ?? location.match(/\b([A-Z]{2})\s+(?:\d{5}|USA?)\b/)?.[1]
+  if (lead && CODES.has(lead)) return lead
   const lower = location.toLowerCase()
   for (const [name, c] of Object.entries(US_STATES)) if (new RegExp(`\\b${name}\\b`).test(lower)) return c
   const city = Object.entries(US_CITIES).find(([name]) => lower.includes(name))
@@ -98,7 +129,7 @@ export function isRemote(location: string, description = ''): boolean {
  */
 export function locationCountry(location: string): 'us' | 'other' | 'unknown' {
   if (usState(location) || /\b(united states|usa|u\.s\.?|us|americas|north america|nationwide)\b/i.test(location)) return 'us'
-  const rest = location.replace(/\b(remote|hybrid|in[- ]office|on[- ]site|onsite|anywhere|flexible|n\/a|multiple locations?|various)\b/gi, '').replace(/[\s,;:()/|•-]+/g, '')
+  const rest = location.replace(/\b(remote|hybrid|in[- ]office|on[- ]site|onsite|anywhere|flexible|n\/a|multiple locations?|\d+ locations|various)\b/gi, '').replace(/[\s,;:()/|•-]+/g, '')
   return rest ? 'other' : 'unknown'
 }
 
@@ -118,7 +149,51 @@ function yearsOf(resume: ParsedResume, now = new Date()): number {
 export function resumeProfile(resume: ParsedResume, prefs: FeedPrefs = {}): ResumeProfile {
   const titles = prefs.targetTitles?.length ? prefs.targetTitles : resume.experience.slice(0, 2).map((e) => e.title)
   const skills = [...new Set([...resume.skills.flatMap((g) => g.items), ...resume.projects.flatMap((p) => p.tech)].map((s) => s.trim()).filter(Boolean))]
-  return { titleWords: new Set(titles.flatMap(titleWords)), skills, years: yearsOf(resume), homeState: usState(resume.contact.location) }
+  const kept = titles.filter((t) => titleWords(t).length)
+  return {
+    titleWords: new Set(titles.flatMap(titleWords)),
+    titles: kept.map((t) => [...new Set(titleWords(t))]),
+    roles: kept.map(roleWords),
+    skills,
+    years: yearsOf(resume),
+    homeState: usState(resume.contact.location),
+  }
+}
+
+/**
+ * How much of a title they asked for this job's title covers, 0 to 100 (best of their titles).
+ * "Operations Work Coordinator" covers all of "Operations Coordinator"; "Cyber Operations
+ * Lead" covers half. Used for the list order (matchRank), not the prefilter gate.
+ */
+export function titleFit(jobTitle: string, profile: ResumeProfile): number {
+  const job = new Set(titleWords(jobTitle))
+  const best = Math.max(0, ...(profile.titles ?? [[...profile.titleWords]]).map((t) => (t.length ? t.filter((w) => job.has(w)).length / t.length : 0)))
+  return Math.round(best * 100)
+}
+
+/**
+ * Is this job title in the field of a title they want? It must share a field word when their
+ * title has one ("logistics" of "Logistics Coordinator", "care" or "nurse" of "RN Care
+ * Coordinator"), else the role word ("Accountant"). The gate for which jobs can be a match.
+ */
+export function titleRelevant(jobTitle: string, profile: ResumeProfile): boolean {
+  const job = new Set(titleWords(jobTitle))
+  const jobRoles = roleWords(jobTitle)
+  return (profile.titles ?? [[...profile.titleWords]]).some((t, i) => {
+    const field = t.filter((w) => !ROLE_WORDS.has(w))
+    if (!(field.length ? field : t).some((w) => job.has(w))) return false
+    // Both name a role and they differ: "Product Designer" is not in the field of "Product Manager".
+    const want = profile.roles?.[i] ?? []
+    return !want.length || !jobRoles.length || want.some((r) => jobRoles.includes(r))
+  })
+}
+
+/** A title's role words, including the "manager" that titleWords() drops as a level. */
+function roleWords(title: string): string[] {
+  return title
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => ROLE_WORDS.has(w) || w === 'manager')
 }
 
 export function prescore(job: { title: string; location: string; description: string }, profile: ResumeProfile, prefs: FeedPrefs = {}): Prescore {

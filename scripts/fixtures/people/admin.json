@@ -1,0 +1,78 @@
+{
+ "name": "Administrative assistant -> Executive Assistant",
+ "job": {
+  "title": "Executive Assistant",
+  "company": "Ecolab",
+  "description": "Ecolab is hiring an Executive Assistant to support two vice presidents in our Saint Paul headquarters.\n\nResponsibilities:\n- Manage complex calendars across time zones\n- Arrange domestic and international travel and process expense reports in Concur\n- Prepare meeting materials and PowerPoint presentations\n- Coordinate team meetings, offsites and events\n- Handle confidential information with discretion\n- Act as the first point of contact for internal and external partners\n\nQualifications:\n- 5+ years of administrative experience, executive support preferred\n- Advanced Microsoft Outlook, Word, Excel and PowerPoint\n- Experience with Concur or similar expense tools\n- Excellent organization and communication\n- Ability to prioritize in a fast-paced environment"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Karen",
+   "lastName": "Johnson",
+   "email": "karen@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Administrative assistant with 9 years supporting a busy clinic office: calendars, billing questions and keeping the office running.",
+   "keyStrengths": [],
+   "careerLevel": "senior"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "Administrative Assistant",
+    "company": "Midway Family Dental",
+    "startDate": "2017-02",
+    "endDate": "present",
+    "location": "Saint Paul, MN",
+    "isCurrentRole": true,
+    "achievements": [
+     "Managed calendars for 4 dentists with 120+ appointments a week",
+     "Answered billing and insurance questions for patients",
+     "Ordered office and clinical supplies within a $3,000 monthly budget",
+     "Planned the annual staff retreat for 25 people",
+     "Moved patient reminders from phone calls to text messages, cutting no-shows by 18%"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Receptionist",
+    "company": "Allina Health",
+    "startDate": "2015-01",
+    "endDate": "2017-01",
+    "location": "Minneapolis, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Checked in 80+ patients a day at a primary care front desk"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "AA",
+    "field": "Business",
+    "institution": "Minneapolis College",
+    "graduationYear": "2014"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "Microsoft Office",
+    "Outlook",
+    "Dentrix"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Scheduling",
+    "Organization"
+   ],
+   "certifications": []
+  },
+  "projects": []
+ }
+}

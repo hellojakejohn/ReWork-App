@@ -1,6 +1,6 @@
 // Keyword coverage matching: plurals, slash families and either-or terms count.
 import { describe, expect, it } from 'vitest'
-import { keywordCoverage, keywordWeight, stem } from '@/lib/keyword-coverage'
+import { keywordCoverage, keywordWeight, root, stem } from '@/lib/keyword-coverage'
 
 describe('keywordCoverage', () => {
   const text = 'Skills: ERC-20/721/1155, Permit2. Wrote knowledge bases and reproducible bug reports. Used curl daily.'
@@ -76,5 +76,68 @@ describe('weighted score', () => {
     expect(keywordCoverage(['TypeScript', 'Kubernetes'], 'TypeScript').score).toBe(67)
     expect(keywordCoverage(['Kubernetes', 'TypeScript'], 'TypeScript').score).toBe(33)
     expect(keywordCoverage(['TypeScript'], 'TypeScript').score).toBe(100)
+  })
+})
+
+describe('other words for career changers', () => {
+  const restaurant = [
+    'Ran weekly inventory and ordering with 5 food and beverage vendors',
+    'Reconciled nightly cash and processed vendor invoices',
+    'Scheduled shifts for 15 staff using 7shifts',
+    'Wrote the training manual used to onboard new servers and hosts',
+    'Managed a staff of 28 across front and back of house',
+  ].join('\n')
+
+  it('shares a root across word forms', () => {
+    expect(root('management')).toBe(root('managed'))
+    expect(root('processing')).toBe(root('processed'))
+    expect(root('coordination')).toBe(root('coordinated'))
+    expect(root('documentation')).toBe(root('documented'))
+    expect(root('scheduling')).toBe(root('schedules'))
+    expect(root('communication')).not.toBe(root('community'))
+    expect(root('nation').length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('finds the same words in another order or form, in one line', () => {
+    const c = keywordCoverage(['Invoice Processing', 'Staff Scheduling', 'Staff Management'], restaurant)
+    expect(c.related).toEqual(['Invoice Processing', 'Staff Scheduling', 'Staff Management'])
+  })
+
+  it('reads "ran X" as X management', () => {
+    expect(keywordCoverage(['Inventory Management'], restaurant).related).toEqual(['Inventory Management'])
+    expect(keywordCoverage(['Vendor Coordination'], 'Coordinated repairs with HVAC vendors').related).toEqual(['Vendor Coordination'])
+  })
+
+  it('does not join words from different lines or far apart', () => {
+    expect(keywordCoverage(['Budget Management'], 'Managed a staff of 28\nTracked the budget').missing).toEqual(['Budget Management'])
+    expect(keywordCoverage(['Data Processing'], 'Processed vendor invoices every week for the owners and wrote data reports').missing).toEqual(['Data Processing'])
+    expect(keywordCoverage(['Project Management'], 'Managed a staff of 28. Shipped a project').missing).toEqual(['Project Management'])
+  })
+
+  it('keeps meaning-only matches missing: those need the person to say so', () => {
+    const c = keywordCoverage(['Customer Service', 'Property Management', 'Work Orders'], restaurant)
+    expect(c.missing).toEqual(['Customer Service', 'Property Management', 'Work Orders'])
+  })
+
+  it('leaves exact words as present', () => {
+    expect(keywordCoverage(['vendors'], restaurant).present).toEqual(['vendors'])
+  })
+
+  it('reads generic job-post words as filler, irregular verbs, and Microsoft Office as its programs', () => {
+    const admin = 'Administrative Assistant\nWrote the new-hire guide for the front desk\nMicrosoft Office, Dentrix'
+    const c = keywordCoverage(['administrative experience', 'writing', 'Word', 'Excel', 'PowerPoint', 'Concur', 'experience'], admin)
+    expect(c.related).toEqual(['administrative experience', 'writing', 'Word', 'Excel', 'PowerPoint'])
+    expect(c.missing).toEqual(['Concur', 'experience'])
+    expect(root('taught')).toBe(root('teaching'))
+  })
+
+  it('never reads an end date as a skill', () => {
+    expect(keywordCoverage(['presentations'], 'Administrative Assistant\nMidway Family Dental\n2017-02\npresent').missing).toEqual(['presentations'])
+    expect(keywordCoverage(['presentations'], 'Gave monthly presentations to the board').present).toEqual(['presentations'])
+  })
+
+  it('does not read a field from a look-alike word', () => {
+    expect(keywordCoverage(['Accounting', 'Marketing'], 'Grew key account revenue 20%\nLed the go-to-market plan').missing).toEqual(['Accounting', 'Marketing'])
+    expect(keywordCoverage(['Accounting'], 'Accounting Clerk').present).toEqual(['Accounting'])
   })
 })

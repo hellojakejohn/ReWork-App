@@ -1,0 +1,80 @@
+{
+ "name": "New grad -> Marketing Coordinator",
+ "job": {
+  "title": "Marketing Coordinator",
+  "company": "Land O'Lakes",
+  "description": "Land O'Lakes is looking for a Marketing Coordinator to support our consumer brands team.\n\nWhat you'll do:\n- Coordinate marketing campaigns across social, email and in-store channels\n- Write copy for social media, emails and the website\n- Track campaign performance in Google Analytics and report results\n- Manage the content calendar and work with agencies on deadlines\n- Support trade shows and events\n- Manage marketing budgets and invoices\n\nQualifications:\n- Bachelor's degree in Marketing or Communications\n- 0-2 years of marketing experience, including internships\n- Strong writing skills\n- Experience with social media platforms and email tools\n- Familiarity with Adobe Creative Suite a plus\n- Highly organized with attention to detail"
+ },
+ "resume": {
+  "contactInfo": {
+   "firstName": "Sam",
+   "lastName": "Nguyen",
+   "email": "sam@example.com",
+   "phone": "555-0140",
+   "location": "Saint Paul, MN"
+  },
+  "professionalSummary": {
+   "summary": "Recent marketing graduate with internship experience in social media, email and event marketing.",
+   "keyStrengths": [],
+   "careerLevel": "entry"
+  },
+  "workExperience": [
+   {
+    "id": "exp_1",
+    "jobTitle": "Marketing Intern",
+    "company": "Surly Brewing Co.",
+    "startDate": "2025-05",
+    "endDate": "2025-08",
+    "location": "Minneapolis, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Wrote and scheduled 60+ Instagram and Facebook posts over the summer",
+     "Grew Instagram followers by 2,400 in 3 months",
+     "Built 8 email campaigns in Mailchimp with a 41% average open rate",
+     "Helped plan and staff 4 taproom events with 300+ guests each"
+    ]
+   },
+   {
+    "id": "exp_2",
+    "jobTitle": "Social Media Assistant",
+    "company": "University of St. Thomas Athletics",
+    "startDate": "2023-09",
+    "endDate": "2025-05",
+    "location": "Saint Paul, MN",
+    "isCurrentRole": false,
+    "achievements": [
+     "Created game-day graphics in Canva and posted live updates on X and Instagram"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "id": "edu_1",
+    "degree": "BA",
+    "field": "Marketing",
+    "institution": "University of St. Thomas",
+    "graduationYear": "2026"
+   }
+  ],
+  "skills": {
+   "technical": [
+    "Mailchimp",
+    "Canva",
+    "Google Analytics",
+    "Hootsuite"
+   ],
+   "frameworks": [],
+   "tools": [],
+   "cloud": [],
+   "databases": [],
+   "soft": [
+    "Copywriting",
+    "Event planning"
+   ],
+   "certifications": [
+    "Google Analytics Certification"
+   ]
+  },
+  "projects": []
+ }
+}
