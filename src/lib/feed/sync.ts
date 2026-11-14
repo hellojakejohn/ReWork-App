@@ -123,3 +123,15 @@ export async function pullListBoards(
   sum.ms = Date.now() - started
   return sum
 }
+
+/**
+ * Jobs we only find by searching (Workday, USAJOBS) can't be closed by a full board read.
+ * Close them once nobody's search has seen them for a while: 30 days for Workday, 14 for
+ * USAJOBS (federal postings are short).
+ */
+export async function closeStaleSearched(db: Db, now = new Date()): Promise<number> {
+  const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000)
+  const workday = await db.job.updateMany({ where: { source: 'workday', closedAt: null, lastSeenAt: { lt: daysAgo(30) } }, data: { closedAt: now } })
+  const federal = await db.job.updateMany({ where: { source: 'usajobs', closedAt: null, lastSeenAt: { lt: daysAgo(14) } }, data: { closedAt: now } })
+  return workday.count + federal.count
+}

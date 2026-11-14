@@ -15,6 +15,7 @@ import { WORKDAY_BOARDS } from './board-list'
 import { prescore, resumeProfile, stateName, titleFit, titleRelevant, usState } from './prefilter'
 import { syncBoard, toJobRow } from './sync'
 import { payFromText } from '@/lib/pay'
+import { searchUsajobs, usajobsConfigured, usajobsQueries } from './usajobs'
 
 export type Workplace = 'remote' | 'near' | 'both'
 export const WORKPLACES: Workplace[] = ['remote', 'near', 'both']
@@ -42,12 +43,15 @@ export interface MatchDeps {
   /** Asked before each model call: false once a spend ceiling is reached or AI is paused. */
   canSpend?: () => Promise<boolean> | boolean
   workdayBoards?: WorkdayBoard[]
+  /** USAJOBS key and email; null turns it off (tests). Default: from the env. */
+  usajobs?: { key: string; email: string } | null
   now?: Date
 }
 
 export interface MatchRun {
   searched: string[]
   workdayJobs: number
+  usajobsJobs: number
   pool: number
   scored: number
   extracted: number
@@ -139,10 +143,16 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
   const started = Date.now()
   const { db, fetchFn = fetch, extract = (j) => extractJobKeywords(j), canSpend = () => true, now = new Date() } = deps
   const { userId, resumeId, resume, prefs } = input
-  const run: MatchRun = { searched: searchTitles(resume, prefs), workdayJobs: 0, pool: 0, scored: 0, extracted: 0, fetched: 0, skippedNoBudget: 0, ms: 0 }
+  const run: MatchRun = { searched: searchTitles(resume, prefs), workdayJobs: 0, usajobsJobs: 0, pool: 0, scored: 0, extracted: 0, fetched: 0, skippedNoBudget: 0, ms: 0 }
 
   const homeState = usState(resume.contact.location)
-  run.workdayJobs = await searchWorkday(db, workdayQueries(run.searched, prefs.workplace, homeState), { fetchFn, boards: deps.workdayBoards ?? WORKDAY_BOARDS, now })
+  // Workday employers and USAJOBS (when its key is set) at the same time.
+  const [workday, federal] = await Promise.all([
+    searchWorkday(db, workdayQueries(run.searched, prefs.workplace, homeState), { fetchFn, boards: deps.workdayBoards ?? WORKDAY_BOARDS, now }),
+    searchUsajobs(db, usajobsQueries(run.searched, prefs.workplace, homeState), { fetchFn, now, auth: deps.usajobs === undefined ? usajobsConfigured() : deps.usajobs }),
+  ])
+  run.workdayJobs = workday
+  run.usajobsJobs = federal
 
   // Step 2a: titles only, everything open in their area.
   const profilePrefs = { targetTitles: prefs.targetTitles.filter((t) => t.trim()) }

@@ -5,6 +5,7 @@ export type JobSource =
   | 'lever'
   | 'ashby'
   | 'workday'
+  | 'usajobs'
   | 'smartrecruiters'
   | 'workable'
   | 'oracle'

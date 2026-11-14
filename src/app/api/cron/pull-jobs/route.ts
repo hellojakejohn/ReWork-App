@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { cronAuthorized } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 import { LIST_BOARDS } from '@/lib/feed/board-list'
-import { pullListBoards } from '@/lib/feed/sync'
+import { closeStaleSearched, pullListBoards } from '@/lib/feed/sync'
 import { track } from '@/lib/track'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
   try {
-    const summary = await pullListBoards(prisma, LIST_BOARDS)
+    const pulled = await pullListBoards(prisma, LIST_BOARDS)
+    const summary = { ...pulled, staleClosed: await closeStaleSearched(prisma) }
     await track('feed_pull', { ...summary, failed: summary.failed.length })
     return NextResponse.json({ ok: true, summary, at: new Date().toISOString() })
   } catch (e) {
