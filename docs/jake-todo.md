@@ -45,8 +45,13 @@ Tick them off here or just tell Claude "done with N".
    `https://rework.hellojakejohn.com/api/health/live`.
 10. [ ] **Vercel Deployment Protection** on for Previews (they share the prod DB).
 11. [ ] **Chrome Web Store**: upload extension 0.2.0 (review takes days; launch doesn't
-    wait on it).
+    wait on it). Build it from the merged main (PR 47 changed it on Nov 14) with
+    `npx tsx scripts/build-extension.ts`, then upload `extension-dist.zip`.
 12. [ ] Vercel Web Analytics on, failed-deployment email alert on.
+
+## Read when you have 10 minutes
+
+- `docs/audit-2026-11-14.md`: the full audit (what was fixed, what's still open).
 
 ## Done
 
