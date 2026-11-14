@@ -9,6 +9,7 @@ import { Banknote, Bookmark, BookmarkCheck, Loader2, MapPin, RefreshCw, Search, 
 import { Button } from "@/components/ui/button"
 import { Segmented } from "@/components/ui/segmented"
 import { cn } from "@/lib/utils"
+import { usState } from "@/lib/feed/prefilter"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
 import { ErrorNote, inputClass } from "./ui"
 
@@ -21,7 +22,9 @@ const WORKPLACE_OPTIONS: { id: Workplace; label: string }[] = [
 ]
 
 function placeLabel(workplace: Workplace, home: string): string {
-  const near = home ? `near ${home}` : "near you"
+  // No US state on the resume: the search can only show remote jobs, so say that.
+  if (!usState(home)) return "Remote"
+  const near = `near ${home}`
   return workplace === "remote" ? "Remote" : workplace === "near" ? near : `Remote or ${near}`
 }
 
@@ -151,6 +154,11 @@ export function MatchesPanel({
           />
         </label>
         <Segmented label="Where" value={workplace} onChange={setWorkplace} options={WORKPLACE_OPTIONS} className="w-full sm:w-auto" />
+        {workplace !== "remote" && !usState(home) && (
+          <p className="text-xs text-text-muted">
+            Your resume doesn&apos;t say which US city and state you&apos;re in, so we&apos;ll show remote jobs. Add your city and state on the Resume card to see jobs near you too.
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => void run([title.trim()], workplace)} loading={running} disabled={!title.trim()}>
             {!running && <Sparkles className="h-4 w-4" />} {running ? "Searching" : "Find my matches"}
