@@ -1,8 +1,8 @@
 "use client"
 
-// Result card -> Apply: open the real application and let the Save to ReWork extension fill
-// it (contact, this tailored resume, the letter, saved answers). The person submits it
-// themselves; then one tap moves the job to Applied in the tracker.
+// Result card -> Apply: open the real application (the person attaches the tailored resume and
+// copies in the letter and answers; the extension that fills it comes after launch). The person
+// submits it themselves; then one tap moves the job to Applied in the tracker.
 import { useState } from "react"
 import { toast } from "sonner"
 import { Check, ExternalLink } from "lucide-react"
@@ -39,11 +39,8 @@ export function ApplyBox({ application }: { application: ApplicationDetailDTO })
       {started && (
         <div className="space-y-2 text-xs text-text-muted">
           <p>
-            On the application form, click the <span className="font-semibold text-text">ReWork</span> button in Chrome&apos;s toolbar: it fills in your details, attaches
-            this resume and adds your cover letter and saved answers. Check it, then submit it yourself.{" "}
-            <a href="/save" target="_blank" rel="noopener" className="font-medium text-text-secondary underline underline-offset-2 hover:text-text">
-              Get the button
-            </a>
+            On the application form, attach this resume (Download above) and copy in your cover letter and answers from the tabs here.
+            Check it, then submit it yourself.
           </p>
           {applied ? (
             <p className="flex items-center gap-1.5 font-semibold text-text">
