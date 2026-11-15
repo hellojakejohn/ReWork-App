@@ -8,7 +8,7 @@ import { buildSync } from 'esbuild'
 import path from 'node:path'
 import { saveJobScript } from '../src/lib/save-job-script'
 
-const ORIGIN = 'https://rework.hellojakejohn.com'
+const ORIGIN = 'https://rework.careers'
 const root = path.resolve(__dirname, '..')
 const out = path.join(root, 'extension-dist')
 const zip = path.join(root, 'extension-dist.zip')

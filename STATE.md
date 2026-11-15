@@ -3,7 +3,7 @@
 Current truth as of `main` on 2026-11-14 (PRs up to #47 merged; #48 is the launch docs). Launch handoff: `docs/handoff-2026-11-02.md`. History lives in git. Launch audit and go/no-go: `docs/launch-audit.md`; token plan: `docs/token-plan.md`.
 
 ## Product
-ReWork (rework.hellojakejohn.com): upload a resume once, paste a job link, get a tailored
+ReWork (rework.careers): upload a resume once, paste a job link, get a tailored
 resume and cover letter. Every rewrite is fact-checked against the original. Operated by
 Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
 

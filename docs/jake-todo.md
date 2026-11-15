@@ -33,7 +33,7 @@ Tick them off here or just tell Claude "done with N".
 4. [x] **Clear test billing data** (nothing to clear on Nov 14: no Stripe customers, only 1 COMP) in the prod DB (SQL in `docs/launch-audit.md` item 5;
    run the counts first).
 5. [x] (Nov 14: ok, live prices and webhook match) **Open `/api/health` signed in as admin**: it should say `ok: true`.
-6. [ ] **Anthropic Console**: a hard monthly spend limit on the workspace, if not set yet.
+6. [x] (Nov 15: $500/month org limit set) **Anthropic Console**: a hard monthly spend limit on the workspace, if not set yet.
 
 ## Your end-to-end test
 
@@ -44,7 +44,7 @@ Tick them off here or just tell Claude "done with N".
 ## Quick clicks (any time)
 
 9. [ ] **Uptime monitor** (UptimeRobot or Better Stack, free) on
-   `https://rework.hellojakejohn.com/api/health/live`.
+   `https://rework.careers/api/health/live`.
 10. [ ] **Vercel Deployment Protection** for Previews: PROJECT.md says it's on; just glance
     that it still is (Vercel, Settings, Deployment Protection).
 11. [ ] **After launch: Chrome Web Store** (decided Nov 15: the extension is a post-launch

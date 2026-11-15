@@ -1,5 +1,5 @@
 // Canonical origin for metadata, sitemap and robots. NEXTAUTH_URL is the deployed URL.
-export const SITE_URL = (process.env.NEXTAUTH_URL || 'https://rework.hellojakejohn.com').replace(/\/$/, '')
+export const SITE_URL = (process.env.NEXTAUTH_URL || 'https://rework.careers').replace(/\/$/, '')
 
 // Next merges metadata shallowly: a page that sets openGraph/twitter replaces the
 // layout's, images included. Pages spread these in.

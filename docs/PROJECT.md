@@ -6,7 +6,7 @@ docs: `docs/launch-audit.md` (launch go/no-go, Jake's by-hand list), `docs/AUDIT
 
 ## What it is
 
-ReWork (rework.hellojakejohn.com) is a resume tailor that won't lie for you. Upload a
+ReWork (rework.careers) is a resume tailor that won't lie for you. Upload a
 resume once, paste a job link, get a tailored resume and cover letter in about a minute.
 Every rewrite is checked against the original by deterministic code after the model:
 no invented employers, tools, numbers or credentials. Built and run solo by Jakob (Jake)
@@ -83,8 +83,8 @@ No holder perks, discounts or buybacks. Rules and launch-day plan: `docs/token-p
 - AI: Anthropic only. Opus 5.5 everywhere, Sonnet 5.5 for the free tier and as a one-time
   retry when Opus declines.
 - Stripe is live (checked Nov 14: live prices, webhook, portal; `/api/health` green). Domain:
-  rework.careers picked, not bought yet; not a blocker (the site runs on
-  rework.hellojakejohn.com until the move).
+  rework.careers (bought Nov 15 at Vercel, $29.99 then $66/yr); rework.hellojakejohn.com
+  redirects to it.
 - Launch plan and Jake's checklist: `docs/handoff-2026-11-02.md`.
 
 ## What job hunters hate, and our answer (research 2026-10-29)
