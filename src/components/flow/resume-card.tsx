@@ -190,7 +190,7 @@ export function ResumeCard({
         <CardBody className="flex flex-col gap-4">
           {masters.length === 0 && mode === "new" && (
             <p className="rounded-input bg-sage px-3 py-2 text-sm text-text">
-              Welcome{firstName ? `, ${firstName}` : ""}. Start with your resume, then paste a job link. {isPro ? "" : `You have ${FREE_TAILORS_PER_MONTH} free tailors this month.`}
+              Welcome{firstName ? `, ${firstName}` : ""}. Add your resume and we&apos;ll show you jobs that fit, or paste a job link of your own. {isPro ? "" : `You have ${FREE_TAILORS_PER_MONTH} free tailors this month.`}
             </p>
           )}
           {mode === "parsing" ? (
