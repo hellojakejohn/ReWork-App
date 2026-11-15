@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'rework',
     short_name: 'rework',
-    description: 'Tailored to the job. True to you.',
+    description: 'Find jobs that fit. Get a resume tailored to match.',
     start_url: '/dashboard',
     display: 'standalone',
     background_color: '#FBFAF7',

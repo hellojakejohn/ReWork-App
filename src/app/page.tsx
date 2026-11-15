@@ -14,8 +14,8 @@ import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 import { CONTACT_EMAIL, FAIR_USE, FREE_FEED_MATCHES, FREE_PLAN_SHORT, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING } from "@/lib/plans"
 import { showPoweredBy } from "@/lib/ai/routing"
 
-const TITLE = "rework: Tailored to the job. True to you."
-const DESCRIPTION = `Upload your resume and see open jobs that fit it, ranked by your real match. Then get a tailored resume, cover letter and answers for each one, fact-checked against your real resume. Free to start, no card.`
+const TITLE = "rework: Find jobs that fit. Get a resume tailored to match."
+const DESCRIPTION = `Upload your resume and see open jobs that fit you, ranked by your real match. Then get a resume tailored to each one, plus a cover letter and answers, fact-checked against your real resume. Free to start, no card.`
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Upload your resume",
-    body: "PDF, Word, or pasted text. What's in it is the only thing we work from.",
+    body: "PDF, Word, or pasted text. Think of it as your measurements: it's the only thing we work from.",
   },
   {
     title: "See jobs that fit",
@@ -36,7 +36,7 @@ const STEPS = [
   },
   {
     title: "Tailor it, honestly",
-    body: "Your resume, pointed at the job. When a rewrite needs a number your resume doesn't have, we leave it out and ask you for the real one.",
+    body: "Your resume, taken in to fit the job. When a rewrite needs a number your resume doesn't have, we leave it out and ask you for the real one.",
   },
   {
     title: "Apply ready",
@@ -79,7 +79,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "Which job sites work?",
     a: (
       <>
-        Your matches come straight from employers&apos; own job boards (Greenhouse, Lever, Ashby and Workday), checked daily so closed jobs drop
+        Your matches come straight from employers&apos; own job boards (Greenhouse, Lever, Ashby, SmartRecruiters and Workday), checked daily so closed jobs drop
         off. You can also paste any link: Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages fill in
         automatically. We don&apos;t read LinkedIn pages, and Indeed, Glassdoor and ZipRecruiter block apps from reading theirs, so for those use
         our Save to ReWork button or paste the description.
@@ -127,8 +127,8 @@ export default function HomePage() {
               Same you. Better fit.
             </h1>
             <p className="max-w-xl text-lg leading-relaxed text-text-secondary">
-              Job hunting is hard enough. rework finds open jobs that fit your resume, tailors it to each one, asks you for the real numbers,
-              and never fills a gap with a guess.
+              Job hunting is hard enough. rework finds open jobs that fit you, ranked by your real match, then tailors your resume to each
+              one. Cut from your real experience, never padded with a guess.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg">
@@ -147,7 +147,7 @@ export default function HomePage() {
 
         {/* How it works */}
         <section id="how-it-works" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
-          <h2 className={h2}>From resume to application. Honest all the way.</h2>
+          <h2 className={h2}>Find the fit. Tailor the resume. Honest all the way.</h2>
           <ol className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((step, i) => (
               <li key={step.title} className={`${card} flex flex-col gap-2.5`}>
@@ -253,7 +253,7 @@ export default function HomePage() {
           <p className="max-w-md text-lg text-text-secondary">Tailored to the job. True to you.</p>
           <Button asChild size="lg">
             <Link href="/auth/signin">
-              Tailor your first resume <ArrowRight className="h-4 w-4" aria-hidden />
+              Find jobs that fit you <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </Button>
         </section>

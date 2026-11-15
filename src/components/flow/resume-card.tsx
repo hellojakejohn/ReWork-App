@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import { AlertTriangle, FileText, Plus, RefreshCw, Sparkles, Trash2, Upload } from "lucide-react"
+import { AlertTriangle, FileText, Plus, RefreshCw, Sparkles, Lock, Trash2, Upload } from "lucide-react"
 import { summarizeResume } from "@/lib/master-resume"
 import { hasContent } from "@/lib/master-dto"
 import type { ParsedResume } from "@/types/parsed-resume"
@@ -249,6 +249,10 @@ export function ResumeCard({
               <Button type="button" variant="text" className="self-center" onClick={() => setPasteOpen((v) => !v)}>
                 {pasteOpen ? "Upload a file instead" : "or paste text"}
               </Button>
+              <p className="flex items-center justify-center gap-1.5 text-center text-xs text-text-muted">
+                <Lock className="h-3 w-3" aria-hidden /> Never sold or shared with employers. Delete it any time.{" "}
+                <a href="/privacy" target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-text">Privacy</a>
+              </p>
             </>
           )}
         </CardBody>
