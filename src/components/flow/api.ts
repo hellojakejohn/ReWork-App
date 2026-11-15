@@ -505,11 +505,12 @@ export async function openMatch(id: string): Promise<{ ok: true; job: JobDraft &
   }
 }
 
-export async function markMatch(id: string, action: "save" | "unsave" | "dismiss" | "seen" | "tailored", applicationId?: string): Promise<{ ok: true } | Failure> {
+export async function markMatch(id: string, action: "save" | "unsave" | "dismiss" | "seen" | "tailored", applicationId?: string): Promise<{ ok: true; tracked?: boolean } | Failure> {
   try {
     const res = await fetch(`/api/feed/matches/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, applicationId }) })
     if (!res.ok) return failure(res, "Couldn't update this match.")
-    return { ok: true }
+    const data = await res.json().catch(() => null)
+    return { ok: true, tracked: data?.tracked }
   } catch {
     return NETWORK
   }

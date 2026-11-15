@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { matchRank, placeFilter, runMatch, searchTitles, workdayQueries } from '@/lib/feed/match'
+import { matchRank, placeFilter, runMatch, searchTitles, searchWorkday, workdayQueries } from '@/lib/feed/match'
 import type { ParsedResume } from '@/types/parsed-resume'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -158,5 +158,27 @@ describe('listMatches reach', () => {
     const { matches } = await listMatches(db as never, 'u', 'r', 10)
     expect(matches.map((m) => m.reach)).toEqual([61, 40])
     expect('keywords' in matches[0].job).toBe(false)
+  })
+})
+
+describe('searchWorkday', () => {
+  const board = { company: 'Acme', tenant: 'acme', host: 'acme.wd1.myworkdayjobs.com', site: 'Careers' }
+  const page = (n: number) => ({ total: n, jobPostings: Array.from({ length: n }, (_, i) => ({ title: `Support Lead ${i}`, externalPath: `/job/Minneapolis/Support-Lead_R${1000 + i}`, locationsText: 'Minneapolis, MN', postedOn: 'Posted Today' })) })
+
+  it('writes every job found in one batch, across employers', async () => {
+    const { db, job } = fakeDb()
+    const fetchFn = vi.fn(async () => new Response(JSON.stringify(page(3)))) as unknown as typeof fetch
+    const n = await searchWorkday(db as never, ['support lead'], { fetchFn, boards: [board, { ...board, company: 'Beta', tenant: 'beta', host: 'beta.wd1.myworkdayjobs.com' }] })
+    expect(n).toBe(6)
+    expect(job.size).toBe(6)
+  })
+
+  it('stops waiting on slow employers after the time budget', async () => {
+    const { db } = fakeDb()
+    const fetchFn = vi.fn((_url: string, init: RequestInit) => new Promise<Response>((_, reject) => init.signal!.addEventListener('abort', () => reject(new Error('aborted'))))) as unknown as typeof fetch
+    const started = Date.now()
+    const n = await searchWorkday(db as never, ['support lead'], { fetchFn, boards: [board], budgetMs: 50 })
+    expect(n).toBe(0)
+    expect(Date.now() - started).toBeLessThan(2000)
   })
 })

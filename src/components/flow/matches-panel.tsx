@@ -11,9 +11,34 @@ import { Segmented } from "@/components/ui/segmented"
 import { cn } from "@/lib/utils"
 import { usState } from "@/lib/feed/prefilter"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
-import { ErrorNote, inputClass } from "./ui"
+import { ErrorNote, StageList, inputClass } from "./ui"
 
 const STALE_MS = 20 * 60 * 60 * 1000
+
+// The search is one request, so the steps follow the clock (about where the server is), and
+// the last one stays open until the results land.
+const SEARCH_STAGES = [
+  { id: "boards", label: "Searching job boards at companies like Target, 3M and Stripe", at: 0 },
+  { id: "titles", label: "Picking the jobs that fit what you want next", at: 8_000 },
+  { id: "reading", label: "Reading the top jobs and checking your real match", at: 12_000 },
+  { id: "ranking", label: "Ranking them, best match first", at: 30_000 },
+]
+
+function useSearchStage(running: boolean): string | null {
+  const [stage, setStage] = useState<string | null>(null)
+  useEffect(() => {
+    if (!running) return setStage(null)
+    const started = Date.now()
+    const tick = () => {
+      const t = Date.now() - started
+      setStage([...SEARCH_STAGES].reverse().find((s) => t >= s.at)!.id)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [running])
+  return stage
+}
 
 const WORKPLACE_OPTIONS: { id: Workplace; label: string }[] = [
   { id: "both", label: "Remote or near me" },
@@ -57,6 +82,7 @@ export function MatchesPanel({
   const [title, setTitle] = useState("")
   const [workplace, setWorkplace] = useState<Workplace>("both")
   const [running, setRunning] = useState(false)
+  const searchStage = useSearchStage(running)
   const [error, setError] = useState("")
   const [opening, setOpening] = useState<string | null>(null)
   const refreshed = useRef<string | null>(null)
@@ -124,6 +150,7 @@ export function MatchesPanel({
     setFeed((f) => f && { ...f, matches: f.matches.map((x) => (x.id === m.id ? { ...x, savedAt: saved ? new Date().toISOString() : null } : x)) })
     const r = await markMatch(m.id, saved ? "save" : "unsave")
     if (!r.ok) toast.error(r.error)
+    else if (saved) toast.success(r.tracked === false ? "Saved here. Your tracker is full, so it isn't there." : "Saved to your tracker.")
   }
 
   const dismiss = async (m: FeedMatchDTO) => {
@@ -169,7 +196,12 @@ export function MatchesPanel({
             </Button>
           )}
         </div>
-        {running && <p className="text-xs text-text-muted" aria-live="polite">Checking thousands of jobs at companies like Target, 3M, Stripe and Medtronic. The first search takes up to a minute.</p>}
+        {running && (
+          <div className="space-y-2">
+            <StageList stages={SEARCH_STAGES} current={searchStage} />
+            <p className="text-xs text-text-muted">Thousands of open jobs. This takes under a minute.</p>
+          </div>
+        )}
         {error && <ErrorNote>{error}</ErrorNote>}
       </section>
     )

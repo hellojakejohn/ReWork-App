@@ -99,24 +99,31 @@ async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>): P
 // Some employers (Allina, Nordstrom) answer 500 without a language.
 const WORKDAY_HEADERS = { 'content-type': 'application/json', accept: 'application/json', 'accept-language': 'en-US' }
 
-/** Step 1: ask every Workday employer for these searches, and keep what comes back. Returns how many different jobs. */
-export async function searchWorkday(db: Db, queries: string[], { fetchFn = fetch, boards = WORKDAY_BOARDS, now = new Date() } = {}): Promise<number> {
-  const found = new Set<string>()
+/** How long the whole Workday step may take: slow or down employers are skipped, not waited on. */
+export const WORKDAY_BUDGET_MS = 20_000
+
+/**
+ * Step 1: ask every Workday employer for these searches, and keep what comes back. Returns how
+ * many different jobs. One write for all of them at the end (each write is a round trip on a
+ * one-connection pool), and nothing past the time budget.
+ */
+export async function searchWorkday(db: Db, queries: string[], { fetchFn = fetch, boards = WORKDAY_BOARDS, now = new Date(), budgetMs = WORKDAY_BUDGET_MS } = {}): Promise<number> {
+  const rows = new Map<string, ReturnType<typeof toJobRow>>()
   const tasks = boards.flatMap((b) => queries.map((t) => ({ b, t })))
+  const stop = AbortSignal.timeout(budgetMs)
   await pool(tasks, 24, async ({ b, t }) => {
+    if (stop.aborted) return
     try {
       const req = workdaySearchRequest(b, t)
-      const res = await fetchFn(req.url, { method: 'POST', body: req.body, headers: WORKDAY_HEADERS, signal: AbortSignal.timeout(10_000) })
+      const res = await fetchFn(req.url, { method: 'POST', body: req.body, headers: WORKDAY_HEADERS, signal: AbortSignal.any([AbortSignal.timeout(10_000), stop]) })
       if (!res.ok) return
-      const jobs = parseWorkdaySearch(b, await res.json(), now)
-      if (!jobs.length) return
-      await syncBoard(db as never, jobs[0].board, jobs.map((j) => toJobRow(j, now)), { complete: false, now })
-      for (const j of jobs) found.add(j.key)
+      for (const j of parseWorkdaySearch(b, await res.json(), now)) rows.set(j.key, toJobRow(j, now))
     } catch {
       // One employer timing out never stops the rest.
     }
   })
-  return found.size
+  if (rows.size) await syncBoard(db as never, 'workday:search', [...rows.values()], { complete: false, now })
+  return rows.size
 }
 
 /** The open-job filter for where they want to work. Null home state: remote only for "near". */

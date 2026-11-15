@@ -83,7 +83,7 @@ export function OfferCards({ access, compact = false, returnTo }: OfferCardsProp
               {offer.amount} <span className={cn("text-lg", featured ? "opacity-80" : "text-text-muted")}>{offer.id === "pass" ? "once" : "/ month"}</span>
             </p>
             {offer.headline && <p className="mt-2 text-sm font-semibold">{offer.headline}</p>}
-            <p className={cn("mt-1 text-xs", featured ? "opacity-80" : "text-text-muted")}>{offer.cadence}</p>
+            {!(compact && offer.headline) && <p className={cn("mt-1 text-xs", featured ? "opacity-80" : "text-text-muted")}>{offer.cadence}</p>}
             <p className={cn("mt-3 text-sm", featured ? "opacity-90" : "text-text-secondary")}>{offer.blurb}</p>
             {!compact && (
               <ul className="mt-5 space-y-2.5">

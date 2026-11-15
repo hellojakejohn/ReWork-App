@@ -18,7 +18,7 @@ export function UpgradeSheet({ open, onOpenChange, reason }: UpgradeSheetProps) 
   const { data: session } = useSession()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-surface backdrop-blur-xl border border-input max-w-[640px]">
+      <DialogContent className="bg-surface backdrop-blur-xl border border-input max-w-[640px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-text flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-text" />
@@ -28,15 +28,18 @@ export function UpgradeSheet({ open, onOpenChange, reason }: UpgradeSheetProps) 
             {reason || `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month.`}
           </DialogDescription>
         </DialogHeader>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {PRO_FEATURES.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
-              <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
         <OfferCards access={session ? session.user.access ?? NO_ACCESS : null} compact />
+        <div>
+          <p className="text-sm font-semibold text-text">Both plans get all of Pro. Only the billing differs.</p>
+          <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {PRO_FEATURES.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
+                <CheckCircle className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </DialogContent>
     </Dialog>
   )

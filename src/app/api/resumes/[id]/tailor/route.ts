@@ -229,8 +229,17 @@ export async function POST(
 
     // Re-tailor an explicit application (or tailor a job that was only on the tracker);
     // otherwise every tailor is its own application (the Recent drawer lists them all).
-    const existingApplication = requestedApplicationId
-      ? await prisma.jobApplication.findFirst({ where: { id: String(requestedApplicationId), userId } })
+    // A match saved to the tracker (still untailored) becomes that card instead of a second one.
+    const savedMatchAppId =
+      !requestedApplicationId && typeof requestData.matchId === 'string'
+        ? (await prisma.jobMatch.findFirst({ where: { id: requestData.matchId, userId }, select: { applicationId: true } }).catch(() => null))?.applicationId
+        : null;
+    const savedDraft = savedMatchAppId
+      ? await prisma.jobApplication.findFirst({ where: { id: savedMatchAppId, userId, status: 'DRAFT' }, select: { id: true } })
+      : null;
+    const reuseId = requestedApplicationId ?? savedDraft?.id ?? null;
+    const existingApplication = reuseId
+      ? await prisma.jobApplication.findFirst({ where: { id: String(reuseId), userId } })
       : null;
 
     const application = existingApplication
