@@ -40,7 +40,7 @@ const STEPS = [
   },
   {
     title: "Apply ready",
-    body: "A cover letter, answers to the application questions, interview prep, and a tracker for every job. Our Chrome extension fills the form; you press submit.",
+    body: "A cover letter, answers to the application questions, interview prep, and a tracker for every job. Everything's ready to copy into the form; you press submit.",
   },
 ]
 
@@ -90,9 +90,8 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     q: "Does rework apply for me?",
     a: (
       <>
-        No, and that&apos;s on purpose. Our Chrome extension fills the application form with your contact details, your tailored resume, your cover
-        letter and your saved answers. You read it over and press submit yourself. It never answers salary, sponsorship, work authorization or
-        demographic questions for you.
+        No, and that&apos;s on purpose. You apply on the employer&apos;s own site with your tailored resume, cover letter and answers ready
+        to copy in. You read it over and press submit yourself.
       </>
     ),
   },
