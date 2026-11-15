@@ -22,8 +22,8 @@ const sans = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-const TITLE = 'rework: Tailored to the job. True to you.'
-const DESCRIPTION = 'Upload your resume, paste a job link, get a tailored resume and cover letter. Every rewrite is fact-checked against your real resume.'
+const TITLE = 'rework: Find jobs that fit. Get a resume tailored to match.'
+const DESCRIPTION = 'Upload your resume and see open jobs that fit you, ranked by your real match. Then get a resume tailored to each one, plus a cover letter and answers, fact-checked against your real resume. Free to start, no card.'
 
 export const viewport: Viewport = {
   themeColor: [
