@@ -115,6 +115,14 @@ describe('extra sections', () => {
 })
 
 describe('applyTailorOutput with skill groups', () => {
+  it('joins extra skills to an unlabeled skills list instead of adding a second line', () => {
+    const flat = parsedToMaster({ ...parsed, skills: [{ group: '', items: ['TypeScript', 'Docker'] }] })
+    const input = buildTailorInput(flat)
+    const { cleaned } = factGuard(input, output())
+    const tailored = applyTailorOutput(flat, input, cleaned)
+    expect(tailored.skills).toEqual([{ group: '', items: ['Docker', 'TypeScript', 'AWS Certified Cloud Practitioner'] }])
+  })
+
   it('keeps the master groups, reorders inside them, and passes certifications through', () => {
     const input = buildTailorInput(master)
     const { cleaned } = factGuard(input, output())

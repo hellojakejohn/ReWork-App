@@ -19,10 +19,9 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const userId = session.user.id
-  const access = await getAccess(userId)
-  const limit = trackerLimitFor(access.isPro)
-
-  const [total, rows] = await Promise.all([
+  // Plan, count and cards in one round of queries (the page waits on all three).
+  const [access, total, allRows] = await Promise.all([
+    getAccess(userId),
     prisma.jobApplication.count({ where: { userId } }),
     prisma.jobApplication.findMany({
       where: { userId },
@@ -46,9 +45,10 @@ export async function GET() {
         coverLetter: true,
       },
       orderBy: { createdAt: 'desc' },
-      ...(Number.isFinite(limit) ? { take: limit } : {}),
     }),
   ])
+  const limit = trackerLimitFor(access.isPro)
+  const rows = Number.isFinite(limit) ? allRows.slice(0, limit) : allRows
 
   return NextResponse.json({
     success: true,

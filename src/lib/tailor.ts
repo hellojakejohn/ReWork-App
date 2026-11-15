@@ -374,8 +374,11 @@ function mergeSkills(masterSkills: unknown, tailored: string[]): unknown {
     })
     // Skills fact-guard allowed because they appear elsewhere in the resume (bullets,
     // project tech, certifications) go in an unlabeled group rather than a wrong one.
+    // When the resume already has an unlabeled list, they join it (one line, not two).
     const extra = tailored.filter((s) => !placed.has(s.toLowerCase()))
-    if (extra.length > 0) result.push({ group: '', items: extra })
+    const unlabeled = result.find((g) => !g.group)
+    if (extra.length > 0 && unlabeled) unlabeled.items.push(...extra)
+    else if (extra.length > 0) result.push({ group: '', items: extra })
     return result.filter((g) => g.items.length > 0)
   }
   if (!masterSkills || typeof masterSkills !== 'object' || Array.isArray(masterSkills)) {
