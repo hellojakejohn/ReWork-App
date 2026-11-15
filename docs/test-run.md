@@ -19,7 +19,7 @@ If you see an error, copy its exact text: it tells Claude where the problem is.
 
 | # | Do | Expect |
 |---|----|--------|
-| 1 | Open rework.hellojakejohn.com | The landing page loads fast. Get started, Pricing, Terms and Privacy all work. |
+| 1 | Open rework.careers | The landing page loads fast. Get started, Pricing, Terms and Privacy all work. |
 | 2 | Get started, then sign in with Google | You land on the dashboard on the Resume card. |
 | 3 | Upload `marcus-hill-resume.pdf` | It reads the file in under a minute. Name, both jobs, school and skills are right. Any "things to check" dots point at real fields. |
 | 4 | "What job do you want next?": type Operations Coordinator, pick Remote or near me | Top matches show up in under a minute: real jobs, mostly in Minnesota or remote, each with a % and pay when the ad names it. Free shows 5 and "N more with Pro". |
@@ -41,7 +41,7 @@ If you see an error, copy its exact text: it tells Claude where the problem is.
 | 20 | Apply at {company} (on a match from step 5) | The real application page opens. With extension 0.2.0, the form fills (contact, resume PDF, letter) and nothing is submitted. Without it, the page still opens. |
 | 21 | Tracker (the board icon) | The job is there, with pay. Drag it to Applied and it stays after a refresh. Drag one to Interview: it gets a Prep button. |
 | 22 | Home | Recent jobs and top 3 matches show. A job 7+ days in Applied shows under Follow up (you may not have one yet). |
-| 23 | Go to rework.hellojakejohn.com/save, drag the button to your bookmarks bar | The page explains it. Clicking the button on that page only tells you to drag it. |
+| 23 | Go to rework.careers/save, drag the button to your bookmarks bar | The page explains it. Clicking the button on that page only tells you to drag it. |
 | 24 | Open a LinkedIn job you're signed in to, click Save to ReWork | A ReWork tab opens on the Job card with title, company and full description. **No one has tested signed-in LinkedIn yet.** |
 | 25 | Same on an Indeed job | Same result. If something is missing, select the description text and click again. |
 | 26 | Phone: open the site and sign in | Every card fits with no sideways scrolling, buttons are easy to tap. Check the matches list too. |

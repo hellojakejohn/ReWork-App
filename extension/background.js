@@ -5,7 +5,7 @@
 //   and open ReWork's /save page with it in a new tab next to this one.
 // activeTab only: the extension can read or fill a page only when the user clicks it there.
 // Its one host permission is ReWork itself, to fetch the user's own kit with their own login.
-const ORIGIN = "https://rework.hellojakejohn.com"
+const ORIGIN = "https://rework.careers"
 const SAVE_PREFIX = ORIGIN + "/save#job="
 
 async function getPacket() {

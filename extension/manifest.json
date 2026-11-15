@@ -4,7 +4,7 @@
   "short_name": "ReWork",
   "version": "0.2.0",
   "description": "Bring the job you're looking at into ReWork in one click, and fill in applications with your tailored resume.",
-  "homepage_url": "https://rework.hellojakejohn.com/save",
+  "homepage_url": "https://rework.careers/save",
   "action": {
     "default_title": "Save this job, or fill this application, with ReWork",
     "default_icon": {
@@ -27,6 +27,6 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://rework.hellojakejohn.com/*"
+    "https://rework.careers/*"
   ]
 }

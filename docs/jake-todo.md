@@ -44,7 +44,7 @@ Tick them off here or just tell Claude "done with N".
 ## Quick clicks (any time)
 
 9. [ ] **Uptime monitor** (UptimeRobot or Better Stack, free) on
-   `https://rework.hellojakejohn.com/api/health/live`.
+   `https://rework.careers/api/health/live`.
 10. [ ] **Vercel Deployment Protection** for Previews: PROJECT.md says it's on; just glance
     that it still is (Vercel, Settings, Deployment Protection).
 11. [ ] **After launch: Chrome Web Store** (decided Nov 15: the extension is a post-launch

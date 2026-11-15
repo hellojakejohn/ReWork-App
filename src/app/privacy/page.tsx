@@ -27,7 +27,7 @@ export default function PrivacyPage() {
     >
       <Section title="Who we are">
         <p>
-          ReWork (rework.hellojakejohn.com) is operated by Jakob Johnson, an individual based in Saint Paul, Minnesota, USA (&quot;we&quot;, &quot;us&quot;). Questions
+          ReWork (rework.careers) is operated by Jakob Johnson, an individual based in Saint Paul, Minnesota, USA (&quot;we&quot;, &quot;us&quot;). Questions
           about your data go to {mail}.
         </p>
       </Section>

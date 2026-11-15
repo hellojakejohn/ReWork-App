@@ -40,7 +40,7 @@ gitignored. Bump `version` in `manifest.json` before each upload.
    - single purpose: "Save the job posting on the current tab into ReWork"
    - activeTab: "read the job posting, or fill the application form, on the tab when the user clicks the button"
    - scripting: "run the job reader or the form filler on that tab"
-   - host permission (rework.hellojakejohn.com): "fetch the user's own application kit from their ReWork account"
+   - host permission (rework.careers): "fetch the user's own application kit from their ReWork account"
    - data: website content, used only to fill in the job in ReWork, never sold
-   - privacy policy: https://rework.hellojakejohn.com/privacy
+   - privacy policy: https://rework.careers/privacy
 5. Submit. Review usually takes a few days.
