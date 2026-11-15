@@ -28,7 +28,8 @@ export const authOptions: NextAuthOptions = {
       if (session?.user && user) {
         session.user.id = user.id
         // Add plan and other data from database user
-        const dbUser = await prisma.user.findUnique({
+        // One round of queries, not four in a row (each is a trip to the database).
+        const [dbUser, jobApplicationsCount, access] = await Promise.all([prisma.user.findUnique({
           where: { id: user.id },
           select: {
             resumesCreated: true,
@@ -40,7 +41,7 @@ export const authOptions: NextAuthOptions = {
             createdAt: true,
             lastActiveAt: true
           }
-        })
+        }), prisma.jobApplication.count({ where: { userId: user.id } }), getAccess(user.id)])
         if (dbUser) {
           session.user.resumesCreated = dbUser.resumesCreated
           session.user.totalResumesCreated = dbUser.totalResumesCreated
@@ -54,12 +55,8 @@ export const authOptions: NextAuthOptions = {
           session.user.lastActiveAt = dbUser.lastActiveAt
         }
         
-        // Get job applications count for "resumes optimized"
-        const jobApplicationsCount = await prisma.jobApplication.count({
-          where: { userId: user.id }
-        })
         session.user.resumesOptimized = jobApplicationsCount
-        session.user.access = await getAccess(user.id)
+        session.user.access = access
         session.user.isAdmin = isAdminEmail(session.user.email)
       }
       return session

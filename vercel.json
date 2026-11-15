@@ -1,4 +1,7 @@
 {
+  "regions": [
+    "pdx1"
+  ],
   "crons": [
     {
       "path": "/api/keepalive",
