@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react"
 import { CheckCircle, Sparkles } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { FREE_TAILORS_PER_MONTH, PRO_FEATURES } from "@/lib/plans"
+import { PRO_FEATURES } from "@/lib/plans"
 import { NO_ACCESS } from "@/lib/entitlement-rules"
 import { OfferCards } from "@/components/billing/offer-cards"
 
@@ -22,10 +22,11 @@ export function UpgradeSheet({ open, onOpenChange, reason }: UpgradeSheetProps) 
         <DialogHeader>
           <DialogTitle className="text-text flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-text" />
-            {reason ? "Get more with Pro" : "Keep tailoring with Pro"}
+            Get more with Pro
           </DialogTitle>
           <DialogDescription className="text-text-muted">
-            {reason || `You've used all ${FREE_TAILORS_PER_MONTH} free tailored resumes this month.`}
+            {/* Opened from the Upgrade button there's no limit hit, so don't claim one. */}
+            {reason || "Everything you need for a whole job search, fact-checked like your resume."}
           </DialogDescription>
         </DialogHeader>
         <OfferCards access={session ? session.user.access ?? NO_ACCESS : null} compact />
