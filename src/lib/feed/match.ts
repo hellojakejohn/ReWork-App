@@ -252,9 +252,18 @@ export interface MatchDTO {
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string }
 }
 
-/** This resume's matches, best first (matchRank): open jobs only, dismissed ones hidden. */
+/**
+ * This resume's matches, best first (matchRank): open jobs only, dismissed ones hidden, and
+ * none that share nothing with the resume (0% and nothing in other words), unless saved.
+ */
 export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: string, resumeId: string, take: number): Promise<{ matches: MatchDTO[]; total: number }> {
-  const where = { userId, resumeId, dismissedAt: null, job: { closedAt: null } }
+  const where = {
+    userId,
+    resumeId,
+    dismissedAt: null,
+    job: { closedAt: null },
+    OR: [{ score: { gt: 0 } }, { related: { isEmpty: false } }, { savedAt: { not: null } }],
+  }
   const [rows, total] = await Promise.all([
     db.jobMatch.findMany({
       where,

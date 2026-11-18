@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanJobTitle, ghostSignals, mentionsPay, otherCompanyNamed, postedDaysAgo, readPastedJob, sameCompany, scamSignals } from '@/lib/job-checks'
+import { cleanJobTitle, ghostSignals, mentionsPay, otherCompanyNamed, postedDaysAgo, readPastedJob, sameCompany, scamSignals, matchAgeNote } from '@/lib/job-checks'
 
 describe('cleanJobTitle', () => {
   it('drops a trailing company name', () => {
@@ -203,5 +203,18 @@ describe('readPastedJob', () => {
   it('reads LinkedIn top-card facts when they were copied too', () => {
     const post = readPastedJob(`Product Designer\nAcme\nSaint Paul, MN · Reposted 2 weeks ago · Over 100 applicants\n${body}`)
     expect(post).toMatchObject({ kind: 'post', facts: { posted: 'Reposted 2 weeks ago', applicants: 'Over 100 applicants' } })
+  })
+})
+
+describe('matchAgeNote', () => {
+  const now = new Date('2026-11-17T12:00:00Z')
+  it('says nothing for a fresh posting or no date', () => {
+    expect(matchAgeNote('2026-11-01T00:00:00Z', now)).toBeNull()
+    expect(matchAgeNote('2026-10-10T00:00:00Z', now)).toBeNull()
+    expect(matchAgeNote(null, now)).toBeNull()
+    expect(matchAgeNote('not a date', now)).toBeNull()
+  })
+  it('names the age of an old posting', () => {
+    expect(matchAgeNote('2026-08-01T00:00:00Z', now)).toBe('Posted about 4 months ago')
   })
 })

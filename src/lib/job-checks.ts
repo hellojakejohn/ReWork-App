@@ -242,6 +242,21 @@ function quoteOf(description: string, re: RegExp): string {
 }
 
 /** Every ghost-job sign for this ad, most telling first. Empty when nothing stands out. */
+/** On match cards only ads this old get a note: most big-company postings stay up 1-3 months. */
+export const MATCH_OLD_DAYS = 90
+
+/**
+ * The quiet ghost-job sign on a match card: an old posting date. Matches come straight from
+ * employers' boards, so scam signs are rare there; age is the one fact every board gives us.
+ */
+export function matchAgeNote(postedAt: string | null, now = new Date()): string | null {
+  const t = postedAt ? Date.parse(postedAt) : NaN
+  if (Number.isNaN(t)) return null
+  const days = Math.floor((now.getTime() - t) / DAY_MS)
+  if (days < MATCH_OLD_DAYS) return null
+  return days >= 60 ? `Posted about ${Math.round(days / 30)} months ago` : `Posted ${days} days ago`
+}
+
 export function ghostSignals(description: string, facts: JobFacts = {}, now = new Date()): GhostSignal[] {
   const found: GhostSignal[] = []
   const closes = facts.closes ? Date.parse(facts.closes) : NaN
