@@ -8,9 +8,10 @@ Tick them off here or just tell Claude "done with N".
 1. [ ] **The $29 test.** On rework.careers, signed in as Stevie: Upgrade, Get 3 months for
    $29, pay with your card. Check the header shows Pro. Then Stripe, Payments, open it,
    Refund (full). Tell Claude "refunded"; Claude checks Pro switched on, then off.
-   (Nov 17: checkout reaches Stripe's payment page again after the tax-code fix.)
-2. [ ] Optional: one $15 subscription, then cancel it in the billing portal.
-3. [ ] Merge the open PRs Claude lists in `docs/questions-2026-11-18.md`.
+   (Nov 18: prices are tax-included, so checkout should total exactly $29.)
+2. [ ] **The $15 test** (you said yes): right after the $29 one, Subscribe for $15/month,
+   pay, then Manage billing, Cancel. Refund it in Stripe too. Tell Claude "cancelled".
+3. [ ] Launch (you said yes: the moment both tests pass).
 
 ## After launch
 
@@ -39,3 +40,5 @@ Tick them off here or just tell Claude "done with N".
   public details, Deployment Protection checked.
 - 2026-11-17: Stripe Managed Payments kept on (Stripe handles sales tax, 3.5% per sale);
   both products tagged "SaaS - personal use" (txcd_10103000), status Ready to use.
+- 2026-11-18: PRs 54 and 55 merged. Stripe Tax setting "Include tax in prices" = Yes; both
+  prices show "Use default (yes)" (Minnesota preview: $29.00 total, tax inside).

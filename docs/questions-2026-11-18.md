@@ -1,6 +1,7 @@
 # Questions for Jake (morning of Nov 18)
 
-Short answers are fine ("1 yes, 2 b, ..."). Nothing below is merged or changed without you.
+**Answered Nov 18:** 1 yes, 2 b (tax included), 3 yes, 4 merge both. Done: PRs 54 and 55
+merged; both Stripe prices are tax-included. Still open: 5, 6, 7.
 
 ## What happened overnight
 
