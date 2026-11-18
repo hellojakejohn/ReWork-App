@@ -244,17 +244,13 @@ Tuning ideas not done yet:
   "Tailoring can lift this to N%" when reach is 5+ points higher.
 - Audit and what's still open: `docs/audit-2026-11-14.md`.
 
-## Next session: launch (target Mon Nov 16, Thanksgiving at the latest)
-Jake's hand steps live in `docs/jake-todo.md`; his end-to-end run is `docs/test-run.md`.
-Done Nov 14: PR 47 merged, job feed SQL applied, first job pull (23,880 jobs), Stripe live
-checked in the dashboard (live $29 and $15 prices, live webhook with 10 events, portal),
-no test billing data to clear, `/api/health` all green on live keys.
-Left, in order:
-1. Anthropic Console hard monthly spend limit (Jake).
-2. Jake's end-to-end test (`docs/test-run.md`) on prod with a fresh Google account; fix what
-   he finds.
-3. One real $29 pass and one $15 subscription, then refund and cancel.
-4. Quick clicks: uptime monitor, Terms/Privacy links in the Stripe portal, Web Analytics.
-5. After launch: USAJOBS key, Chrome Web Store upload (build from main), Adzuna decision.
-   No marketing until the end-to-end test passes.
+## Next session: launch (rework.careers)
+Jake's hand steps live in `docs/jake-todo.md`; open questions in `docs/questions-2026-11-18.md`.
+State Nov 17: live on rework.careers (old domain 308s), functions in pdx1 next to the
+database, Vercel Pro, Anthropic $500/month limit, `AI_FREE_DAILY_USD=10`, UptimeRobot,
+Web Analytics. Daily job pull runs about 13:20 UTC (~25.6k open jobs).
+Stripe: Managed Payments on (Stripe is merchant of record, 3.5% add-on); both products have
+tax code txcd_10103000 (SaaS, personal use). Without a tax code checkout returns 400
+"product tax code is missing". Any new product needs one.
+Left: the $29 test and refund (Jake), then launch. No marketing until it passes.
 Local shell defaults to Node 18; tests need Node 22 (`.nvmrc`, `nvm use`).
