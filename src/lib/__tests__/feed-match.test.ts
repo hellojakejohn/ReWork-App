@@ -159,6 +159,14 @@ describe('listMatches reach', () => {
     expect(matches.map((m) => m.reach)).toEqual([61, 40])
     expect('keywords' in matches[0].job).toBe(false)
   })
+
+  it('leaves out matches that share nothing with the resume, unless saved', async () => {
+    const { listMatches } = await import('@/lib/feed/match')
+    let seen: Row = {}
+    const db = { jobMatch: { findMany: async ({ where }: Row) => ((seen = where), []), count: async () => 0 } }
+    await listMatches(db as never, 'u', 'r', 10)
+    expect(seen.OR).toEqual([{ score: { gt: 0 } }, { related: { isEmpty: false } }, { savedAt: { not: null } }])
+  })
 })
 
 describe('searchWorkday', () => {

@@ -5,11 +5,12 @@
 // paste. Shown on the Job card (the step right after the upload) and, shorter, on Home.
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { Banknote, Bookmark, BookmarkCheck, Loader2, MapPin, RefreshCw, Search, Sparkles, X } from "lucide-react"
+import { Banknote, Bookmark, BookmarkCheck, Clock, Loader2, MapPin, RefreshCw, Search, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Segmented } from "@/components/ui/segmented"
 import { cn } from "@/lib/utils"
 import { usState } from "@/lib/feed/prefilter"
+import { matchAgeNote } from "@/lib/job-checks"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
 import { ErrorNote, StageList, inputClass } from "./ui"
 
@@ -270,6 +271,11 @@ export function MatchesPanel({
                     {m.job.payLabel && (
                       <span className="flex items-center gap-1">
                         <Banknote className="h-3 w-3" aria-hidden /> {m.job.payLabel}
+                      </span>
+                    )}
+                    {matchAgeNote(m.job.postedAt) && (
+                      <span className="flex items-center gap-1" title="Older ads are more often filled, paused or left up by mistake. Worth applying soon or checking it's still open.">
+                        <Clock className="h-3 w-3" aria-hidden /> {matchAgeNote(m.job.postedAt)}
                       </span>
                     )}
                   </p>
