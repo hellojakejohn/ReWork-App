@@ -3,56 +3,26 @@
 Things only Jake can do (dashboards, money, secrets). Top to bottom is the order.
 Tick them off here or just tell Claude "done with N".
 
-## Now (unblocks PR 47, job matches)
+## Launch (the last gate)
 
-1. [x] **Paste the job feed SQL in Supabase.** (done Nov 14) Copy it with
-   `pbcopy < prisma/migrations/20261109000000_job_feed/migration.sql`, paste it into the
-   Supabase SQL editor (ReWork project), run it. It only adds 3 new tables: safe any time.
-   Then tell Claude, who merges PR 47 and checks prod.
-2. [x] **Fill the job list once** (done Nov 14: 23,880 jobs, 137 boards) (after 47 is live): Vercel, ReWork project, Settings,
-   Cron Jobs, `/api/cron/pull-jobs`, Run. Takes a few minutes. Otherwise matches stay
-   empty until the daily pull at 6:30 am CT.
+1. [ ] **The $29 test.** On rework.careers, signed in as Stevie: Upgrade, Get 3 months for
+   $29, pay with your card. Check the header shows Pro. Then Stripe, Payments, open it,
+   Refund (full). Tell Claude "refunded"; Claude checks Pro switched on, then off.
+   (Nov 18: prices are tax-included, so checkout should total exactly $29.)
+2. [ ] **The $15 test** (you said yes): right after the $29 one, Subscribe for $15/month,
+   pay, then Manage billing, Cancel. Refund it in Stripe too. Tell Claude "cancelled".
+3. [ ] Launch (you said yes: the moment both tests pass).
 
-## More jobs (anytime, free)
+## After launch
 
-2a. [ ] **USAJOBS key** (federal jobs: VA hospitals, logistics, admin, accounting). Request
-   a free key at developer.usajobs.gov with the email you want on file. Then in Vercel
-   Production env add `USAJOBS_API_KEY` (the key) and `USAJOBS_EMAIL` (that same email), and
-   redeploy. Off until both are set. Tell Claude, who checks it with the test people.
-2b. [ ] **Decide on Adzuna** (millions of jobs of every kind, all states). Its free key is a
-   14-day trial; a product that makes money needs a licence from Adzuna (ask them for a quote
-   at developer.adzuna.com). Claude can build it once there's a deal.
-
-## Before taking money (about 20 min, best with Claude)
-
-3. [x] **Stripe live mode** (checked Nov 14 in the dashboard: live products $29 and $15/mo,
-   live webhook active with 10 events, portal set up. Still confirm Vercel uses the live
-   keys via step 5.) Optional: add Terms and Privacy links in the portal settings.: the $15/month and $29 one-time prices, their ids in Vercel
-   Production env, the webhook (API version 2026-02-25.clover, 10 events), the customer
-   portal, one subscription per customer. Full list: `docs/launch-audit.md` item 4.
-4. [x] **Clear test billing data** (nothing to clear on Nov 14: no Stripe customers, only 1 COMP) in the prod DB (SQL in `docs/launch-audit.md` item 5;
-   run the counts first).
-5. [x] (Nov 14: ok, live prices and webhook match) **Open `/api/health` signed in as admin**: it should say `ok: true`.
-6. [x] (Nov 15: $500/month org limit set) **Anthropic Console**: a hard monthly spend limit on the workspace, if not set yet.
-
-## Your end-to-end test
-
-7. [ ] Run `docs/test-run.md` on prod with a fresh Google account. Send Claude anything off.
-8. [ ] One real $29 pass and one real $15 subscription, then refund the pass and cancel the
-   subscription in the portal.
-
-## Quick clicks (any time)
-
-9. [ ] **Uptime monitor** (UptimeRobot or Better Stack, free) on
-   `https://rework.careers/api/health/live`.
-10. [ ] **Vercel Deployment Protection** for Previews: PROJECT.md says it's on; just glance
-    that it still is (Vercel, Settings, Deployment Protection).
-11. [ ] **After launch: Chrome Web Store** (decided Nov 15: the extension is a post-launch
-    feature; the site no longer promises it. When it's approved, Claude adds the install link
-    and turns the copy back on.): upload extension 0.2.0 (review takes days; launch doesn't
-    wait on it). Build it from the merged main (PR 47 changed it on Nov 14) with
-    `npx tsx scripts/build-extension.ts`, then upload `extension-dist.zip`.
-12. [ ] Vercel Web Analytics on, failed-deployment email alert on.
+4. [ ] **Support email**: free forwarding `support@rework.careers` to your Gmail (ImprovMX or
+   similar, two DNS records in Vercel Domains), then Claude switches the site and Stripe to it.
+5. [ ] **USAJOBS key** (federal jobs). Free key at developer.usajobs.gov. Vercel Production
+   env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
+6. [ ] **Adzuna**: decide on a licence (developer.adzuna.com). Claude builds it after a deal.
+7. [ ] **Chrome Web Store** (post-launch feature): $5 developer account, Claude builds the zip
+   and writes the listing. When approved, Claude adds the install link and turns the copy on.
+8. [ ] Vercel failed-deployment email alert (Settings, Notifications).
 
 ## Read when you have 10 minutes
 
@@ -61,4 +31,14 @@ Tick them off here or just tell Claude "done with N".
 ## Done
 
 - 2026-11-13: PRs 44, 45, 46 merged and live.
-- 2026-11-14: PR 47 (job matches) merged and live.
+- 2026-11-14: PR 47 (job matches) live; job feed SQL applied; first job pull; Stripe live
+  checked; no test billing data; `/api/health` green.
+- 2026-11-15: PRs 49 to 53 live (fast search, save to tracker, upgrade popup, extension
+  hidden, launch copy, rework.careers, servers in Oregon). Anthropic $500/month limit and
+  alerts, `AI_FREE_DAILY_USD=10`, Vercel Pro, domain bought ($29.99, then $66/yr), Google
+  sign-in and Stripe webhook moved, old domain 308s, UptimeRobot, Web Analytics, Stripe
+  public details, Deployment Protection checked.
+- 2026-11-17: Stripe Managed Payments kept on (Stripe handles sales tax, 3.5% per sale);
+  both products tagged "SaaS - personal use" (txcd_10103000), status Ready to use.
+- 2026-11-18: PRs 54 and 55 merged. Stripe Tax setting "Include tax in prices" = Yes; both
+  prices show "Use default (yes)" (Minnesota preview: $29.00 total, tax inside).
