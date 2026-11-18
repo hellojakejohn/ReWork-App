@@ -1,24 +1,39 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import confetti from "canvas-confetti"
-import { describeAccess, type Access } from "@/lib/entitlement-rules"
+import { CheckCircle, Crown } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import type { Access } from "@/lib/entitlement-rules"
+import { PRO_WELCOME_HIGHLIGHTS, proWelcome } from "@/lib/pro-welcome"
 
 const POLL_MS = 1000
 const MAX_WAIT_MS = 10_000
 
+function celebrate() {
+  const base = { disableForReducedMotion: true, zIndex: 60 }
+  confetti({ ...base, particleCount: 160, spread: 90, origin: { y: 0.55 } })
+  setTimeout(() => {
+    confetti({ ...base, particleCount: 80, angle: 60, spread: 70, origin: { x: 0, y: 0.7 } })
+    confetti({ ...base, particleCount: 80, angle: 120, spread: 70, origin: { x: 1, y: 0.7 } })
+  }, 250)
+}
+
 /**
  * Handles /dashboard?checkout=success&offer=... The webhook may land a few seconds after
- * Stripe redirects back, so poll access until Pro shows up (or give up after ~10s).
+ * Stripe redirects back, so poll access until Pro shows up (or give up after ~10s), then
+ * show the "You're Pro" popup.
  */
-export function CheckoutSuccess() {
+export function CheckoutSuccess({ onSeeMatches }: { onSeeMatches?: () => void }) {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { update } = useSession()
+  const { data: session, update } = useSession()
   const started = useRef(false)
+  const [welcome, setWelcome] = useState<Access | null>(null)
 
   useEffect(() => {
     if (searchParams.get("checkout") !== "success" || started.current) return
@@ -43,8 +58,9 @@ export function CheckoutSuccess() {
             const { access } = (await res.json()) as { access: Access }
             if (access.isPro) {
               await update()
-              toast.success(`You're Pro. ${describeAccess(access)}.`, { id: toastId })
-              confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } })
+              toast.dismiss(toastId)
+              setWelcome(access)
+              celebrate()
               clearParams()
               return
             }
@@ -68,5 +84,68 @@ export function CheckoutSuccess() {
     }
   }, [searchParams, router, update])
 
-  return null
+  if (!welcome) return null
+  return (
+    <ProWelcomeDialog
+      access={welcome}
+      name={session?.user?.name}
+      onClose={() => setWelcome(null)}
+      onSeeMatches={onSeeMatches}
+    />
+  )
+}
+
+/** The "You're Pro" popup: what they bought, what's unlocked, and where to go next. */
+export function ProWelcomeDialog({
+  access,
+  name,
+  onClose,
+  onSeeMatches,
+}: {
+  access: Access
+  name?: string | null
+  onClose: () => void
+  onSeeMatches?: () => void
+}) {
+  const { title, detail } = proWelcome(access, name)
+  const close = onClose
+  return (
+    <Dialog open onOpenChange={(open) => !open && close()}>
+      <DialogContent className="max-w-[460px]">
+        <DialogHeader className="items-center text-center sm:text-center">
+          <span className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-accent">
+            <Crown className="h-6 w-6" />
+          </span>
+          <DialogTitle className="font-serif text-3xl font-medium tracking-tight text-text">{title}</DialogTitle>
+          <DialogDescription className="text-text-secondary">{detail}</DialogDescription>
+        </DialogHeader>
+        <div className="rounded-card border border-border p-4">
+          <p className="text-sm font-semibold text-text">Unlocked now</p>
+          <ul className="mt-2 space-y-2">
+            {PRO_WELCOME_HIGHLIGHTS.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
+                <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="flex flex-col gap-2">
+          {onSeeMatches && (
+            <Button
+              onClick={() => {
+                close()
+                onSeeMatches()
+              }}
+            >
+              See all my matches
+            </Button>
+          )}
+          <Button variant={onSeeMatches ? "text" : "primary"} onClick={close}>
+            {onSeeMatches ? "Later" : "Let's go"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }

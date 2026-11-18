@@ -422,7 +422,13 @@ export function OneFlow() {
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-bg">
-      <CheckoutSuccess />
+      <CheckoutSuccess
+        onSeeMatches={() => {
+          setJob(null)
+          setApplication(null)
+          go(1)
+        }}
+      />
       <AppHeader
         quota={quota}
         recentCount={applications.length}
