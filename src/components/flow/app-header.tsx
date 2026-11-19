@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { BarChart3, ChevronDown, FileStack, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
+import { BarChart3, ChevronDown, Crown, FileStack, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -19,6 +19,7 @@ import {
 import { SettingsModal } from "@/components/settings-modal"
 import { LogoutModal } from "@/components/logout-modal"
 import type { Quota } from "./api"
+import { describeAccess } from "@/lib/entitlement-rules"
 import { AIUsageBanner, AIUsageMeter, useAIUsage } from "./ai-usage"
 
 /** Hooks into the one-page flow. Absent on other views, where the same items link back to it. */
@@ -49,11 +50,10 @@ export function AppHeader({
   // Quota changes after every tailor/cover letter, so the usage bar refreshes with it.
   const aiUsage = useAIUsage(`${session?.user?.id}:${quota?.used ?? ""}:${quota?.remaining ?? ""}:${recentCount}`)
 
-  const tailorsText = !quota
-    ? ""
-    : quota.limit === null
-      ? "Pro: tailor every job"
-      : `${quota.remaining} of ${quota.limit} tailors left`
+  // Pro gets the badge instead of a count.
+  const tailorsText = !quota || quota.isPro ? "" : `${quota.remaining} of ${quota.limit} tailors left`
+  const access = session?.user?.access
+  const proText = access?.isPro ? describeAccess(access) : quota?.isPro ? "Pro" : ""
 
   return (
     <>
@@ -103,6 +103,18 @@ export function AppHeader({
             </Button>
           )}
 
+          {quota?.isPro && (
+            <Link
+              href="/pricing"
+              title={proText}
+              aria-label={`Pro account: ${proText}`}
+              className="flex items-center gap-1.5 rounded-full border border-accent/50 bg-accent/15 px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent/25"
+            >
+              <Crown className="h-3.5 w-3.5" />
+              Pro
+            </Link>
+          )}
+
           {session && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1 rounded-full p-1 hover:bg-surface-raised focus:outline-none focus-visible:ring-2 focus-visible:ring-text/40" aria-label="Account menu">
@@ -114,6 +126,11 @@ export function AppHeader({
                   <div className="truncate text-sm font-semibold text-text">{session.user?.name}</div>
                   <div className="truncate text-xs text-text-muted">{session.user?.email}</div>
                   {tailorsText && <div className="mt-1 text-xs text-text-muted sm:hidden">{tailorsText}</div>}
+                  {proText && (
+                    <div className="mt-1 flex items-center gap-1 text-xs font-medium text-accent">
+                      <Crown className="h-3 w-3" /> {proText}
+                    </div>
+                  )}
                   <AIUsageMeter usage={aiUsage} />
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
