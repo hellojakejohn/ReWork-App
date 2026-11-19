@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils"
 import { TRACKER_COLUMNS, columnOf, trackerStats, transitionPatch, type TrackerColumn } from "@/lib/tracker"
 import { FREE_TRACKER_APPLICATIONS } from "@/lib/plans"
-import type { TemplateId } from "@/lib/resume-templates"
+import { isTemplateId, type TemplateId } from "@/lib/resume-templates"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { AppHeader } from "@/components/flow/app-header"
 import { deleteTracked, loadTracker, updateTracked, type TrackerCardDTO, type TrackerData } from "@/components/flow/api"
@@ -31,7 +31,8 @@ import { AddJobDialog } from "./add-job-dialog"
 
 function readTemplate(): TemplateId {
   try {
-    return window.localStorage.getItem("rework.template") === "modern" ? "modern" : "classic"
+    const stored = window.localStorage.getItem("rework.template")
+    return isTemplateId(stored) ? stored : "classic"
   } catch {
     return "classic"
   }

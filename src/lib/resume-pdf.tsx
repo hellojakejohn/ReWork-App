@@ -29,8 +29,10 @@ function styles(template: TemplateId) {
   const font = t.serif ? 'Tinos' : 'Arimo'
   const bold = t.serif ? 'Tinos-Bold' : 'Arimo-Bold'
   const italic = t.serif ? 'Tinos-Italic' : 'Arimo-Italic'
+  // Compact: smaller type and gaps so a long career fits on one page.
+  const c = t.compact
   return StyleSheet.create({
-    page: { paddingVertical: 40, paddingHorizontal: 46, fontFamily: font, fontSize: 10, lineHeight: 1.35, color: '#111827' },
+    page: { paddingVertical: c ? 30 : 40, paddingHorizontal: c ? 38 : 46, fontFamily: font, fontSize: c ? 9.3 : 10, lineHeight: c ? 1.25 : 1.35, color: '#111827' },
     header: { marginBottom: 10, alignItems: t.centered ? 'center' : 'flex-start' },
     // An explicit lineHeight: the page's inherited one is sized for 10pt text, so a 20pt
     // name overflowed its line and the headline drew over it.
@@ -38,24 +40,24 @@ function styles(template: TemplateId) {
     headline: { fontSize: 11, marginTop: 2, color: t.serif ? '#374151' : t.accent },
     contact: { fontSize: 9, color: '#374151' },
     contactRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: t.centered ? 'center' : 'flex-start', marginTop: 4 },
-    section: { marginTop: 9 },
+    section: { marginTop: c ? 6 : 9 },
     heading: {
       fontFamily: bold,
-      fontSize: 10.5,
+      fontSize: c ? 9.8 : 10.5,
       color: t.accent,
       textTransform: 'uppercase',
       letterSpacing: 0.8,
       borderBottomWidth: t.serif ? 0.8 : 0.6,
       borderBottomColor: t.rule,
       paddingBottom: 2,
-      marginBottom: 5,
+      marginBottom: c ? 3 : 5,
     },
     row: { flexDirection: 'row', justifyContent: 'space-between' },
-    entry: { marginBottom: 6 },
+    entry: { marginBottom: c ? 4 : 6 },
     strong: { fontFamily: bold },
     muted: { color: '#4B5563' },
     italic: { fontFamily: italic, color: '#374151' },
-    bullet: { flexDirection: 'row', marginTop: 1.5 },
+    bullet: { flexDirection: 'row', marginTop: c ? 0.8 : 1.5 },
     bulletDot: { width: 10 },
     bulletText: { flex: 1 },
     small: { fontSize: 9 },
