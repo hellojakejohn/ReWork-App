@@ -17,6 +17,11 @@ const GREENHOUSE = [
     'everlane', 'mejuri', 'parachutehome', 'harrys', 'stitchfix', 'onemedical',
     // Nov 14: health care and service jobs (checked live).
     'blankstreet', 'cloverhealth', 'honor', 'omadahealth', 'talkspace', 'doordashusa', 'oura', 'instawork',
+    // Nov 19 (checked live): car sales and delivery, public safety, restaurants, groceries,
+    // health care, lending, insurance, logistics, space.
+    'carvana', 'axon', 'opentable', 'misfitsmarket', 'thrivemarket', 'weee', 'thefarmersdog',
+    'renttherunway', 'tia', 'galileo', 'sezzle', 'oportun', 'missionlane', 'coalition',
+    'project44', 'fourkites', 'wikimedia', 'relativity', 'astranis',
 ]
 const LEVER = [
     'palantir', 'spotify', 'zoox', 'gopuff', 'jumpcloud', 'anchorage', 'ro', 'veeva', 'tala',
@@ -26,6 +31,8 @@ const ASHBY = [
     'ramp', 'notion', 'linear', 'openai', 'supabase', 'posthog', 'replit', 'cursor', 'ashby',
     'cohere', 'clickup', 'zapier', 'hex', 'modal', 'perplexity', 'elevenlabs', 'plaid',
     'snowflake', 'docker', 'benchling', 'watershed', 'quora', 'multiverse', 'harvey',
+    // Nov 19 (checked live): mental health and clinics, plus a few large boards.
+    'headway', 'commure', 'vanta', 'drata', 'sentry', 'attio',
 ]
 
 export const LIST_BOARDS: Board[] = [
@@ -95,4 +102,9 @@ export const WORKDAY_BOARDS: WorkdayBoard[] = [
   { company: 'Pentair', tenant: 'pentair', host: 'pentair.wd5.myworkdayjobs.com', site: 'pentair_Careers' },
   { company: 'Prime Therapeutics', tenant: 'primetherapeutics', host: 'primetherapeutics.wd1.myworkdayjobs.com', site: 'primetherapeuticscareers' },
   { company: 'Werner Enterprises', tenant: 'werner', host: 'werner.wd501.myworkdayjobs.com', site: 'werner' },
+  // Added Nov 19 (checked live): hospitals in NC, IL, WI, GA; auto parts; restaurants.
+  { company: 'Advocate Health', tenant: 'aah', host: 'aah.wd115.myworkdayjobs.com', site: 'External' },
+  { company: 'LKQ', tenant: 'lkqcorp', host: 'lkqcorp.wd5.myworkdayjobs.com', site: 'ExternalCareerSite-LKQ' },
+  { company: "Ted's Montana Grill", tenant: 'tedsmontanagrill', host: 'tedsmontanagrill.wd503.myworkdayjobs.com', site: 'TMG_External_Career_Site' },
+  { company: 'TopBuild', tenant: 'topbuild', host: 'topbuild.wd501.myworkdayjobs.com', site: 'DI_External' },
 ]

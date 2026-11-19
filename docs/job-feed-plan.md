@@ -279,3 +279,30 @@ QA on 7 non-tech test people (`scripts/fixtures/people`, `--people` on `eval:mat
 - **Adzuna** (every kind of job, all states) needs a commercial licence; Jake's call.
 - **SmartRecruiters** public postings work for few companies without a known id list
   (Equinox 734 US jobs, Bosch 352); not added yet.
+
+## More jobs (Nov 19)
+
+Added (each checked live): 19 Greenhouse boards (Carvana, Axon, OpenTable, Misfits Market, Thrive
+Market, Weee, The Farmer's Dog, Rent the Runway, Tia, Galileo, Sezzle, Oportun, Mission Lane,
+Coalition, project44, FourKites, Wikimedia, Relativity, Astranis), 6 Ashby (Headway, Commure,
+Vanta, Drata, Sentry, Attio), 3 SmartRecruiters (Domino's, 25k US postings, newest 2,000
+pulled; Raising Cane's; AbbVie) and 4 Workday (Advocate Health, LKQ, Ted's Montana Grill,
+TopBuild). `roleKey` now drops store numbers and addresses so one store chain role shows once.
+
+**To check next** (found by web search, but Workday rate-limited the check from this machine
+after a broad probe; retry a few at a time, 4s apart). Host and site:
+- Health: `nshs.wd1 ns-eeh` (Endeavor), `choa.wd12 externalcareers` (Children's Atlanta),
+  `nyp.wd1 nypcareers` (NewYork-Presbyterian), `rrhs.wd5 RRH` (Rochester Regional),
+  `memorialhermann.wd5 external`, `hfsc.wd5 Careers`
+- Retail and grocery: `tjx.wd1 TJX_EXTERNAL`, `jdgroupnam.wd1 JD_Careers`, `justfab.wd1 fabletics`,
+  `cswg.wd1 CS_Careers`, `fastretailing.wd3 headquarters_us_GU` (Uniqlo)
+- Logistics and parts: `mdlz.wd3 External` (Mondelez), `genpt.wd1 Careers` (Genuine Parts),
+  `fleetpride.wd1 fleetpridecareer`, `distributionnow.wd5 DNOW_Careers`, `cesco.wd5 CESCOCareers`
+- Schools: `clevelandmetroschools.wd1 jobs`, `dcsd.wd5 DCSD`, `asd.wd5 ASD20`, `strideinc.wd1 SK`,
+  `vertexeducation.wd1 LegacyCareers`, `tntp.wd5 TNTP`
+- Call centers: `acg.wd1 careers` (AAA), `sagility.wd1 eQuest`, `assurant.wd1 Assurant_Careers`
+- Hotels and restaurants: `benchmark.wd1 PGH_Careers`, `atriumhospitality.wd5 AtriumHospitality`,
+  `hriproperties.wd12 HRI_Hospitality`, `daveandbusters.wd1 Dave_and_Busters_Careers`
+
+Workday is searched live per match (24 at a time, 20s budget), so past ~100 employers move the
+big ones to a daily pull instead.

@@ -71,6 +71,9 @@ export function roleKey(job: { company: string; title: string }): string {
     .toLowerCase()
     .replace(/\([^)]*\)/g, ' ')
     .replace(/\s[-–|]\s[^-–|]*\b(remote|[a-z]+,\s*[a-z]{2})\b.*$/i, ' ')
+    // Store numbers and street addresses: "Delivery Driver (08964) - 6401 Stirling Rd", "#1234".
+    .replace(/\s[-–|]\s[^-–|]*\d[^-–|]*$/, ' ')
+    .replace(/#\s*\d+/g, ' ')
     .replace(/[^a-z0-9+#]+/g, ' ')
     .trim()
   return `${job.company.toLowerCase()}|${title}`

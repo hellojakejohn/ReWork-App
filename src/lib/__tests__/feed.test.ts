@@ -38,6 +38,14 @@ describe('dedupe', () => {
     expect(roleKey({ company: 'X', title: 'Web Developer (New York, NY)' })).toBe(roleKey({ company: 'X', title: 'Web Developer' }))
     expect(roleKey({ company: 'X', title: 'Web Developer' })).not.toBe(roleKey({ company: 'X', title: 'Backend Developer' }))
   })
+
+  it('drops store numbers and street addresses', () => {
+    const base = roleKey({ company: "Domino's", title: 'Delivery Driver' })
+    expect(roleKey({ company: "Domino's", title: 'Delivery Driver (08964) - 6401 Stirling Rd' })).toBe(base)
+    expect(roleKey({ company: "Domino's", title: 'Delivery Driver - Store 4412' })).toBe(base)
+    expect(roleKey({ company: "Domino's", title: 'Delivery Driver #4412' })).toBe(base)
+    expect(roleKey({ company: 'X', title: 'Product Manager - Payments' })).not.toBe(roleKey({ company: 'X', title: 'Product Manager - Growth' }))
+  })
 })
 
 describe('locations', () => {

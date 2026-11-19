@@ -26,6 +26,11 @@ export const SMARTRECRUITERS_BOARDS: SmartRecruitersBoard[] = [
   { id: 'NBCUniversal3', company: 'NBCUniversal' },
   { id: 'AveryDennison', company: 'Avery Dennison' },
   { id: 'Continental', company: 'Continental' },
+  // Nov 19 (checked live): pizza delivery and stores (25k US postings; the newest pages are
+  // pulled), restaurants, pharma.
+  { id: 'Dominos', company: "Domino's" },
+  { id: 'RaisingCanes', company: "Raising Cane's" },
+  { id: 'Abbvie', company: 'AbbVie' },
 ]
 
 const PAGE = 100
