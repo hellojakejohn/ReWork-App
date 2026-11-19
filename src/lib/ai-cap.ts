@@ -72,9 +72,9 @@ const globalCache = new Map<SpendTier, { day: number; at: number; spent: number 
 export type SpendTier = 'free' | 'pro' | 'burn'
 
 export const AI_DISABLED_MESSAGE =
-  "rework's AI features are paused for a few minutes while we fix something. Downloads, the tracker and editing still work."
+  "ReWork's AI features are paused for a few minutes while we fix something. Downloads, the tracker and editing still work."
 export const AI_FREE_CEILING_MESSAGE =
-  "rework's free plan has used today's AI allowance, so AI for free accounts is back at midnight UTC. Go Pro to keep going now. Downloads, the tracker and editing still work."
+  "ReWork's free plan has used today's AI allowance, so AI for free accounts is back at midnight UTC. Go Pro to keep going now. Downloads, the tracker and editing still work."
 export const AI_BURN_CEILING_MESSAGE =
   "Pro from burned $REWORK has used today's AI allowance, so it's back at midnight UTC. Downloads, the tracker and editing still work."
 export const AI_SPEND_UNKNOWN_MESSAGE = "We can't check your AI usage right now. Please try again in a few minutes."

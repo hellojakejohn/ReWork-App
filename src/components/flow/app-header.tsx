@@ -67,7 +67,7 @@ export function AppHeader({
               flow.onLogo()
             }
           }}
-          aria-label="rework home"
+          aria-label="ReWork home"
           className="-ml-1 flex items-center rounded-input"
         >
           <Logo height={52} priority className="sm:hidden" />

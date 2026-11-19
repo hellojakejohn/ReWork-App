@@ -7,7 +7,7 @@ export function SiteHeader({ links = true }: { links?: boolean }) {
   return (
     <header className="bg-bg">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
-        <Link href="/" aria-label="rework home" className="-ml-1 rounded-input">
+        <Link href="/" aria-label="ReWork home" className="-ml-1 rounded-input">
           <Logo height={56} priority className="sm:hidden" />
           <Logo height={104} priority className="hidden sm:inline-flex" />
         </Link>

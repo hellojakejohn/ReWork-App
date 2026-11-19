@@ -14,7 +14,7 @@ import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 import { CONTACT_EMAIL, FAIR_USE, FREE_FEED_MATCHES, FREE_PLAN_SHORT, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING } from "@/lib/plans"
 import { showPoweredBy } from "@/lib/ai/routing"
 
-const TITLE = "rework: Find jobs that fit. Get a resume tailored to match."
+const TITLE = "ReWork: Find jobs that fit. Get a resume tailored to match."
 const DESCRIPTION = `Upload your resume and see open jobs that fit you, ranked by your real match. Then get a resume tailored to each one, plus a cover letter and answers, fact-checked against your real resume. Free to start, no card.`
 
 export const metadata: Metadata = {
@@ -87,7 +87,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Does rework apply for me?",
+    q: "Does ReWork apply for me?",
     a: (
       <>
         No, and that&apos;s on purpose. You apply on the employer&apos;s own site with your tailored resume, cover letter and answers ready
@@ -127,7 +127,7 @@ export default function HomePage() {
               Same you. Better fit.
             </h1>
             <p className="max-w-xl text-lg leading-relaxed text-text-secondary">
-              Job hunting is hard enough. rework finds open jobs that fit you, ranked by your real match, then tailors your resume to each
+              Job hunting is hard enough. ReWork finds open jobs that fit you, ranked by your real match, then tailors your resume to each
               one. Cut from your real experience, never padded with a guess.
             </p>
             <div className="flex flex-wrap gap-3">

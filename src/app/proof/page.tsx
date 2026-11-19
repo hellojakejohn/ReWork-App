@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Proof",
-  description: "Every resume rework has tailored, counted: what it kept, what it added, what it left out, and what it invented (nothing).",
+  description: "Every resume ReWork has tailored, counted: what it kept, what it added, what it left out, and what it invented (nothing).",
   alternates: { canonical: "/proof" },
 }
 
@@ -45,7 +45,7 @@ export default async function ProofPage() {
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h1 className="font-serif text-4xl font-medium tracking-tight text-text sm:text-5xl">Invented: 0</h1>
         <p className="mt-4 max-w-2xl leading-relaxed">
-          Every resume rework tailors comes with a receipt: what it kept, what it added, and what it left out because your resume
+          Every resume ReWork tailors comes with a receipt: what it kept, what it added, and what it left out because your resume
           doesn&apos;t back it up. These are the receipts added together.
         </p>
 

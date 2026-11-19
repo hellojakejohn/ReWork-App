@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'rework',
-    short_name: 'rework',
+    name: 'ReWork',
+    short_name: 'ReWork',
     description: 'Find jobs that fit. Get a resume tailored to match.',
     start_url: '/dashboard',
     display: 'standalone',
