@@ -16,6 +16,43 @@ import { ErrorNote, StageList, inputClass } from "./ui"
 
 const STALE_MS = 20 * 60 * 60 * 1000
 
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  } catch {
+    return true
+  }
+}
+
+/** The score counts up the first time a card shows (skipped for reduced motion). */
+function CountUp({ to, ms = 600 }: { to: number; ms?: number }) {
+  const [n, setN] = useState(to)
+  useEffect(() => {
+    if (prefersReducedMotion() || to <= 0) return
+    let raf = 0
+    const start = performance.now()
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / ms)
+      setN(Math.round(to * (1 - Math.pow(1 - p, 3))))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    setN(0)
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [to, ms])
+  return <>{n}</>
+}
+
+/** Where the match is now and where tailoring can take it. */
+function ReachBar({ score, reach }: { score: number; reach: number }) {
+  return (
+    <span className="relative inline-block h-1.5 w-20 overflow-hidden rounded-full bg-surface-raised align-middle" aria-hidden>
+      <span className="absolute inset-y-0 left-0 rounded-full bg-success/30 motion-safe:transition-[width] motion-safe:duration-700" style={{ width: `${Math.min(100, reach)}%` }} />
+      <span className="absolute inset-y-0 left-0 rounded-full bg-success" style={{ width: `${Math.min(100, score)}%` }} />
+    </span>
+  )
+}
+
 // The search is one request, so the steps follow the clock (about where the server is), and
 // the last one stays open until the results land.
 const SEARCH_STAGES = [
@@ -250,11 +287,15 @@ export function MatchesPanel({
         )
       ) : (
         <ul className="space-y-2">
-          {shown.map((m) => (
-            <li key={m.id} className="rounded-card border border-border p-3">
+          {shown.map((m, i) => (
+            <li
+              key={m.id}
+              className="rounded-card border border-border p-3 transition-colors hover:border-text/25 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 motion-safe:fill-mode-both"
+              style={{ animationDelay: `${Math.min(i, 10) * 45}ms` }}
+            >
               <div className="flex items-start gap-3">
                 <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums", scoreTone(m.score))} title="Your match: the share of this job's key skills your resume already shows">
-                  {m.score}%
+                  <CountUp to={m.score} />%
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold leading-snug text-text">
@@ -280,7 +321,8 @@ export function MatchesPanel({
                     )}
                   </p>
                   {m.reach >= m.score + 5 && (
-                    <p className="mt-1 text-xs font-medium text-success" title="Your resume already shows more of this job's skills in other words. Tailoring puts them in the job's words.">
+                    <p className="mt-1 flex items-center gap-2 text-xs font-medium text-success" title="Your resume already shows more of this job's skills in other words. Tailoring puts them in the job's words.">
+                      <ReachBar score={m.score} reach={m.reach} />
                       Tailoring can lift this to {m.reach}%
                     </p>
                   )}
