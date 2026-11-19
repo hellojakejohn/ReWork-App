@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "$REWORK",
-  description: "rework's memecoin, and how to burn it for Pro.",
+  description: "ReWork's memecoin, and how to burn it for Pro.",
   alternates: { canonical: "/token" },
 }
 
@@ -27,14 +27,14 @@ export default function TokenPage() {
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h1 className="font-serif text-4xl font-medium tracking-tight text-text sm:text-5xl">$REWORK</h1>
         <p className="mt-4 max-w-2xl leading-relaxed">
-          rework&apos;s memecoin on Solana. It&apos;s a collectible, not an investment: it has no promised value, rework never buys it back, and
-          nobody at rework holds any.
+          ReWork&apos;s memecoin on Solana. It&apos;s a collectible, not an investment: it has no promised value, ReWork never buys it back, and
+          nobody at ReWork holds any.
         </p>
 
         <section className="mt-8 rounded-card bg-surface p-6">
           <h2 className="font-serif text-2xl font-semibold text-text">Burn for Pro</h2>
           <p className="mt-2 leading-relaxed">
-            Burn ${BURN_PRO_USD} worth of $REWORK and get {BURN_PRO_DAYS} days of rework Pro, the same Pro a card buys. The tokens are destroyed
+            Burn ${BURN_PRO_USD} worth of $REWORK and get {BURN_PRO_DAYS} days of ReWork Pro, the same Pro a card buys. The tokens are destroyed
             on-chain and nobody receives them. Burns are final.
           </p>
           <Link
@@ -62,15 +62,15 @@ export default function TokenPage() {
         </section>
 
         <section className="mt-8 space-y-3">
-          <h2 className="font-serif text-2xl font-semibold text-text">How rework earns from it</h2>
+          <h2 className="font-serif text-2xl font-semibold text-text">How ReWork earns from it</h2>
           <p className="leading-relaxed">
-            The launchpad pays rework a 1% creator fee on trading volume. That&apos;s rework&apos;s revenue, the same as a sale, and it pays for
+            The launchpad pays ReWork a 1% creator fee on trading volume. That&apos;s ReWork&apos;s revenue, the same as a sale, and it pays for
             servers and AI.
           </p>
         </section>
 
         <p className="mt-10 text-xs leading-relaxed text-text-muted">
-          Nothing here is financial advice. Crypto is risky, so only use money you can afford to lose. rework Pro bought with a card works the
+          Nothing here is financial advice. Crypto is risky, so only use money you can afford to lose. ReWork Pro bought with a card works the
           same and never needs a wallet.
         </p>
       </main>

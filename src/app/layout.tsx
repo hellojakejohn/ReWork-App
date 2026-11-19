@@ -22,7 +22,7 @@ const sans = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-const TITLE = 'rework: Find jobs that fit. Get a resume tailored to match.'
+const TITLE = 'ReWork: Find jobs that fit. Get a resume tailored to match.'
 const DESCRIPTION = 'Upload your resume and see open jobs that fit you, ranked by your real match. Then get a resume tailored to each one, plus a cover letter and answers, fact-checked against your real resume. Free to start, no card.'
 
 export const viewport: Viewport = {
@@ -33,9 +33,9 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: { default: TITLE, template: '%s · rework' },
+  title: { default: TITLE, template: '%s · ReWork' },
   description: DESCRIPTION,
-  applicationName: 'rework',
+  applicationName: 'ReWork',
   authors: [{ name: 'Jakob Johnson' }],
   creator: 'Jakob Johnson',
   formatDetection: { email: false, address: false, telephone: false },

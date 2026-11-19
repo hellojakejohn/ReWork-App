@@ -41,7 +41,7 @@ export default function AdminPage() {
   })
 
   useEffect(() => {
-    document.title = "Admin · rework"
+    document.title = "Admin · ReWork"
     if (status === 'loading') return
 
     if (!session) {

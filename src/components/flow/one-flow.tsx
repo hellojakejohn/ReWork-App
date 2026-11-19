@@ -158,7 +158,7 @@ export function OneFlow() {
   }, [])
 
   useEffect(() => {
-    document.title = "rework"
+    document.title = "ReWork"
     void load()
   }, [load])
 

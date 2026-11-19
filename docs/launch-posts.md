@@ -34,7 +34,7 @@ Don't say: "unlimited", "beats the ATS", "ATS score", "guaranteed interviews".
 1/
 AI is taking jobs. I built something that helps you take one back.
 
-rework reads your resume, finds open jobs that actually fit you, and tailors your resume
+ReWork reads your resume, finds open jobs that actually fit you, and tailors your resume
 to each one in about a minute.
 
 Without making anything up. rework.careers
@@ -45,7 +45,7 @@ Without making anything up. rework.careers
 Most AI resume tools will happily invent a certification, a bigger team, a 40% increase.
 That's how you get caught in an interview.
 
-rework checks every rewrite against your real resume. If your resume doesn't back it up,
+ReWork checks every rewrite against your real resume. If your resume doesn't back it up,
 it doesn't go in.
 
 3/
@@ -73,13 +73,13 @@ rework.careers
 
 ## LinkedIn
 
-I spent the last few months building rework, and today it's live.
+I spent the last few months building ReWork, and today it's live.
 
 The idea came from watching people I know apply to 100+ jobs with the same resume, then
 watching AI tools "fix" that by inventing things they never did. Bigger numbers, tools
 they never used, a team they never led. It reads great until the interview.
 
-So rework does two things:
+So ReWork does two things:
 
 1. It finds open jobs that fit you. Upload your resume and you get a ranked list from
    employers' own job boards, 25,000+ and growing, in and outside tech.
@@ -121,9 +121,9 @@ would make this useful for you?
 
 ## Indie Hackers / Show HN
 
-**Show HN: rework, a resume tailor with a deterministic fact guard**
+**Show HN: ReWork, a resume tailor with a deterministic fact guard**
 
-rework tailors a resume to a job posting with an LLM, then runs plain code over the result
+ReWork tailors a resume to a job posting with an LLM, then runs plain code over the result
 before you see it: every employer, title, date, number, tool and credential in the output
 has to trace back to the original resume, or it's removed or flagged. The model can
 reword; it can't invent.
@@ -141,8 +141,8 @@ rework.careers. Happy to go deep on the fact guard or the job feed.
 - **Description:** Upload your resume and see open jobs ranked by your real match. Tailor
   to any of them in about a minute, with a cover letter and answers. A fact guard checks
   every line against your real resume, so nothing gets invented.
-- **First comment:** Hi, I'm Jake. I built rework because AI resume tools kept making
-  things up for people, and that falls apart in the interview. rework rewrites, but every
+- **First comment:** Hi, I'm Jake. I built ReWork because AI resume tools kept making
+  things up for people, and that falls apart in the interview. ReWork rewrites, but every
   claim has to come from your resume. It also shows you the keywords it couldn't add.
   Free to start. I'm here all day, tell me what's broken.
 

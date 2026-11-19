@@ -15,7 +15,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
   return (
     <main className="flex min-h-screen flex-col items-start justify-center gap-4 bg-bg px-4 py-16 text-text-secondary sm:px-10">
-      <Link href="/" aria-label="rework home">
+      <Link href="/" aria-label="ReWork home">
         <Logo height={40} />
       </Link>
       <h1 className="font-serif text-4xl font-medium tracking-tight text-text">Something broke on our side.</h1>

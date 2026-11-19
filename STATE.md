@@ -64,7 +64,7 @@ Routing is per task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/mode
 `npm run eval:models` runs the real pipeline on the fixtures (see "Quality eval" below).
 
 ## Brand
-Lowercase "rework" in brand moments ("ReWork" stays in legal pages, Stripe and OAuth).
+Brand name is "ReWork" everywhere in text (Nov 19, Jake). The wordmark art stays lowercase.
 Spec: brand-kit/BRAND.md (gitignored; shipped assets in `public/brand/`). PDF exports embed
 Tinos/Arimo (`src/lib/fonts/`, OFL), metric twins of Times/Helvetica with Latin Extended. Light first, dark
 follows the system with a Light/Dark/System toggle in the account menu. Headings Newsreader,
