@@ -1,23 +1,29 @@
-// The two ATS-safe templates. Both are single column with real text and standard section
-// headings; they differ only in type and accents. Shared by the HTML preview
+// The ATS-safe templates. All are single column with real text and standard section
+// headings; they differ only in type, accents and spacing. Shared by the HTML preview
 // (src/components/flow/resume-document.tsx) and the PDF (src/lib/resume-pdf.tsx).
 import { dateRange } from '@/lib/master-resume'
 import type { ParsedResume } from '@/types/parsed-resume'
 
-export type TemplateId = 'classic' | 'modern'
+export type TemplateId = 'classic' | 'modern' | 'executive' | 'compact'
 
 export const TEMPLATES: { id: TemplateId; name: string; blurb: string }[] = [
   { id: 'classic', name: 'Classic', blurb: 'Serif, centered header' },
   { id: 'modern', name: 'Modern', blurb: 'Sans, accent headings' },
+  { id: 'executive', name: 'Executive', blurb: 'Serif, navy, left-aligned' },
+  { id: 'compact', name: 'Compact', blurb: 'Sans, tighter: a long career on one page' },
 ]
 
+const TEMPLATE_IDS = TEMPLATES.map((t) => t.id)
+
 export function isTemplateId(value: unknown): value is TemplateId {
-  return value === 'classic' || value === 'modern'
+  return typeof value === 'string' && (TEMPLATE_IDS as string[]).includes(value)
 }
 
-export const TEMPLATE_STYLE: Record<TemplateId, { accent: string; rule: string; serif: boolean; centered: boolean }> = {
-  classic: { accent: '#111827', rule: '#111827', serif: true, centered: true },
-  modern: { accent: '#047857', rule: '#D1D5DB', serif: false, centered: false },
+export const TEMPLATE_STYLE: Record<TemplateId, { accent: string; rule: string; serif: boolean; centered: boolean; compact: boolean }> = {
+  classic: { accent: '#111827', rule: '#111827', serif: true, centered: true, compact: false },
+  modern: { accent: '#047857', rule: '#D1D5DB', serif: false, centered: false, compact: false },
+  executive: { accent: '#1E3A5F', rule: '#1E3A5F', serif: true, centered: false, compact: false },
+  compact: { accent: '#334155', rule: '#CBD5E1', serif: false, centered: false, compact: true },
 }
 
 /** Everything a template renders, in order, with display strings already built. */

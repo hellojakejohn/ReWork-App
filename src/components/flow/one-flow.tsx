@@ -15,7 +15,7 @@ import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
 import { CheckoutSuccess } from "@/components/billing/checkout-success"
 import { hasContent } from "@/lib/master-dto"
 import { takeSavedJob } from "@/lib/saved-job"
-import type { TemplateId } from "@/lib/resume-templates"
+import { isTemplateId, type TemplateId } from "@/lib/resume-templates"
 import {
   loadApplication,
   loadDashboard,
@@ -105,7 +105,7 @@ export function OneFlow() {
       setStep(-1)
     }
     const stored = readStored(TEMPLATE_KEY)
-    if (stored === "classic" || stored === "modern") setTemplate(stored)
+    if (isTemplateId(stored)) setTemplate(stored)
     setLoaded(true)
 
     // Links from the tracker: ?open=manage | start, ?application=<id> (open its result),

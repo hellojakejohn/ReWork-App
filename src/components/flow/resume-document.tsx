@@ -45,7 +45,7 @@ export function ResumeDocument({
   const font = t.serif ? "'Times New Roman', Times, serif" : "Helvetica, Arial, sans-serif"
   const Heading = ({ children }: { children: React.ReactNode }) => (
     <h3
-      className="mt-4 mb-1.5 pb-0.5 text-sm font-bold uppercase tracking-[0.08em]"
+      className={`${t.compact ? "mt-2.5 mb-1" : "mt-4 mb-1.5"} pb-0.5 text-sm font-bold uppercase tracking-[0.08em]`}
       style={{ color: t.accent, borderBottom: `${t.serif ? 1 : 0.75}px solid ${t.rule}` }}
     >
       {children}
@@ -66,8 +66,8 @@ export function ResumeDocument({
     <div ref={outer} className="w-full overflow-hidden" style={{ height: height * scale }}>
       <div
         ref={inner}
-        className="origin-top-left rounded-card bg-resume-paper text-sm leading-[1.4] shadow-float"
-        style={{ width: PAGE_WIDTH, minHeight: 1056, padding: "52px 60px", fontFamily: font, color: INK, transform: `scale(${scale})` }}
+        className={`origin-top-left rounded-card bg-resume-paper shadow-float ${t.compact ? "text-[13px] leading-[1.3]" : "text-sm leading-[1.4]"}`}
+        style={{ width: PAGE_WIDTH, minHeight: 1056, padding: t.compact ? "40px 50px" : "52px 60px", fontFamily: font, color: INK, transform: `scale(${scale})` }}
       >
         <header className={t.centered ? "text-center" : ""}>
           {l.name && <h1 className="text-2xl font-bold" style={{ letterSpacing: t.serif ? "0.04em" : 0 }}>{l.name}</h1>}

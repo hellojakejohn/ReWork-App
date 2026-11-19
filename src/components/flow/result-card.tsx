@@ -116,7 +116,7 @@ function Result({
     preview: (
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Segmented label="Template" value={template} onChange={onTemplate} options={TEMPLATES.map((t) => ({ id: t.id, label: t.name }))} className="w-full sm:w-56" />
+          <Segmented label="Template" value={template} onChange={onTemplate} options={TEMPLATES.map((t) => ({ id: t.id, label: t.name }))} className="w-full sm:w-[26rem]" />
           <p className="hidden text-xs text-text-muted dark:block">The resume stays on paper in dark mode, so you see exactly what you&apos;ll send.</p>
         </div>
         <ResumeDocument resume={application.tailored} template={template} highlight={highlight} />
