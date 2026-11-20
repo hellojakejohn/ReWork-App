@@ -76,7 +76,7 @@ export const INPUT_LIMIT_MESSAGES = {
   jobDescription: 'That job description is over 20,000 characters. Paste just the role, responsibilities and requirements.',
 } as const
 
-export const CONTACT_EMAIL = 'hellojakejohn@gmail.com'
+export const CONTACT_EMAIL = 'support@rework.careers'
 
 // Days of Pro a Job Hunt Pass buys. Buying another while one is active stacks. The
 // Stripe webhook (passWindow) and the pass-to-subscription trial both use this.

@@ -5,17 +5,17 @@ Tick them off here or just tell Claude "done with N".
 
 ## Launch (the last gate)
 
-1. [ ] **The $29 test.** On rework.careers, signed in as Stevie: Upgrade, Get 3 months for
+1. [x] **The $29 test.** (passed and refunded Nov 19) On rework.careers, signed in as Stevie: Upgrade, Get 3 months for
    $29, pay with your card. Check the header shows Pro. Then Stripe, Payments, open it,
    Refund (full). Tell Claude "refunded"; Claude checks Pro switched on, then off.
    (Nov 18: prices are tax-included, so checkout should total exactly $29.)
-2. [ ] **The $15 test** (you said yes): right after the $29 one, Subscribe for $15/month,
+2. [-] **The $15 test** (skipped Nov 19; check the first real subscriber instead) (you said yes): right after the $29 one, Subscribe for $15/month,
    pay, then Manage billing, Cancel. Refund it in Stripe too. Tell Claude "cancelled".
-3. [ ] Launch (you said yes: the moment both tests pass).
+3. [x] Launch (you said yes: the moment both tests pass).
 
 ## After launch
 
-4. [ ] **Support email**: free forwarding `support@rework.careers` to your Gmail (ImprovMX or
+4. [x] **Support email** (ImprovMX on rework.careers, Nov 19; left: Stripe Public details support email): free forwarding `support@rework.careers` to your Gmail (ImprovMX or
    similar, two DNS records in Vercel Domains), then Claude switches the site and Stripe to it.
 5. [ ] **USAJOBS key** (federal jobs). Free key at developer.usajobs.gov. Vercel Production
    env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
