@@ -5,7 +5,7 @@ Current truth as of `main` on 2026-11-14 (PRs up to #47 merged; #48 is the launc
 ## Product
 ReWork (rework.careers): upload a resume once, paste a job link, get a tailored
 resume and cover letter. Every rewrite is fact-checked against the original. Operated by
-Jakob Johnson (individual, Saint Paul, MN). Contact hellojakejohn@gmail.com.
+Jakob Johnson (individual, Saint Paul, MN). Contact support@rework.careers (ImprovMX forward to Jake's Gmail, set up Nov 19).
 
 - Free: 3 tailors/month, 1 cover letter/month, tracker up to 10 jobs, PDF downloads, fit
   check + skill check (about $0.008 a call on Sonnet; counts toward the AI cap).

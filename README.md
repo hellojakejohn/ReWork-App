@@ -88,4 +88,4 @@ Migrations are applied by hand in the Supabase SQL editor, in folder order, from
 
 ## Contact
 
-hellojakejohn@gmail.com
+support@rework.careers
