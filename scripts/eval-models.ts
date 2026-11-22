@@ -4,8 +4,7 @@
 // fact guard -> cover letter) and reports cost, speed and quality, so routing (AI_* env)
 // is picked with data.
 //
-//   --models   comma-separated provider:model list. Default: Opus 5.5, Sonnet 5.5, gpt-4o,
-//              gpt-5.4-mini, openrouter moonshotai/kimi-k2.6
+//   --models   comma-separated provider:model list. Default: Opus 5.5 and Sonnet 5.5
 //   --max-usd  stop starting new work once estimated spend passes this (default 3)
 //   --out      output directory (default eval-results/, gitignored: it quotes resumes)
 //
@@ -42,9 +41,6 @@ const FIXTURES = path.join(HERE, 'fixtures')
 export const DEFAULT_MODELS = [
   'anthropic:claude-opus-5-5',
   'anthropic:claude-sonnet-5-5',
-  'openai:gpt-4o',
-  'openai:gpt-5.4-mini',
-  'openrouter:moonshotai/kimi-k2.6',
 ]
 
 // ---------- args ----------

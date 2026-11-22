@@ -168,14 +168,14 @@ describe('buildChanges / applyChangeDecision', () => {
 })
 
 describe('callTailorModel errors', () => {
-  it('says tailoring is unavailable (not "busy") when OpenAI is out of quota', async () => {
+  it('says tailoring is unavailable (not "busy") when Anthropic is out of credit', async () => {
     const { callTailorModel, TailorError } = await import('@/lib/tailor')
     const spy = (await import('vitest')).vi.spyOn(console, 'error').mockImplementation(() => {})
     const client = {
-      chat: {
-        completions: {
+      beta: {
+        messages: {
           create: async () => {
-            throw Object.assign(new Error('429 You exceeded your current quota'), { status: 429, code: 'insufficient_quota' })
+            throw Object.assign(new Error('400 Your credit balance is too low to access the Anthropic API.'), { status: 400 })
           },
         },
       },

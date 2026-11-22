@@ -1,6 +1,7 @@
 // Evidence interview: weak-bullet selection, question hygiene, and the rule that a rewrite
-// may only use the original bullet plus the user's own answers. OpenAI is always mocked.
+// may only use the original bullet plus the user's own answers. The model is always mocked.
 import { describe, expect, it, vi } from 'vitest'
+import { anthropicJson, bodyOf, fakeAnthropic } from './fixtures/fake-anthropic'
 import {
   applyRewrites,
   bulletWeakness,
@@ -44,8 +45,7 @@ const resume: ParsedResume = {
 }
 
 function client(content: unknown) {
-  const create = vi.fn(async () => ({ model: 'gpt-test', choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(content) } }] }))
-  return { client: { chat: { completions: { create } } } as never, create }
+  return fakeAnthropic(() => anthropicJson(content))
 }
 
 const item: EvidenceItem = {
@@ -109,7 +109,7 @@ describe('rewriteWithEvidence', () => {
     const [rewrite] = await rewriteWithEvidence([item], [answer('exp_1:0:q0', 'about 4,000'), answer('exp_1:0:q1', 'stockouts dropped 30%')], { client: c })
     expect(rewrite).toMatchObject({ before: 'Helped with inventory', after: 'Managed inventory for about 4,000 SKUs, cutting stockouts 30%' })
     expect(rewrite.warning).toBeUndefined()
-    const prompt = (create.mock.calls[0] as unknown as [{ messages: { content: string }[] }])[0].messages[1].content
+    const prompt = bodyOf(create).messages[0].content
     expect(prompt).toContain('A: about 4,000')
   })
 

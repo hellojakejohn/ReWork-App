@@ -58,8 +58,9 @@ Next.js 15.5 (App Router), TypeScript, Tailwind, Radix UI, Prisma 6.8.2 on Supab
 database sessions), Stripe, @react-pdf/renderer, docx, Vercel (+ Analytics, Cron).
 AI: one provider layer in `src/lib/ai/` (`generateStructured`). Production is Anthropic only:
 claude-opus-5-5 for every task, claude-sonnet-5-5 for the free tier and the decline retry.
-Prepaid credits ($20, auto-reload off) are the hard spend limit. OpenAI and OpenRouter
-adapters remain in code but nothing routes there and `OPENAI_API_KEY` is deleted in Vercel.
+Prepaid credits ($20, auto-reload off) are the hard spend limit. Anthropic is the only
+provider in code: the OpenAI and OpenRouter adapters and the `openai` package were removed
+Nov 2026 (tests fake the AI with `src/lib/__tests__/fixtures/fake-anthropic.ts`).
 Routing is per task by `AI_*` env (`provider:model`). Prices in `src/lib/ai/models.ts`.
 `npm run eval:models` runs the real pipeline on the fixtures (see "Quality eval" below).
 
@@ -122,8 +123,7 @@ Daily ceilings still fail open if `events` can't be read (DB blip); the AI cap f
 
 ## Environment
 See README.md for the full table. Required in production: DATABASE_URL, NEXTAUTH_URL,
-NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY (and
-OPENAI_API_KEY / OPENROUTER_API_KEY only if a task routes there), NEXT_PUBLIC_SUPABASE_URL,
+NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL,
 SUPABASE_SERVICE_ROLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
 STRIPE_PRICE_PRO_MONTHLY ($15 price), STRIPE_PRICE_PASS ($29 price; no fallback name),
 CRON_SECRET (crons refuse every request without it). ADMIN_EMAILS is optional: unset, both of Jake's emails are
@@ -208,9 +208,8 @@ Tuning ideas not done yet:
 - Declines: Anthropic accepts no server-side fallback for Opus 5.5 or Sonnet 5.5
   (`allowed_fallback_models` null, prod 2026-10-28), so an Opus decline is retried once by the
   app on Sonnet 5.5 (`refusalRetry`). A Sonnet decline isn't retried. Never OpenAI or OpenRouter.
-- Anthropic is the only AI provider in use and the only one in /privacy. The OpenAI and
-  OpenRouter adapters are still in the code (tests use them); update /privacy before routing
-  anything there. Full removal is a post-launch cleanup.
+- Anthropic is the only AI provider (code, routing and /privacy). Adding another one means
+  a new adapter and a /privacy update first.
 - Launch blocker: Stripe. Prod `STRIPE_SECRET_KEY` is an invalid `sk_test` key, so
   `/api/health` is `ok: false` on stripePrices and stripeWebhook (everything else passes).
   See "Next session" below.
@@ -226,7 +225,7 @@ Tuning ideas not done yet:
 - Landing example is hand-built from `scripts/fixtures/restaurant-manager-to-ops-coordinator.json`
   in the result's shape; swap in real `npm run eval:tailor` output when convenient.
 - npm audit: 0 critical. Remaining moderate/high (postcss and sharp via next, zod via
-  openai 4) need majors (Next 16, openai 7). Prisma 7 parked (needs explicit OK).
+  openai 4 is gone with the package) need majors (Next 16). Prisma 7 parked (needs explicit OK).
 - Out of scope for launch: post-a-job, crypto payments.
 - Not yet verified live: Save to ReWork on signed-in LinkedIn, the extension in real Chrome,
   Indeed's /viewjob page (bot check). `docs/test-run.md` covers them.

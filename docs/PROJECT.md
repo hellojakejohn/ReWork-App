@@ -139,7 +139,7 @@ provider); admin feedback view; one more template; durable rate limit if abuse s
 **January push** (job-search peak): marketing push, token January plan
 (`docs/token-plan.md` section 6).
 
-**Later**: full OpenAI/OpenRouter code removal; Prisma 7 (needs Jake's
+**Later**: Prisma 7 (needs Jake's
 OK); LinkedIn profile suggestions; email magic link.
 
 ## Settled decisions (don't reopen)
