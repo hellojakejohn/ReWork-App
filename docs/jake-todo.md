@@ -17,8 +17,8 @@ Tick them off here or just tell Claude "done with N".
 
 4. [x] **Support email** (ImprovMX on rework.careers, Nov 19; left: Stripe Public details support email): free forwarding `support@rework.careers` to your Gmail (ImprovMX or
    similar, two DNS records in Vercel Domains), then Claude switches the site and Stripe to it.
-5. [ ] **Paste `docs/sql/paste-2026-11-23.sql`** in Supabase (referrals and email settings).
-5b. [ ] **USAJOBS key** (federal jobs). Free key at developer.usajobs.gov. Vercel Production
+5. [x] **Paste `docs/sql/paste-2026-11-23.sql`** in Supabase (done Nov 23; tables checked, RLS on).
+5b. [x] **USAJOBS key** (done Nov 23: both env vars in Vercel Production, redeployed). Free key at developer.usajobs.gov. Vercel Production
    env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
 6. [ ] **Adzuna**: decide on a licence (developer.adzuna.com). Claude builds it after a deal.
 7. [ ] **Chrome Web Store** (post-launch feature): $5 developer account, Claude builds the zip
@@ -33,9 +33,10 @@ Tick them off here or just tell Claude "done with N".
 
 ## Resend (weekly email)
 
-- [ ] Add domain `send.rework.careers` in Resend, paste its DNS records in Vercel Domains,
+- [x] (Done Nov 23: domain added via the Vercel integration, DNS checked live, `RESEND_API_KEY` in Vercel.) Add domain `send.rework.careers` in Resend, paste its DNS records in Vercel Domains,
   create an API key, add `RESEND_API_KEY` in Vercel (Production). Pick a mailing address for
   the footer (PO box or virtual mailbox). Then Claude builds `docs/weekly-email-plan.md`.
+- [ ] Still open: pick the mailing address for the email footer.
 
 ## Read when you have 10 minutes
 
