@@ -67,7 +67,7 @@ export function referrerSource(referer: string | null | undefined, ownHost: stri
 /** The source for one page visit. */
 export function sourceFromVisit(url: URL, referer: string | null | undefined): SignupSource {
   const q = url.searchParams
-  const tagged = cleanTag(q.get('ref')) ?? cleanTag(q.get('utm_source'))
+  const tagged = cleanTag(q.get('ref')) ?? cleanTag(q.get('utm_source')) ?? (q.get('invite') ? 'invite' : undefined)
   const s = tagged ?? referrerSource(referer, url.hostname) ?? 'direct'
   const out: SignupSource = { s, p: url.pathname.slice(0, 60) }
   const m = cleanTag(q.get('utm_medium'))

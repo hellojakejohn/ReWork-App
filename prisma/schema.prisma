@@ -75,6 +75,9 @@ model User {
   entitlements           Entitlement[]
   events                 Event[]
   aiCapOverride          AiCapOverride?
+  referralCode           ReferralCode?
+  referralsMade          Referral[]        @relation("referrer")
+  referredBy             Referral?         @relation("referred")
   jobMatches             JobMatch[]
   feedPrefs              FeedPrefs[]
 
@@ -244,6 +247,33 @@ model AiCapOverride {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("ai_cap_overrides")
+}
+
+// Referrals (src/lib/referrals.ts): each user's invite code, and who joined through whose
+// link. Own tables, so the app keeps working before the SQL is pasted: reads of a missing
+// table fail soft. When the friend finishes their first tailor, both get Pro days (COMP).
+model ReferralCode {
+  userId    String   @id
+  code      String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("referral_codes")
+}
+
+model Referral {
+  id         String    @id @default(cuid())
+  referrerId String
+  referredId String    @unique
+  createdAt  DateTime  @default(now())
+  rewardedAt DateTime?
+  // False when the referrer was over the monthly cap: the friend still got their days.
+  referrerRewarded Boolean @default(false)
+  referrer   User      @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred   User      @relation("referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId, rewardedAt])
+  @@map("referrals")
 }
 
 // Processed Stripe webhook events, for idempotency.

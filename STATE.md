@@ -115,6 +115,8 @@ folder is now applied. New tables: enable RLS and repeat the REVOKE (Supabase gr
 roles on new tables by default).
 2026-11-14: `20261109000000_job_feed` applied (jobs, job_matches, feed_prefs; RLS on, REVOKE
 done). Everything in the folder is applied again.
+Pending (Nov 22): `20261122000000_referrals` (referral_codes, referrals; RLS on, REVOKE in the
+file). Until pasted, Settings > Invite friends says "almost ready" and nothing else changes.
 
 Daily ceilings still fail open if `events` can't be read (DB blip); the AI cap fails closed for FREE.
 

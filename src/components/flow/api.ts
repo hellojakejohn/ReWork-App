@@ -203,7 +203,7 @@ export async function runTailor(resumeId: string, job: JobDraft, onStage: (stage
         targetKeywords,
       }),
     })
-    return await streamed<{ application: ApplicationDetailDTO; tailorsRemaining: number | null }>(res, onStage, "Tailoring failed. Please try again.")
+    return await streamed<{ application: ApplicationDetailDTO; tailorsRemaining: number | null; referralDays?: number }>(res, onStage, "Tailoring failed. Please try again.")
   } catch {
     return NETWORK
   }

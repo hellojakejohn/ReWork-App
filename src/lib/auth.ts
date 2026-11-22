@@ -8,6 +8,8 @@ import { track } from "@/lib/track"
 import { safeRedirect } from "@/lib/auth-redirect"
 import { cookies } from "next/headers"
 import { SOURCE_COOKIE, decodeSource, sourceProps } from "@/lib/signup-source"
+import { INVITE_COOKIE } from "@/lib/referral-rules"
+import { linkReferral } from "@/lib/referrals"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -69,12 +71,16 @@ export const authOptions: NextAuthOptions = {
     // The source cookie is set by middleware (src/lib/signup-source.ts).
     createUser: async ({ user }) => {
       let source = null
+      let invite: string | undefined
       try {
-        source = decodeSource((await cookies()).get(SOURCE_COOKIE)?.value)
+        const jar = await cookies()
+        source = decodeSource(jar.get(SOURCE_COOKIE)?.value)
+        invite = jar.get(INVITE_COOKIE)?.value
       } catch {
         // Outside a request (tests, scripts): no cookie to read.
       }
       await track('signed_up', { provider: 'google', ...sourceProps(source) }, user.id)
+      await linkReferral(user.id, invite)
     },
   },
   session: {

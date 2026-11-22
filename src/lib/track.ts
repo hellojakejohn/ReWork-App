@@ -35,6 +35,8 @@ export type EventName =
   | 'token_burn' // { usd, days, priceUsd } a burn granted Pro
   | 'apply_started' // { applicationId } Apply pressed on the Result card; the extension fills that job's form (src/lib/apply-packet.ts)
   | 'feed_match' // { resumeId, ok, searched, workdayJobs, pool, scored, extracted, fetched, skippedNoBudget, ms, feedUsd } one match run (src/lib/feed/feed-server.ts)
+  | 'referral_joined' // {} a new user signed up through a friend's invite link (src/lib/referrals.ts)
+  | 'referral_rewarded' // { days, referrerRewarded } their first tailor gave both Pro days
   | 'feed_pull' // { boards, ok, failed, skipped, listed, added, closed, ms } the daily job pull (src/lib/feed/sync.ts)
 
 export type EventProps = Record<string, string | number | boolean | null | undefined>
