@@ -116,7 +116,10 @@ export function CoverLetterPdf({ resume, template, text, date = new Date() }: { 
   )
 }
 
-export function ResumePdf({ resume, template }: { resume: ParsedResume; template: TemplateId }) {
+// The free plan's PDFs carry one small line at the foot of each page. Pro removes it.
+export const SEAM_LINE = 'Tailored with ReWork · rework.careers'
+
+export function ResumePdf({ resume, template, seam = false }: { resume: ParsedResume; template: TemplateId; seam?: boolean }) {
   const s = styles(template)
   const l = toLayout(resume)
   return (
@@ -208,6 +211,11 @@ export function ResumePdf({ resume, template }: { resume: ParsedResume; template
             <Bullets items={section.items} s={s} />
           </View>
         ))}
+        {seam && (
+          <Text fixed style={{ position: 'absolute', bottom: 14, left: 0, right: 0, textAlign: 'center', fontSize: 7, color: '#9CA3AF', fontFamily: 'Arimo' }}>
+            {SEAM_LINE}
+          </Text>
+        )}
       </Page>
     </Document>
   )

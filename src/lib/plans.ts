@@ -215,7 +215,7 @@ export const PRO_FEATURES = [
   'Answers to application questions, built only from your resume',
   'Interview prep: likely questions and the bullets that answer them',
   'Track every application',
-  'PDF + Word downloads (Word for application portals)',
+  'PDF + Word downloads (Word for application portals), with no ReWork line',
   FAIR_USE,
 ]
 
