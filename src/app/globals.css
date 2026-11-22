@@ -128,3 +128,17 @@
 .legal li + li { margin-top: 0.4rem; }
 .legal a { color: rgb(var(--accent-strong)); text-decoration: underline; text-underline-offset: 3px; }
 .legal strong { color: rgb(var(--text)); font-weight: 600; }
+
+/* Landing jobs ticker (src/components/site/jobs-ticker.tsx): two copies of the list slide
+   left by half their width, so it loops seamlessly. Paused on hover; reduced motion stops it
+   (the rule above) and the strip can be scrolled by hand instead. */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-track { animation: ticker 90s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .ticker { overflow-x: auto; }
+  .ticker-track { animation: none; }
+}

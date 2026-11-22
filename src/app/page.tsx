@@ -1,6 +1,7 @@
 // Landing page. A server component on purpose: no animation libraries, no client JS of
-// its own (except the one-line "account deleted" notice), so it paints fast on mobile.
-// Every number comes from src/lib/plans.ts.
+// its own (except the one-line "account deleted" notice), so it paints fast on mobile. The jobs
+// ticker is read from the database at most hourly (revalidate) and moves with CSS only.
+// Every price and limit comes from src/lib/plans.ts.
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, Check, ShieldCheck, X } from "lucide-react"
@@ -13,6 +14,11 @@ import { LANDING_EXAMPLE as EX } from "@/components/site/landing-example"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 import { CONTACT_EMAIL, FAIR_USE, FREE_FEED_MATCHES, FREE_PLAN_SHORT, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING } from "@/lib/plans"
 import { showPoweredBy } from "@/lib/ai/routing"
+import { jobsTicker } from "@/lib/feed/public-stats"
+import { JobsTicker } from "@/components/site/jobs-ticker"
+
+// The jobs ticker reads the database; rebuild the page at most once an hour.
+export const revalidate = 3600
 
 const TITLE = "ReWork: Find jobs that fit. Get a resume tailored to match."
 const DESCRIPTION = `Upload your resume and see open jobs that fit you, ranked by your real match. Then get a resume tailored to each one, plus a cover letter and answers, fact-checked against your real resume. Free to start, no card.`
@@ -111,8 +117,9 @@ const container = "mx-auto max-w-6xl px-4 sm:px-6"
 const h2 = "font-serif text-3xl font-medium tracking-tight text-text sm:text-4xl"
 const card = "rounded-card bg-surface p-6 sm:p-7"
 
-export default function HomePage() {
+export default async function HomePage() {
   const poweredBy = showPoweredBy()
+  const ticker = await jobsTicker()
   return (
     <div className="min-h-screen bg-bg text-text">
       <DeletedNotice />
@@ -144,6 +151,8 @@ export default function HomePage() {
           </div>
           <HeroReceipt />
         </section>
+
+        {ticker && <JobsTicker ticker={ticker} />}
 
         {/* How it works */}
         <section id="how-it-works" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
