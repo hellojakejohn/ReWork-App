@@ -18,7 +18,8 @@ function dbTerms(role: RoleDef): string[] {
 
 async function jobsFor(role: RoleDef): Promise<RoleJob[]> {
   const rows = await prisma.job.findMany({
-    where: { closedAt: null, country: { not: 'other' }, OR: dbTerms(role).map((t) => ({ title: { contains: t, mode: 'insensitive' as const } })) },
+    // Adzuna ads stay out of public pages (their terms are for showing ads in matches).
+    where: { closedAt: null, country: { not: 'other' }, source: { not: 'adzuna' }, OR: dbTerms(role).map((t) => ({ title: { contains: t, mode: 'insensitive' as const } })) },
     select: { title: true, company: true, location: true, remote: true, usState: true, payLabel: true, postedAt: true, firstSeenAt: true, url: true },
     orderBy: { firstSeenAt: 'desc' },
     take: 3000,
@@ -52,7 +53,7 @@ async function loadIndex(): Promise<{ slug: string; title: string; count: number
   // One read of every open title, then each role counted in memory.
   let titles: string[]
   try {
-    titles = (await prisma.job.findMany({ where: { closedAt: null, country: { not: 'other' } }, select: { title: true } })).map((j) => j.title)
+    titles = (await prisma.job.findMany({ where: { closedAt: null, country: { not: 'other' }, source: { not: 'adzuna' } }, select: { title: true } })).map((j) => j.title)
   } catch {
     return []
   }

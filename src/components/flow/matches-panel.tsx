@@ -3,6 +3,7 @@
 // Matches on upload: "What job do you want next?" once, then the open jobs that fit this
 // resume, best real match first. Tailor fills the Job card with the full post: no link to
 // paste. Shown on the Job card (the step right after the upload) and, shorter, on Home.
+import { ADZUNA_HOME, ADZUNA_LABEL, ADZUNA_LABEL_MIN } from '@/lib/feed/adzuna-label'
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Banknote, Bookmark, BookmarkCheck, Clock, Loader2, MapPin, RefreshCw, Search, Sparkles, X } from "lucide-react"
@@ -301,7 +302,18 @@ export function MatchesPanel({
                   </p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
                     <span className="font-medium text-text-secondary">{m.job.company}</span>
-                    {m.job.via && <span>via {m.job.via}</span>}
+                    {m.job.via === 'Adzuna' && (
+                      <a
+                        href={ADZUNA_HOME}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center justify-center rounded border border-border px-1.5 font-medium text-text-secondary underline-offset-2 hover:underline"
+                        style={{ minWidth: ADZUNA_LABEL_MIN.width, minHeight: ADZUNA_LABEL_MIN.height }}
+                      >
+                        {ADZUNA_LABEL}
+                      </a>
+                    )}
                     {m.job.location && (
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" aria-hidden /> {m.job.location.length > 60 ? `${m.job.location.slice(0, 57)}...` : m.job.location}

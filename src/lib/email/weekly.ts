@@ -75,7 +75,7 @@ export async function buildWeekly(userId: string, resumeId: string, name: string
     where: { userId, resumeId, dismissedAt: null, applicationId: null, job: { closedAt: null, firstSeenAt: { gte: since } } },
     orderBy: [{ rank: 'desc' }, { score: 'desc' }],
     take: 40,
-    include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, firstSeenAt: true, closedAt: true, keywords: true } } },
+    include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, firstSeenAt: true, closedAt: true, keywords: true, source: true } } },
   })
   const picked = pickWeeklyJobs(matches, since, WEEKLY_JOBS)
   if (picked.length === 0) return null
@@ -90,6 +90,7 @@ export async function buildWeekly(userId: string, resumeId: string, name: string
     location: m.job.location,
     remote: m.job.remote,
     payLabel: m.job.payLabel,
+    adzuna: m.job.source === 'adzuna',
     score: m.score,
     reach: Math.max(m.score, weightedScore(m.job.keywords, [...m.present, ...m.related])),
     present: m.present,
