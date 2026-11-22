@@ -24,6 +24,12 @@ Tick them off here or just tell Claude "done with N".
    and writes the listing. When approved, Claude adds the install link and turns the copy on.
 8. [ ] Vercel failed-deployment email alert (Settings, Notifications).
 
+## Every Sunday (2 minutes, until Supabase Pro)
+
+- Run `npm run backup` in the project folder. It saves the database to `~/ReWork-backups`
+  (outside the repo; it holds users' resumes). Supabase free has no backups of its own.
+  Switch to Supabase Pro ($25/mo, daily backups) once revenue covers it.
+
 ## Read when you have 10 minutes
 
 - `docs/audit-2026-11-14.md`: the full audit (what was fixed, what's still open).
