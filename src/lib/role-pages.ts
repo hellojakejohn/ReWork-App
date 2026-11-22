@@ -79,6 +79,7 @@ export function titleInRole(title: string, role: RoleDef): boolean {
 }
 
 export interface RoleJob {
+  id: string
   title: string
   company: string
   location: string
@@ -88,6 +89,8 @@ export interface RoleJob {
   postedAt: Date | null
   firstSeenAt: Date
   url: string
+  /** The Job match keywords, once extracted (empty until a match run reads the job). */
+  keywords?: string[]
 }
 
 export interface RoleSummary {
@@ -103,6 +106,37 @@ export interface RoleSummary {
   employers: number
   /** Newest first, at most 3 per employer so one big hirer can't fill the list. */
   newest: RoleJob[]
+  /** Skills these posts ask for most, from jobs with keywords. Empty until enough have them. */
+  topSkills: { skill: string; share: number }[]
+  /** How many jobs the skills were counted from. */
+  skillJobs: number
+}
+
+/** Fewest jobs with keywords before a role page lists common skills. */
+export const MIN_SKILL_JOBS = 10
+
+/** The skills most posts ask for, by share of jobs (case-insensitive, first spelling kept). */
+export function topSkills(jobs: { keywords?: string[] }[], n = 12): { skills: { skill: string; share: number }[]; jobs: number } {
+  const withKw = jobs.filter((j) => j.keywords && j.keywords.length > 0)
+  if (withKw.length < MIN_SKILL_JOBS) return { skills: [], jobs: withKw.length }
+  const counts = new Map<string, { skill: string; n: number }>()
+  for (const j of withKw) {
+    const seen = new Set<string>()
+    for (const k of j.keywords!) {
+      const key = k.trim().toLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      const c = counts.get(key) ?? { skill: k.trim(), n: 0 }
+      c.n++
+      counts.set(key, c)
+    }
+  }
+  const skills = [...counts.values()]
+    .filter((c) => c.n >= 2)
+    .sort((a, b) => b.n - a.n || a.skill.localeCompare(b.skill))
+    .slice(0, n)
+    .map((c) => ({ skill: c.skill, share: c.n / withKw.length }))
+  return { skills, jobs: withKw.length }
 }
 
 const median = (xs: number[]) => {
@@ -154,7 +188,12 @@ export function summarizeRole(jobs: RoleJob[], newest = 20): RoleSummary {
     topStates: topN(jobs.map((j) => j.usState).filter((s): s is string => !!s), 5).map(({ key, n }) => ({ state: stateName(key) ?? key, n })),
     topCompanies: topN(jobs.map((j) => j.company.trim()).filter(Boolean), 8).map(({ key, n }) => ({ company: key, n })),
     employers: new Set(jobs.map((j) => j.company.trim().toLowerCase())).size,
-    newest: capPerCompany([...jobs].sort((a, b) => (b.postedAt ?? b.firstSeenAt).getTime() - (a.postedAt ?? a.firstSeenAt).getTime()), 3).slice(0, newest),
+    newest: capPerCompany([...jobs].sort((a, b) => (b.postedAt ?? b.firstSeenAt).getTime() - (a.postedAt ?? a.firstSeenAt).getTime()), 3)
+      .slice(0, newest)
+      // The page doesn't need each job's keywords; keep the cached summary small.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(({ keywords: _k, ...j }) => j),
+    ...(({ skills, jobs: skillJobs }) => ({ topSkills: skills, skillJobs }))(topSkills(jobs)),
   }
 }
 

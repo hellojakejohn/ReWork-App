@@ -3,7 +3,9 @@
 import type { Metadata } from "next"
 import { SiteHeader } from "@/components/site/site-header"
 import { SiteFooter } from "@/components/site/site-footer"
-import { FitCheck } from "@/components/site/fit-check"
+import { FitCheck, type StartingJob } from "@/components/site/fit-check"
+import { prisma } from "@/lib/prisma"
+import { fetchDescription } from "@/lib/feed/match"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 
 const TITLE = "Take your measurements: how well does your resume fit this job?"
@@ -18,7 +20,36 @@ export const metadata: Metadata = {
   twitter: { ...TWITTER_DEFAULTS, title: TITLE, description: DESCRIPTION },
 }
 
-export default function FitPage() {
+const MAX_JOB_CHARS = 12_000
+
+/** An open job from our feed, for "Check my fit" on the role pages. Adzuna ads stay off public pages. */
+async function startingJob(id: string | undefined): Promise<StartingJob | null> {
+  if (!id || id.length > 200) return null
+  try {
+    const j = await prisma.job.findFirst({
+      where: { id, closedAt: null, source: { not: "adzuna" } },
+      select: { id: true, title: true, company: true, description: true, url: true },
+    })
+    if (!j) return null
+    const label = `${j.title} at ${j.company}`
+    let description = j.description
+    // Workday and SmartRecruiters jobs get their text on first use; fetch and keep it, once.
+    if (!description) {
+      const got = await fetchDescription(j, fetch)
+      if (!got) return { label, text: "" }
+      description = got.description
+      await prisma.job.update({ where: { id: j.id }, data: { description, payLabel: got.payLabel } })
+    }
+    if (description.trim().length < 200) return { label, text: "" }
+    return { label, text: `${j.title}\n${j.company}\n\n${description}`.slice(0, MAX_JOB_CHARS) }
+  } catch {
+    return null
+  }
+}
+
+export default async function FitPage({ searchParams }: { searchParams: Promise<{ job?: string | string[] }> }) {
+  const raw = (await searchParams).job
+  const start = await startingJob(typeof raw === "string" ? raw : undefined)
   return (
     <div className="min-h-screen bg-bg text-text">
       <SiteHeader />
@@ -31,7 +62,7 @@ export default function FitPage() {
             alterations.
           </p>
         </div>
-        <FitCheck />
+        <FitCheck startingJob={start} />
       </main>
       <SiteFooter />
     </div>

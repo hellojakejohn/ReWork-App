@@ -2,7 +2,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowRight, ExternalLink } from "lucide-react"
+import { ArrowRight, ExternalLink, Ruler } from "lucide-react"
 import { SiteHeader } from "@/components/site/site-header"
 import { SiteFooter } from "@/components/site/site-footer"
 import { Button } from "@/components/ui/button"
@@ -115,6 +115,20 @@ export default async function RolePage({ params }: Params) {
           )}
         </div>
 
+        {s.topSkills.length > 0 && (
+          <section className="mt-10">
+            <h2 className="font-serif text-2xl font-semibold text-text">Skills these posts ask for</h2>
+            <p className="mt-1 text-sm text-text-muted">Share of {s.skillJobs.toLocaleString("en-US")} {role.title} posts that ask for each one.</p>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {s.topSkills.map((k) => (
+                <li key={k.skill} className="rounded-full bg-surface px-3 py-1.5 text-sm text-text">
+                  {k.skill} <span className="text-text-muted">{pct(k.share)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <div className="mt-10 flex flex-col gap-4 rounded-card bg-inverse p-6 text-inverse-fg sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-serif text-2xl font-semibold">Which of these fit you?</p>
@@ -140,9 +154,14 @@ export default async function RolePage({ params }: Params) {
                   </p>
                   <p className="text-xs text-text-faint">Posted {ago(asDate(j.postedAt) ?? asDate(j.firstSeenAt))}</p>
                 </div>
-                <a href={j.url} target="_blank" rel="noopener nofollow" className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-accent-strong hover:underline">
-                  View on their site <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+                <div className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1">
+                  <Link href={`/fit?job=${encodeURIComponent(j.id)}`} rel="nofollow" className="inline-flex items-center gap-1 text-sm font-medium text-text hover:underline">
+                    <Ruler className="h-3.5 w-3.5" /> Check my fit
+                  </Link>
+                  <a href={j.url} target="_blank" rel="noopener nofollow" className="inline-flex items-center gap-1 text-sm font-medium text-accent-strong hover:underline">
+                    View on their site <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
               </li>
             ))}
           </ul>

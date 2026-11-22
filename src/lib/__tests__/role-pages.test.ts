@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { ROLES, money, roleBySlug, summarizeRole, titleInRole, type RoleJob } from '@/lib/role-pages'
+import { MIN_SKILL_JOBS, ROLES, money, roleBySlug, summarizeRole, titleInRole, topSkills, type RoleJob } from '@/lib/role-pages'
 
 const job = (over: Partial<RoleJob> = {}): RoleJob => ({
+  id: 'j1',
   title: 'Operations Coordinator',
   company: 'Acme',
   location: 'Saint Paul, MN',
@@ -69,5 +70,32 @@ describe('role pages', () => {
     expect(money(65000, 'year')).toBe('$65k')
     expect(money(22.5, 'hour')).toBe('$22.50')
     expect(money(25, 'hour')).toBe('$25')
+  })
+})
+
+describe('role page skills', () => {
+  it('lists nothing until enough jobs have keywords', () => {
+    const few = Array.from({ length: MIN_SKILL_JOBS - 1 }, () => job({ keywords: ['Excel'] }))
+    expect(topSkills(few).skills).toEqual([])
+  })
+  it('ranks skills by share of jobs, case-insensitive, once per job', () => {
+    const jobs = [
+      ...Array.from({ length: 8 }, () => job({ keywords: ['Excel', 'excel', 'Scheduling'] })),
+      ...Array.from({ length: 4 }, () => job({ keywords: ['Scheduling', 'SAP'] })),
+      job({ keywords: ['Rare'] }),
+      job({ keywords: [] }),
+    ]
+    const { skills, jobs: n } = topSkills(jobs)
+    expect(n).toBe(13)
+    expect(skills.map((s) => s.skill)).toEqual(['Scheduling', 'Excel', 'SAP'])
+    expect(skills[0].share).toBeCloseTo(12 / 13)
+  })
+  it('summary carries the skills and drops keywords from the newest list', () => {
+    const jobs = Array.from({ length: 12 }, (_, i) => job({ id: `j${i}`, company: `C${i}`, url: `https://x/${i}`, keywords: ['Excel', 'Scheduling'] }))
+    const s = summarizeRole(jobs)
+    expect(s.topSkills.map((x) => x.skill)).toEqual(['Excel', 'Scheduling'])
+    expect(s.skillJobs).toBe(12)
+    expect(s.newest[0]).not.toHaveProperty('keywords')
+    expect(s.newest[0].id).toBeDefined()
   })
 })

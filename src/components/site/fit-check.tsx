@@ -23,8 +23,14 @@ interface FitResult {
 
 const piece = `relative rounded-panel ${stitchedEdge} bg-surface p-5 sm:p-6`
 
-export function FitCheck() {
-  const [job, setJob] = useState("")
+/** A job from a role page (/fit?job=<id>): its text is filled in, the person adds a resume. */
+export interface StartingJob {
+  label: string
+  text: string
+}
+
+export function FitCheck({ startingJob }: { startingJob?: StartingJob | null } = {}) {
+  const [job, setJob] = useState(startingJob?.text ?? "")
   const [resumeText, setResumeText] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
@@ -109,7 +115,18 @@ export function FitCheck() {
           />
         </section>
         <section className={piece} aria-labelledby="fit-job">
-          <PieceLabel n={2} id="fit-job" title="The job" hint="Paste the whole post: duties and requirements." />
+          <PieceLabel
+            n={2}
+            id="fit-job"
+            title="The job"
+            hint={
+              startingJob?.text
+                ? `Filled in: ${startingJob.label}. Paste another post to swap it.`
+                : startingJob
+                  ? `We couldn't load ${startingJob.label}. Paste the post from their site.`
+                  : "Paste the whole post: duties and requirements."
+            }
+          />
           <Textarea
             value={job}
             onChange={(e) => setJob(e.target.value)}
