@@ -38,6 +38,7 @@ export type EventName =
   | 'fit_check_public' // { score, keywords, file, cached } one public fit check at /fit (no user; src/lib/public-fit.ts)
   | 'referral_joined' // {} a new user signed up through a friend's invite link (src/lib/referrals.ts)
   | 'referral_rewarded' // { days, referrerRewarded } their first tailor gave both Pro days
+  | 'job_check_public' // { ok, link?, scam, ghost, onBoard, needsPaste? } one free job check at /check (no user, no AI)
   | 'feed_pull' // { boards, ok, failed, skipped, listed, added, closed, staleClosed, purged, ms } the daily job pull (src/lib/feed/sync.ts)
 
 export type EventProps = Record<string, string | number | boolean | null | undefined>

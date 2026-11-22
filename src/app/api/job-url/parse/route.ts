@@ -5,8 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit';
-import { UnsafeUrlError, assertSafeUrl, safeFetch } from '@/lib/safe-fetch';
-import { refuseLinkedIn, resolveJob, type FetchedPage } from '@/lib/job-resolve';
+import { UnsafeUrlError, assertSafeUrl } from '@/lib/safe-fetch';
+import { fetchJobPage } from '@/lib/job-resolve/fetch-page';
+import { resolveJob } from '@/lib/job-resolve';
 import { extractJobWithModel } from '@/lib/job-resolve/model-extract';
 import { collectUsage, usageProps } from '@/lib/ai-usage';
 import { getAIBudget, type AIBudget } from '@/lib/ai-cap';
@@ -16,23 +17,7 @@ import { msSince, track } from '@/lib/track';
 export const runtime = 'nodejs';
 export const maxDuration = 300; // Vercel Pro; the model reader can be slow on long pages
 
-const BROWSER_UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
-
-async function fetchPage(url: string, accept: 'json' | 'html'): Promise<FetchedPage> {
-  const res = await safeFetch(url, {
-    checkUrl: refuseLinkedIn, // never fetch LinkedIn, not even through a redirect
-    maxRedirects: 3,
-    timeoutMs: 8000,
-    maxBytes: 3 * 1024 * 1024,
-    headers: {
-      'User-Agent': BROWSER_UA,
-      Accept: accept === 'json' ? 'application/json' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.8',
-    },
-  });
-  return { status: res.status, url: res.url, text: res.text };
-}
+const fetchPage = fetchJobPage;
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
