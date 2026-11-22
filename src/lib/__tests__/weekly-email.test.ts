@@ -52,7 +52,7 @@ describe('who gets the weekly email', () => {
 })
 
 describe('which jobs go in', () => {
-  const m = (id: string, over: Partial<CandidateMatch> & { job?: Partial<CandidateMatch['job']> } = {}): CandidateMatch => ({
+  const m = (id: string, over: Partial<Omit<CandidateMatch, 'job'>> & { job?: Partial<CandidateMatch['job']> } = {}): CandidateMatch => ({
     id,
     rank: 50,
     score: 50,
