@@ -1,6 +1,6 @@
 "use client"
 
-// The public fit check, tailor-themed: two "pattern pieces" (the job, your resume) with
+// The public fit check, tailor-themed: two "pattern pieces" (your resume, the job) with
 // stitched edges, a tape measure for the score, and three piles: fits, fits in other words,
 // needs alterations. Posts to /api/fit; nothing is stored.
 import { useEffect, useRef, useState } from "react"
@@ -66,19 +66,8 @@ export function FitCheck() {
   return (
     <div className="mt-10">
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className={piece} aria-labelledby="fit-job">
-          <PieceLabel n={1} id="fit-job" title="The job" hint="Paste the whole post: duties and requirements." />
-          <Textarea
-            value={job}
-            onChange={(e) => setJob(e.target.value)}
-            placeholder="Paste the job description here..."
-            className="mt-4 min-h-[220px] bg-bg"
-            aria-label="Job description"
-          />
-        </section>
-
         <section className={piece} aria-labelledby="fit-resume">
-          <PieceLabel n={2} id="fit-resume" title="Your resume" hint="A PDF or Word file, or paste the text." />
+          <PieceLabel n={1} id="fit-resume" title="Your resume" hint="A PDF or Word file, or paste the text." />
           {file ? (
             <div className="mt-4 flex items-center gap-3 rounded-input border border-border bg-bg px-4 py-3">
               <FileText className="h-5 w-5 text-text-muted" aria-hidden />
@@ -123,6 +112,17 @@ export function FitCheck() {
             }}
           />
         </section>
+        <section className={piece} aria-labelledby="fit-job">
+          <PieceLabel n={2} id="fit-job" title="The job" hint="Paste the whole post: duties and requirements." />
+          <Textarea
+            value={job}
+            onChange={(e) => setJob(e.target.value)}
+            placeholder="Paste the job description here..."
+            className="mt-4 min-h-[220px] bg-bg"
+            aria-label="Job description"
+          />
+        </section>
+
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
