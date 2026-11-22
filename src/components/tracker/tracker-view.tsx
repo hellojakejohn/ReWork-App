@@ -19,7 +19,8 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core"
 import { cn } from "@/lib/utils"
-import { TRACKER_COLUMNS, columnOf, trackerStats, transitionPatch, type TrackerColumn } from "@/lib/tracker"
+import { TRACKER_COLUMNS, columnOf, milestoneFor, trackerStats, transitionPatch, type Milestone, type TrackerColumn } from "@/lib/tracker"
+import { MilestoneDialog } from "./milestone-dialog"
 import { FREE_TRACKER_APPLICATIONS } from "@/lib/plans"
 import { isTemplateId, type TemplateId } from "@/lib/resume-templates"
 import { UpgradeSheet } from "@/components/billing/upgrade-sheet"
@@ -92,6 +93,7 @@ export function TrackerView() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(KeyboardSensor))
 
   const apps = useMemo(() => data?.applications ?? [], [data])
+  const [milestone, setMilestone] = useState<Milestone | null>(null)
   const stats = useMemo(() => trackerStats(apps), [apps])
   const byColumn = useMemo(() => {
     const map = Object.fromEntries(TRACKER_COLUMNS.map((c) => [c.id, [] as TrackerCardDTO[]])) as Record<TrackerColumn, TrackerCardDTO[]>
@@ -115,9 +117,12 @@ export function TrackerView() {
       statusUpdatedAt: patch.statusUpdatedAt.toISOString(),
       appliedAt: patch.appliedAt ? patch.appliedAt.toISOString() : app.appliedAt,
     })
+    const reached = milestoneFor(apps, app, column)
     const result = await updateTracked(app.id, { column })
-    if (result.ok) replace(result.application)
-    else {
+    if (result.ok) {
+      replace(result.application)
+      if (reached) setMilestone(reached)
+    } else {
       replace(app)
       toast.error(result.error)
     }
@@ -285,6 +290,7 @@ export function TrackerView() {
         }}
       />
       <UpgradeSheet open={upgrade.open} onOpenChange={(open) => setUpgrade((u) => ({ ...u, open }))} reason={upgrade.reason} />
+      <MilestoneDialog milestone={milestone} onClose={() => setMilestone(null)} />
     </div>
   )
 }
