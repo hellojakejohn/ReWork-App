@@ -69,3 +69,42 @@ describe('pay: the surest figure wins, European thousands', () => {
     expect(payFromText('Pay: $22.50 per hour')).toMatchObject({ min: 22.5, period: 'hour' })
   })
 })
+
+describe('pay: retirement match and "hourly"', () => {
+  it('skips a 401(k) match amount after the real range', () => {
+    const text =
+      'United States | Remote - Anticipated Base Salary Range $220,700—$300,000 USD What you\'ll love At Upstart, our benefits include a 401(k) or Group Retirement Savings Plan with a company match of $2 for every $1 contributed, up to $15,000 annually'
+    expect(payFromText(text)?.label).toBe('$220.7k to $300k a year')
+  })
+  it('reads "hourly" as the period, so the range beats a lone starting rate', () => {
+    const text = 'Pay Range: $17 - $18 hourly (based on level of experience) • Pay: Starting pay for this position is $17/hr.'
+    expect(payFromText(text)?.label).toBe('$17 to $18 an hour')
+  })
+})
+
+describe('pay: a range after "contribute" still counts', () => {
+  it('keeps the salary when the sentence talks about contributing', () => {
+    expect(payFromText('You will contribute to our mission, and the base salary range is $120,000 - $150,000')?.label).toBe('$120k to $150k a year')
+  })
+})
+
+describe('pay: weekly perks', () => {
+  it('skips a weekly discount', () => {
+    expect(payFromText('What we offer: Enjoy a €30 weekly discount on your boxes. • €10 meal vouchers per day.')).toBeNull()
+    expect(payFromText('Pay: $900 weekly')?.label).toBe('$900 a week')
+  })
+})
+
+describe('pay: period on both ends of a range', () => {
+  it('reads "$25.75/hour - $32.19/hour" as one range', () => {
+    expect(payFromText('Based in Colorado or Minnesota: $25.75/hour - $32.19/hour.')?.label).toBe('$25.75 to $32.19 an hour')
+    expect(payFromText('Pay: $25/hr')?.label).toBe('$25 an hour')
+  })
+})
+
+describe('pay: a bonus line right after a stated period', () => {
+  it('keeps "$20.00 - $31.00 hourly" before "Sign-On Bonus"', () => {
+    expect(payFromText('Pay Range: $20.00 - $31.00 hourly Sign-On Bonus of up to $8,000 based on level of experience')?.label).toBe('$20 to $31 an hour')
+    expect(payFromText('We offer a $5,000 signing bonus.')).toBeNull()
+  })
+})
