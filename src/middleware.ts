@@ -17,7 +17,7 @@ function hasSessionCookie(request: NextRequest) {
 }
 
 // Server-to-server callers: no browser, no cookies, their own auth (signature, secret).
-const NO_ORIGIN_CHECK = ['/api/stripe/webhook', '/api/cron/', '/api/keepalive', '/api/csp-report']
+const NO_ORIGIN_CHECK = ['/api/stripe/webhook', '/api/cron/', '/api/keepalive', '/api/csp-report', '/api/email/unsubscribe']
 
 /**
  * A state-changing API request from a browser on another site. SameSite=Lax cookies

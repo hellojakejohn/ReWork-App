@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { anthropicJson, bodyOf, fakeAnthropic } from './fixtures/fake-anthropic'
 import { cleanSourceText, itemsToLines, type PositionedItem } from '@/lib/resume-source-text'
 import { nameCase, SourceIndex, validateParsedResume } from '@/lib/parse-validate'
 import { masterToParsed, parsedToMaster } from '@/lib/master-resume'
@@ -228,29 +229,22 @@ describe('parsedToMaster / masterToParsed', () => {
 })
 
 describe('parseResume', () => {
-  function fakeClient(impl: () => unknown) {
-    const create = vi.fn(async () => impl())
-    return { client: { chat: { completions: { create } } } as never, create }
-  }
+  const fakeClient = (impl: () => unknown) => fakeAnthropic(impl)
 
   it('parses pasted text and validates the result', async () => {
     const out = goodParse()
     out.contact.links.push({ label: 'LinkedIn', url: 'linkedin.com/in/gmail' })
-    const { client, create } = fakeClient(() => ({
-      model: 'gpt-4o-test',
-      choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(out) } }],
-    }))
+    const { client, create } = fakeClient(() => anthropicJson(out))
     const stages: string[] = []
     const result = await parseResume({ kind: 'text', text: RAW }, { client, onStage: (s) => stages.push(s) })
     expect(stages).toEqual(['extracting', 'reading', 'checking'])
     expect(result.resume.contact.links).toHaveLength(2)
     expect(result.needsReview).toHaveLength(1)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const body = (create.mock.calls[0] as unknown as [Record<string, any>])[0]
-    expect(body.temperature).toBe(0)
-    expect(body.response_format.json_schema.strict).toBe(true)
-    // Text input only: no file part, and the cleaned text (no zero-width chars) is sent.
-    const content = body.messages[1].content
+    const body = bodyOf(create)
+    expect(body).not.toHaveProperty('temperature') // Opus 5.5 rejects temperature
+    expect(body.output_config.format.type).toBe('json_schema')
+    // Text input only: no document block, and the cleaned text (no zero-width chars) is sent.
+    const content = body.messages[0].content
     expect(typeof content).toBe('string')
     expect(content).not.toMatch(/​/)
   })
@@ -267,11 +261,11 @@ describe('parseResume', () => {
   it('reports quota exhaustion honestly', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { client } = fakeClient(() => {
-      throw Object.assign(new Error('429 You exceeded your current quota'), { status: 429, code: 'insufficient_quota' })
+      throw Object.assign(new Error('400 Your credit balance is too low to access the Anthropic API.'), { status: 400 })
     })
     const error = await parseResume({ kind: 'text', text: RAW }, { client }).catch((e) => e)
     expect(error.userMessage).toBe("Resume reading is temporarily unavailable, we're on it.")
-    expect(spy.mock.calls.some((c) => String(c[0]).includes('OPENAI_QUOTA_EXHAUSTED'))).toBe(true)
+    expect(spy.mock.calls.some((c) => String(c[0]).includes('ANTHROPIC_QUOTA_EXHAUSTED'))).toBe(true)
     spy.mockRestore()
   })
 

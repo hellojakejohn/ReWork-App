@@ -1,5 +1,5 @@
 // GET /api/health (admins only): which keys are set, can we reach the DB, and does one
-// tiny call succeed on every configured AI provider (Anthropic, OpenAI, OpenRouter).
+// tiny call succeed on Anthropic (the only AI provider).
 // Each provider check says which failure it is (checks.ai.<provider>.kind: quota | auth |
 // rate_limit | overloaded | ...), so an exhausted account or a bad key shows up here
 // before users report "busy". `models` shows the routing in effect. `checks.stripePrices`
@@ -50,8 +50,6 @@ export async function GET(request: Request) {
 
   const keys = {
     anthropic: set('ANTHROPIC_API_KEY'),
-    openai: set('OPENAI_API_KEY'),
-    openrouter: set('OPENROUTER_API_KEY'),
     database: set('DATABASE_URL'),
     storage: set('NEXT_PUBLIC_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'),
     stripe: set('STRIPE_SECRET_KEY'),

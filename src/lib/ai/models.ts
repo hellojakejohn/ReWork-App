@@ -7,7 +7,8 @@
 //
 // Safe to import from client components (no SDKs, no env).
 
-export type ProviderId = 'anthropic' | 'openai' | 'openrouter'
+// Anthropic is the only provider (OpenAI and OpenRouter were removed Nov 2026).
+export type ProviderId = 'anthropic'
 
 export interface ModelInfo {
   id: string
@@ -21,13 +22,11 @@ export interface ModelInfo {
   source: string
   // Sampling: newer reasoning models reject a non-default temperature with a 400.
   temperature: boolean
-  // Can take a PDF directly (Anthropic document block / OpenAI file input).
+  // Can take a PDF directly (Anthropic document block).
   pdf: boolean
   // Native strict JSON-schema output. Without it we use JSON mode + validation + repair.
   strictSchema: boolean
-  // OpenAI only: reasoning models take max_completion_tokens instead of max_tokens.
-  maxCompletionTokens?: boolean
-  // Anthropic only: the model a safety-classifier decline is re-run on, server-side, inside
+  // The model a safety-classifier decline is re-run on, server-side, inside
   // the same call (beta server-side-fallback). Always another Anthropic model: resume text
   // never crosses to a different provider because of a refusal. No entry = no fallback.
   refusalFallback?: string
@@ -88,90 +87,34 @@ export const MODELS: Record<string, ModelInfo> = {
     pdf: true,
     strictSchema: true,
   },
-  'gpt-4o': {
-    id: 'gpt-4o',
-    provider: 'openai',
-    label: 'GPT-4o',
-    input: 2.5,
-    output: 10,
-    cachedInput: 1.25,
-    priceAsOf: '2026-10-01',
-    source: 'https://openai.com/api/pricing/',
-    temperature: true,
-    pdf: true,
-    strictSchema: true,
-  },
-  'gpt-4o-mini': {
-    id: 'gpt-4o-mini',
-    provider: 'openai',
-    label: 'GPT-4o mini',
-    input: 0.15,
-    output: 0.6,
-    cachedInput: 0.075,
-    priceAsOf: '2026-10-01',
-    source: 'https://openai.com/api/pricing/',
-    temperature: true,
-    pdf: true,
-    strictSchema: true,
-  },
-  // Current OpenAI mini. Price from third-party price trackers (openai.com was not
-  // reachable when this was written): verify on the OpenAI pricing page.
-  'gpt-5.4-mini': {
-    id: 'gpt-5.4-mini',
-    provider: 'openai',
-    label: 'GPT-5.4 mini',
-    input: 0.75,
-    output: 4.5,
-    cachedInput: 0.075,
-    priceAsOf: '2026-10-02',
-    source: 'https://benchlm.ai/openai/api-pricing (unverified, check https://openai.com/api/pricing/)',
-    temperature: false, // reasoning model: only the default temperature
-    pdf: true,
-    strictSchema: true,
-    maxCompletionTokens: true,
-  },
-  // OpenRouter passes through the provider's price. Text only, JSON mode.
-  'moonshotai/kimi-k2.6': {
-    id: 'moonshotai/kimi-k2.6',
-    provider: 'openrouter',
-    label: 'Kimi K2.6',
-    input: 0.4342,
-    output: 1.828,
-    cachedInput: 0.07312,
-    priceAsOf: '2026-10-02',
-    source: 'https://openrouter.ai/moonshotai/kimi-k2.6 (varies by upstream provider)',
-    temperature: true,
-    pdf: false,
-    strictSchema: false,
-  },
 }
 
 // Unknown model: price it like Opus 5.5 so estimates (and the AI cap) err high.
 const FALLBACK_PRICE = { input: 4, output: 20, cachedInput: 0.2 }
 
 /**
- * Model info by id. Dated snapshots ("gpt-4o-2024-08-06") and OpenRouter ids match their
- * family by longest prefix. Unknown ids get conservative defaults: priced high, no
- * temperature, no PDF, no strict schema.
+ * Model info by id. Dated snapshots ("claude-opus-5-5-20261001") match their family by
+ * longest prefix. Unknown ids (old non-Claude rows in events) get conservative defaults:
+ * priced high, no temperature.
  */
-export function modelInfo(id: string, provider?: ProviderId): ModelInfo {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function modelInfo(id: string, _provider?: ProviderId): ModelInfo {
   const exact = MODELS[id]
   if (exact) return exact
   const family = Object.values(MODELS)
     .filter((m) => id.startsWith(m.id))
     .sort((a, b) => b.id.length - a.id.length)[0]
   if (family) return { ...family, id }
-  const p = provider ?? (id.startsWith('claude') ? 'anthropic' : id.includes('/') ? 'openrouter' : 'openai')
   return {
     id,
-    provider: p,
+    provider: 'anthropic',
     label: id,
     ...FALLBACK_PRICE,
     priceAsOf: 'unknown',
     source: 'fallback (unknown model, priced like Opus 5.5)',
     temperature: false,
-    pdf: p !== 'openrouter',
-    strictSchema: p !== 'openrouter',
+    pdf: true,
+    strictSchema: true,
   }
 }
 

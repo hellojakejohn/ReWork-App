@@ -18,6 +18,7 @@ import { takeSavedJob } from "@/lib/saved-job"
 import { isTemplateId, type TemplateId } from "@/lib/resume-templates"
 import {
   loadApplication,
+  openMatch,
   loadDashboard,
   markMatch,
   type ApplicationDetailDTO,
@@ -109,14 +110,16 @@ export function OneFlow() {
     setLoaded(true)
 
     // Links from the tracker: ?open=manage | start, ?application=<id> (open its result),
-    // ?tailor=<id> (tailor a job that was only tracked).
+    // ?tailor=<id> (tailor a job that was only tracked). From the weekly email: ?match=<id>
+    // (that matched job on the Job card, ready to tailor).
     const params = new URLSearchParams(window.location.search)
     const open = params.get("open")
     const applicationParam = params.get("application")
     const tailorParam = params.get("tailor")
     const tabParam = params.get("tab")
-    if (open || applicationParam || tailorParam || tabParam) {
-      for (const key of ["open", "application", "tailor", "tab"]) params.delete(key)
+    const matchParam = params.get("match")
+    if (open || applicationParam || tailorParam || tabParam || matchParam) {
+      for (const key of ["open", "application", "tailor", "tab", "match", "utm_source", "utm_medium"]) params.delete(key)
       const query = params.toString()
       window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
     }
@@ -126,6 +129,16 @@ export function OneFlow() {
       setJob(saved)
       if (initial && hasContent(initial.resume)) setStep(1)
       toast.success(saved.title ? `Saved: ${saved.title}` : "Job saved")
+    }
+    if (matchParam && !applicationParam && !tailorParam) {
+      const opened = await openMatch(matchParam)
+      if (!opened.ok) toast.error(opened.status === 404 ? "That job isn't in your matches anymore." : opened.error)
+      else {
+        const { closed, ...draft } = opened.job
+        setJob(draft)
+        if (initial && hasContent(initial.resume)) setStep(1)
+        if (closed) toast.message("Heads up: this job just closed on the company's site.")
+      }
     }
     if (open === "manage") setManageOpen(true)
     if (open === "start") {

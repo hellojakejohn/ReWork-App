@@ -11,7 +11,7 @@ Live at https://rework.hellojakejohn.com. Operated by Jakob Johnson, Saint Paul,
 - Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Radix UI
 - PostgreSQL on Supabase (us-west-2) via Prisma 6.8.2, Supabase Storage for uploaded files
 - NextAuth v4 with Google sign-in (database sessions)
-- AI behind one provider layer (`src/lib/ai/`): Anthropic Claude (default: Opus 5.5), OpenAI, or OpenRouter, chosen per task by env
+- AI behind one provider layer (`src/lib/ai/`): Anthropic Claude only (Opus 5.5 by default, Sonnet 5.5 for the free tier), chosen per task by env
 - Stripe (Pro Monthly subscription, Job Hunt Pass one-time payment, billing portal)
 - @react-pdf/renderer for PDFs, docx for Word files
 - Vercel hosting, Vercel Analytics, Vercel Cron
@@ -45,9 +45,7 @@ Put these in `.env` (not `.env.local`; Prisma reads `.env`). `npm run build` wor
 | `NEXTAUTH_URL` | yes | Deployed origin, e.g. `https://rework.hellojakejohn.com`. Also used for canonical URLs, sitemap and Stripe redirects |
 | `NEXTAUTH_SECRET` | yes | `openssl rand -base64 32` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | yes | Google OAuth client |
-| `ANTHROPIC_API_KEY` | recommended | With it, every AI task defaults to `claude-opus-5-5` |
-| `OPENAI_API_KEY` | if routed | Required when any task routes to `openai:` (the default without `ANTHROPIC_API_KEY`) |
-| `OPENROUTER_API_KEY` | no | Only for tasks routed to `openrouter:` (Kimi etc.). Text only, no PDFs |
+| `ANTHROPIC_API_KEY` | yes | The only AI provider. Every task defaults to `claude-opus-5-5` |
 | `AI_PARSE`, `AI_JOB_EXTRACT`, `AI_TAILOR`, `AI_COVER_LETTER`, `AI_EVIDENCE` | no | Routing per task, `provider:model`, e.g. `anthropic:claude-opus-5-5` |
 | `AI_FREE_TIER` | no | FREE users' tailor/cover letter/evidence, and paid users past 75% of their AI cap. Defaults to `anthropic:claude-sonnet-5-5` when `ANTHROPIC_API_KEY` is set |
 | `AI_CAP_RATIO` | no | Share of net revenue a user's AI spend may reach per period. Default `0.70` |
@@ -58,11 +56,10 @@ Put these in `.env` (not `.env.local`; Prisma reads `.env`). `npm run build` wor
 | `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRICE_PASS` | for billing | Price IDs: the $15/month price and the $29 one-time price. No fallback names; `/api/health` checks both amounts against `src/lib/plans.ts` |
 | `CRON_SECRET` | yes on Vercel | Authorizes `/api/keepalive` and `/api/cron/expire-entitlements`. Without it both refuse every request |
 | `ADMIN_EMAILS` | no | Comma separated; defaults to the owner's addresses |
-| `OPENAI_PARSE_MODEL`, `OPENAI_TAILOR_MODEL`, `OPENAI_COVER_LETTER_MODEL`, `OPENAI_EVIDENCE_MODEL`, `OPENAI_JOB_MODEL` | no | Old OpenAI model overrides, used only when no `AI_*` route and no `ANTHROPIC_API_KEY` |
 
-`/api/health` (admins only) reports which keys are set, the routing in effect, and pings the DB and every configured AI provider.
+`/api/health` (admins only) reports which keys are set, the routing in effect, and pings the DB and Anthropic.
 
-Privacy: resume text only goes to providers named by these env vars. Nothing defaults to a free or community endpoint, and OpenRouter requests deny upstream data collection.
+Privacy: resume text only goes to Anthropic. Nothing defaults to a free or community endpoint.
 
 ## Local development
 

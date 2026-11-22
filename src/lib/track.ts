@@ -39,6 +39,9 @@ export type EventName =
   | 'referral_joined' // {} a new user signed up through a friend's invite link (src/lib/referrals.ts)
   | 'referral_rewarded' // { days, referrerRewarded } their first tailor gave both Pro days
   | 'job_check_public' // { ok, link?, scam, ghost, onBoard, needsPaste? } one free job check at /check (no user, no AI)
+  | 'weekly_email' // { status: sent | dry | skipped | failed, mode, reason?, jobs?, resendId?, error? } src/lib/email/weekly.ts
+  | 'welcome_email' // { status: sent | failed, resendId?, error? }
+  | 'email_prefs' // { weekly, via: settings | unsubscribe }
   | 'feed_pull' // { boards, ok, failed, skipped, listed, added, closed, staleClosed, purged, ms } the daily job pull (src/lib/feed/sync.ts)
 
 export type EventProps = Record<string, string | number | boolean | null | undefined>
