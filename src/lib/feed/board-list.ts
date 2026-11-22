@@ -25,10 +25,15 @@ const GREENHOUSE = [
     // Nov 22 (checked live): sales, support and home services roles, open to career changers.
     'stockx', 'bird', 'lendingtree', 'yotpo', 'attentive', 'klaviyo', 'dialpad', 'five9',
     'housecall', 'workstream',
+    // Nov 22 (checked live): urgent care, behavioral health, retail stores, freight and
+    // warehouses, schools and child care.
+    'convenientmd', 'midihealth', 'charliehealth', 'reformation', 'aloyoga', 'shipmonk',
+    'uberfreight', 'achievementfirst', 'wonderschool',
 ]
 const LEVER = [
     'palantir', 'spotify', 'zoox', 'gopuff', 'jumpcloud', 'anchorage', 'ro', 'veeva', 'tala',
     'lyrahealth', 'pointclickcare', 'everlywell', 'aledade', 'grailbio',
+    'arrivelogistics',
 ]
 const ASHBY = [
     'ramp', 'notion', 'linear', 'openai', 'supabase', 'posthog', 'replit', 'cursor', 'ashby',
@@ -36,6 +41,8 @@ const ASHBY = [
     'snowflake', 'docker', 'benchling', 'watershed', 'quora', 'multiverse', 'harvey',
     // Nov 19 (checked live): mental health and clinics, plus a few large boards.
     'headway', 'commure', 'vanta', 'drata', 'sentry', 'attio',
+    // Nov 22 (checked live): eating disorder and psychiatry clinics.
+    'equip', 'talkiatry',
 ]
 
 export const LIST_BOARDS: Board[] = [
