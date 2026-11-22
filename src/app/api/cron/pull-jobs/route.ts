@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { cronAuthorized } from '@/lib/cron-auth'
 import { prisma } from '@/lib/prisma'
 import { LIST_BOARDS } from '@/lib/feed/board-list'
-import { closeStaleSearched, pullListBoards } from '@/lib/feed/sync'
+import { closeStaleSearched, pullListBoards, purgeClosedJobs } from '@/lib/feed/sync'
 import { pullAllSmartRecruiters } from '@/lib/feed/smartrecruiters'
 import { track } from '@/lib/track'
 
@@ -25,6 +25,7 @@ export async function GET(req: Request) {
       added: pulled.added + smartRecruiters.added,
       closed: pulled.closed + smartRecruiters.closed,
       staleClosed: await closeStaleSearched(prisma),
+      purged: await purgeClosedJobs(prisma),
     }
     await track('feed_pull', { ...summary, failed: summary.failed.length })
     return NextResponse.json({ ok: true, summary, at: new Date().toISOString() })

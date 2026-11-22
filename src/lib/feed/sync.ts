@@ -138,3 +138,19 @@ export async function closeStaleSearched(db: Db, now = new Date()): Promise<numb
   const federal = await db.job.updateMany({ where: { source: 'usajobs', closedAt: null, lastSeenAt: { lt: daysAgo(14) }, ...kept }, data: { closedAt: now } })
   return workday.count + federal.count
 }
+
+export const PURGE_CLOSED_AFTER_DAYS = 60
+
+/**
+ * Delete jobs closed more than 60 days ago, so the table (most of the database) doesn't grow
+ * forever on Supabase's free 500 MB. Their matches go with them (cascade). Jobs someone saved
+ * or tailored stay, like in closeStaleSearched. Tracker entries don't point at jobs, so
+ * nobody's applications change.
+ */
+export async function purgeClosedJobs(db: Db, now = new Date()): Promise<number> {
+  const cutoff = new Date(now.getTime() - PURGE_CLOSED_AFTER_DAYS * 86_400_000)
+  const kept = { matches: { none: { OR: [{ savedAt: { not: null } }, { applicationId: { not: null } }] } } }
+  const { count } = await db.job.deleteMany({ where: { closedAt: { lt: cutoff }, ...kept } })
+  return count
+}
+

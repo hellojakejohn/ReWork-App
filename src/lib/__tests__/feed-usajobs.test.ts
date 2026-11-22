@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseUsajobs, searchUsajobs, usajobsConfigured, usajobsQueries, USAJOBS_BOARD } from '@/lib/feed/usajobs'
-import { closeStaleSearched } from '@/lib/feed/sync'
+import { closeStaleSearched, purgeClosedJobs } from '@/lib/feed/sync'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const item = (over: any = {}) => ({
@@ -77,3 +77,14 @@ describe('closeStaleSearched', () => {
     expect(calls[1].where.lastSeenAt.lt.toISOString()).toBe('2026-10-31T12:00:00.000Z')
   })
 })
+
+describe('purgeClosedJobs', () => {
+  it('deletes jobs closed over 60 days ago unless someone saved or tailored them', async () => {
+    const calls: any[] = []
+    const db: any = { job: { deleteMany: async (q: any) => { calls.push(q); return { count: 7 } } } }
+    expect(await purgeClosedJobs(db, now)).toBe(7)
+    expect(calls[0].where.closedAt.lt.toISOString()).toBe('2026-09-15T12:00:00.000Z')
+    expect(calls[0].where.matches.none.OR).toHaveLength(2)
+  })
+})
+
