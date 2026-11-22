@@ -12,6 +12,7 @@ export function SiteFooter() {
             <Link href="/pricing" className="underline-offset-4 hover:text-text hover:underline">Pricing</Link>
             <Link href="/fit" className="underline-offset-4 hover:text-text hover:underline">Fit check</Link>
             <Link href="/check" className="underline-offset-4 hover:text-text hover:underline">Job check</Link>
+            <Link href="/jobs" className="underline-offset-4 hover:text-text hover:underline">Jobs by role</Link>
             <Link href="/proof" className="underline-offset-4 hover:text-text hover:underline">Proof</Link>
             <Link href="/privacy" className="underline-offset-4 hover:text-text hover:underline">Privacy</Link>
             <Link href="/terms" className="underline-offset-4 hover:text-text hover:underline">Terms</Link>
