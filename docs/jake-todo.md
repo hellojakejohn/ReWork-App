@@ -20,13 +20,18 @@ Tick them off here or just tell Claude "done with N".
 5. [x] **Paste `docs/sql/paste-2026-11-23.sql`** in Supabase (done Nov 23; tables checked, RLS on).
 5b. [x] **USAJOBS key** (done Nov 23: both env vars in Vercel Production, redeployed). Free key at developer.usajobs.gov. Vercel Production
    env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
-6. [ ] **Adzuna** (Nov 22: signed up; licence email drafted to info@adzuna.com. Their terms: paid apps need a licence after a 14-day trial, and each listing needs an "Adzuna" label linked to adzuna.com, not built yet) (built Nov 22, off until keys are set): sign up at developer.adzuna.com, then
+6. [ ] **Adzuna** (Nov 22: signed up; licence email sent to info@adzuna.com; label built in PR 99. Their terms: paid apps need a licence after a 14-day trial, and each listing needs an "Adzuna" label linked to adzuna.com, not built yet) (built Nov 22, off until keys are set): sign up at developer.adzuna.com, then
    email them that ReWork is a paid app that shows their ads as job matches and ask if the
    free tier covers it (an earlier read said commercial use needs a licence). Once they say
    yes: Vercel Production env `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`, redeploy. Tell Claude.
 7. [ ] **Chrome Web Store** (post-launch feature): $5 developer account, Claude builds the zip
    and writes the listing. When approved, Claude adds the install link and turns the copy on.
 8. [ ] Vercel failed-deployment email alert (Settings, Notifications).
+9. [x] Google Search Console (Nov 22): domain verified, sitemap submitted.
+10. [ ] Mon Nov 23 (any time): /admin, check `feed_pull` shows `usajobs` jobs (first nightly federal
+   pull, 6:30am CT) and the weekly email dry-run log. Tell Claude what you see.
+11. [ ] Tue Nov 24: launch posts on X and LinkedIn (`docs/launch-posts.md`), links with `?ref=x` / `?ref=linkedin`.
+12. [ ] This week: first 5 partner emails (`docs/marketing/partners.md`, CareerForce Saint Paul first).
 
 ## Every Sunday (2 minutes, until Supabase Pro)
 
