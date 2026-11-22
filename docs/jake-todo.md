@@ -15,12 +15,12 @@ Tick them off here or just tell Claude "done with N".
 
 ## After launch
 
-4. [x] **Support email** (ImprovMX on rework.careers, Nov 19; left: Stripe Public details support email): free forwarding `support@rework.careers` to your Gmail (ImprovMX or
+4. [x] **Support email** (ImprovMX on rework.careers, Nov 19; Stripe Public details set Nov 22): free forwarding `support@rework.careers` to your Gmail (ImprovMX or
    similar, two DNS records in Vercel Domains), then Claude switches the site and Stripe to it.
 5. [x] **Paste `docs/sql/paste-2026-11-23.sql`** in Supabase (done Nov 23; tables checked, RLS on).
 5b. [x] **USAJOBS key** (done Nov 23: both env vars in Vercel Production, redeployed). Free key at developer.usajobs.gov. Vercel Production
    env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
-6. [ ] **Adzuna** (built Nov 22, off until keys are set): sign up at developer.adzuna.com, then
+6. [ ] **Adzuna** (Nov 22: signed up; licence email drafted to info@adzuna.com. Their terms: paid apps need a licence after a 14-day trial, and each listing needs an "Adzuna" label linked to adzuna.com, not built yet) (built Nov 22, off until keys are set): sign up at developer.adzuna.com, then
    email them that ReWork is a paid app that shows their ads as job matches and ask if the
    free tier covers it (an earlier read said commercial use needs a licence). Once they say
    yes: Vercel Production env `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`, redeploy. Tell Claude.
@@ -39,11 +39,11 @@ Tick them off here or just tell Claude "done with N".
 - [x] (Done Nov 23: domain added via the Vercel integration, DNS checked live, `RESEND_API_KEY` in Vercel.) Add domain `send.rework.careers` in Resend, paste its DNS records in Vercel Domains,
   create an API key, add `RESEND_API_KEY` in Vercel (Production). Pick a mailing address for
   the footer (PO box or virtual mailbox). Then Claude builds `docs/weekly-email-plan.md`.
-- [ ] Pick the mailing address for the email footer (PO box or virtual mailbox), then add it in
+- [x] (Nov 22: set, redeployed) Pick the mailing address for the email footer (PO box or virtual mailbox), then add it in
   Vercel Production as `EMAIL_MAILING_ADDRESS` (one line, e.g. `PO Box 123, Saint Paul, MN 55101`).
   Nothing sends without it.
 - [ ] After the weekly email PR is merged, turn it on in steps (Vercel Production env, redeploy each time):
-  1. `EMAIL_WEEKLY=dry`: Monday's cron logs who would get what in `/admin` (no sends, no AI spend).
+  1. [x] (Nov 22) `EMAIL_WEEKLY=dry`: Monday's cron logs who would get what in `/admin` (no sends, no AI spend).
   2. `/admin` > Emails > "Send me a test weekly" to see it in your inbox.
   3. `EMAIL_WEEKLY=admins`: next Monday only you get it, for real.
   4. `EMAIL_WEEKLY=live` and `EMAIL_WELCOME=1`: everyone.

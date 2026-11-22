@@ -14,10 +14,11 @@ export interface Pay {
 
 const NUM = String.raw`(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)`
 const CUR = String.raw`(?:([$£€])|\b(USD|CAD|AUD|EUR|GBP)\s?)`
-const PERIOD = String.raw`(?:\s*(?:/|per|an?|each)\s*|\s+)(hour|hr|year|yr|annum|annually|month|mo|week|wk)\b`
+const PERIOD = String.raw`(?:\s*(?:/|per|an?|each)\s*|\s+)(hourly|hour|hr|yearly|year|yr|annum|annually|monthly|month|mo|weekly|week|wk)\b`
 // One amount, an optional "k", then optionally "- / to" a second amount, then the period.
+// "$25.75/hour - $32.19/hour" is one range: the first period may sit before the dash.
 const PAY_RE = new RegExp(
-  String.raw`${CUR}\s?${NUM}\s?([kK])?(?![\w])(?:\s*(?:-|–|—|to)\s*(?:[$£€]|USD|CAD|AUD|EUR|GBP)?\s?${NUM}\s?([kK])?(?![\w]))?(?:\s*(?:USD|CAD|AUD|EUR|GBP))?(?:${PERIOD})?`,
+  String.raw`${CUR}\s?${NUM}\s?([kK])?(?![\w])(?:(?:\s*/\s*(?:hour|hr|year|yr))?\s*(?:-|–|—|to)\s*(?:[$£€]|USD|CAD|AUD|EUR|GBP)?\s?${NUM}\s?([kK])?(?![\w]))?(?:\s*(?:USD|CAD|AUD|EUR|GBP))?(?:${PERIOD})?`,
   'g'
 )
 // A range of bare "k" numbers with no currency: "120k-150k".
@@ -27,8 +28,11 @@ const NOT_PAY_AFTER = /^\s*(?:\+\s*)?(?:m\b|mm\b|b\b|bn\b|million|billion|in (?:
 // "$100/month education budget", "$500 home office stipend": a perk a few words on.
 // Only the amount's own noun: "$100/month education budget", "$500 home office stipend". Not
 // "$150,000 plus annual bonus": there the perk is an extra on top of a real salary.
-const NOT_PAY_SOON = /^(?:[ \t]*\/[ \t]*(?:mo|month|year|yr|week|wk))?(?:[ \t]+[a-z-]+){0,2}[ \t]+(?:budget|stipend|allowance|reimbursement|credit|perk)s?\b/i
+const NOT_PAY_SOON = /^(?:[ \t]*\/[ \t]*(?:mo|month|year|yr|week|wk))?(?:[ \t]+[a-z-]+){0,2}[ \t]+(?:budget|stipend|allowance|reimbursement|credit|perk|discount|voucher)s?\b/i
 const NOT_PAY_BEFORE = /(raised|funding|funded|revenue|valuation|valued|series [a-e]|bonus|stipend|budget|reimburse\w*|allowance|credit|401k|match)[^.\n]{0,30}$/i
+// A retirement match is never the salary: "a company match of $2 for every $1 contributed, up
+// to $15,000 annually" (Upstart). Looked for in the whole sentence before the amount.
+const RETIREMENT_BEFORE = /(401\(?k\)?|retirement|pension|(?:company|employer) match)[^.\n]{0,90}$/i
 const PAY_WORD_BEFORE = /(salary|pay|compensation|wage|rate|range|base|earn|ote|annual|hourly|per year|per hour)[^.\n]{0,50}$/i
 
 const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', CAD: '$', AUD: '$', EUR: '€', GBP: '£' }
@@ -42,9 +46,9 @@ function amount(raw: string, k: string | undefined): number {
 function periodOf(word: string | undefined): PayPeriod | null {
   if (!word) return null
   const w = word.toLowerCase()
-  if (w === 'hour' || w === 'hr') return 'hour'
-  if (w === 'week' || w === 'wk') return 'week'
-  if (w === 'month' || w === 'mo') return 'month'
+  if (w === 'hour' || w === 'hr' || w === 'hourly') return 'hour'
+  if (w === 'week' || w === 'wk' || w === 'weekly') return 'week'
+  if (w === 'month' || w === 'mo' || w === 'monthly') return 'month'
   return 'year'
 }
 
@@ -80,7 +84,8 @@ interface Candidate {
 function accept(text: string, index: number, end: number, min: number, max: number, currency: string, periodWord: string | undefined): Candidate | null {
   const before = text.slice(Math.max(0, index - 60), index)
   const after = text.slice(end, end + 30)
-  if (NOT_PAY_AFTER.test(after) || NOT_PAY_BEFORE.test(before) || NOT_PAY_SOON.test(text.slice(end, end + 40))) return null
+  // A stated period ends the amount: "$20 - $31 hourly Sign-On Bonus..." is still pay.
+  if ((!periodWord && NOT_PAY_AFTER.test(after)) || NOT_PAY_BEFORE.test(before) || RETIREMENT_BEFORE.test(text.slice(Math.max(0, index - 120), index)) || NOT_PAY_SOON.test(text.slice(end, end + 40))) return null
   if (max < min) [min, max] = [max, min]
   if (min < 7 || max > 2_000_000 || max > min * 4) return null
   const said = periodOf(periodWord)
@@ -91,6 +96,8 @@ function accept(text: string, index: number, end: number, min: number, max: numb
   if (period === 'hour' && max > 500) return null
   // A monthly figure under $1,000 is a perk or a fee, not a salary.
   if (period === 'month' && max < 1000) return null
+  // Same for a weekly figure under $200 ("€30 weekly discount").
+  if (period === 'week' && max < 200) return null
   const payWord = PAY_WORD_BEFORE.test(before)
   return {
     pay: { min, max, currency, period },
