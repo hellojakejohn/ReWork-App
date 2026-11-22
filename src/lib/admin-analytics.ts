@@ -60,7 +60,7 @@ export interface FeedStats {
   openJobs: number
   openBySource: { source: string; jobs: number }[]
   withKeywords: number
-  lastPull: { at: string; ok: number; boards: number; failed: number; added: number; closed: number; ms: number } | null
+  lastPull: { at: string; ok: number; boards: number; failed: number; added: number; closed: number; ms: number; usajobs: number | null; failedBoards: string | null } | null
   runs: number
   runUsers: number
   spendUsd: number
@@ -84,12 +84,13 @@ export async function feedStats(since: Date): Promise<FeedStats | null> {
       prisma.jobMatch.count({ where: { dismissedAt: { gte: since } } }),
     ])
     const p = (lastPull?.props ?? {}) as Record<string, number>
+    const failedBoards = (lastPull?.props as Record<string, unknown> | null)?.failedBoards
     const openBySource = bySource.map((g) => ({ source: g.source, jobs: g._count._all })).sort((a, b) => b.jobs - a.jobs)
     return {
       openJobs: openBySource.reduce((n, s) => n + s.jobs, 0),
       openBySource,
       withKeywords,
-      lastPull: lastPull ? { at: lastPull.createdAt.toISOString(), ok: p.ok ?? 0, boards: p.boards ?? 0, failed: p.failed ?? 0, added: p.added ?? 0, closed: p.closed ?? 0, ms: p.ms ?? 0 } : null,
+      lastPull: lastPull ? { at: lastPull.createdAt.toISOString(), ok: p.ok ?? 0, boards: p.boards ?? 0, failed: p.failed ?? 0, added: p.added ?? 0, closed: p.closed ?? 0, ms: p.ms ?? 0, usajobs: typeof p.usajobs === 'number' ? p.usajobs : null, failedBoards: typeof failedBoards === 'string' && failedBoards ? failedBoards : null } : null,
       runs,
       runUsers: runUsers.length,
       spendUsd: Math.round(Number(spend[0]?.spent ?? 0) * 100) / 100,

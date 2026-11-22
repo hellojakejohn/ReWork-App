@@ -26,4 +26,11 @@ describe('SmartRecruiters', () => {
     expect(r).toMatchObject({ listed: 150, added: 150, closed: 1 })
     expect(rows[0]).toMatchObject({ usState: 'MN', description: '' })
   })
+
+  it("doesn't close anything when only the newest 2,000 of a bigger list were read", async () => {
+    const fetchFn = (async () => new Response(JSON.stringify({ totalFound: 25000, content: Array.from({ length: 100 }, (_, i) => post(`p${Math.random()}${i}`)) }))) as never
+    const db: any = { job: { findMany: async () => [], createMany: async ({ data }: any) => ({ count: data.length }), updateMany: async ({ data }: any) => ({ count: data.closedAt ? 99 : 0 }) } }
+    const r = await pullSmartRecruiters(db, b, { fetchFn })
+    expect(r).toMatchObject({ listed: 2000, closed: 0 })
+  })
 })
