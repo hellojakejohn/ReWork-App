@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { SOURCE_COOKIE, SOURCE_COOKIE_DAYS, decodeSource, encodeSource, shouldRemember, sourceFromVisit } from '@/lib/signup-source'
 
 // Auth uses the database session strategy (Prisma adapter), so the session cookie
 // holds an opaque session token, not a JWT. getToken() from next-auth/jwt can't decode
@@ -52,10 +53,29 @@ export function middleware(request: NextRequest) {
   if (!hasSession && isDashboardRoute) {
     const signInUrl = new URL('/auth/signin', request.url)
     signInUrl.searchParams.set('callbackUrl', request.url)
-    return NextResponse.redirect(signInUrl)
+    const redirect = NextResponse.redirect(signInUrl)
+    rememberSource(request, redirect)
+    return redirect
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+  if (!hasSession) rememberSource(request, response)
+  return response
+}
+
+/** First touch (or a tagged link after an untagged visit) for signed-out page views. */
+function rememberSource(request: NextRequest, response: NextResponse) {
+  if (request.method !== 'GET' || request.nextUrl.pathname.startsWith('/api/')) return
+  const visit = sourceFromVisit(request.nextUrl, request.headers.get('referer'))
+  const existing = decodeSource(request.cookies.get(SOURCE_COOKIE)?.value)
+  if (!shouldRemember(existing, visit)) return
+  response.cookies.set(SOURCE_COOKIE, encodeSource(visit), {
+    maxAge: SOURCE_COOKIE_DAYS * 24 * 60 * 60,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: request.nextUrl.protocol === 'https:',
+    path: '/',
+  })
 }
 
 // Configure which routes to run middleware on
