@@ -12,6 +12,7 @@ import { buildReceipt, type LeftOutClaim, type Receipt } from "@/lib/receipt"
 import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
 import { applyEvidence, submitEvidence, type ApplicationDetailDTO, type MasterResumeDTO } from "./api"
 import { ErrorNote, inputClass } from "./ui"
+import { TapeMeasure, stitchedEdge } from "@/components/ui/tailor"
 
 export const ADD_IT_UPSELL =
   "Adding the real number uses the evidence interview, a Pro feature: it rewrites the bullet from your answer only, and checks it the same way."
@@ -23,7 +24,7 @@ export function useReceipt(application: ApplicationDetailDTO): Receipt {
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const row = "flex items-baseline justify-between gap-4 text-sm"
   return (
-    <section aria-labelledby="receipt-title" className="rounded-card border border-border bg-surface p-5">
+    <section aria-labelledby="receipt-title" className={cn("rounded-card bg-surface p-5", stitchedEdge)}>
       <h3 id="receipt-title" className="font-bold text-text">
         Your receipt
       </h3>
@@ -72,10 +73,7 @@ function MatchMeter({ before, after }: { before: number; after: number }) {
           <span className="sr-only">to</span> <span className="text-2xl font-bold">{after}%</span>
         </p>
       </div>
-      <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-border" aria-hidden>
-        <div className="absolute inset-y-0 left-0 rounded-full bg-success" style={{ width: `${Math.min(100, after)}%` }} />
-        <div className="absolute inset-y-0 left-0 rounded-full bg-text-faint" style={{ width: `${Math.min(100, before, after)}%` }} />
-      </div>
+      <TapeMeasure value={after} from={before} size="sm" className="mt-2" />
       <p className="mt-2 text-xs text-text-muted">
         {gain > 0 ? `+${gain} points. ` : ""}
         The job&apos;s keywords your resume uses word for word, top skills counting most. Only what you really have counts.

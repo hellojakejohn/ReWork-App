@@ -18,6 +18,7 @@ import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { missingNudge } from "@/lib/receipt"
 import { payFromText } from "@/lib/pay"
 import { Card, CardHeader, ErrorNote } from "./ui"
+import { TapeMeasure } from "@/components/ui/tailor"
 import { rememberCoverage, SkillCheck } from "./skill-check"
 
 export type ResultTab = "preview" | "changes" | "keywords" | "letter" | "linkedin" | "answers" | "interview"
@@ -169,10 +170,7 @@ function Result({
               {application.coverageBefore ?? 0}% → <span className="font-bold text-success">{application.coverageAfter ?? 0}%</span>
             </span>
           </div>
-          <div className="relative h-2 overflow-hidden rounded-full bg-surface-raised">
-            <div className="absolute inset-y-0 left-0 bg-success" style={{ width: `${application.coverageAfter ?? 0}%` }} />
-            <div className="absolute inset-y-0 left-0 bg-text-faint" style={{ width: `${application.coverageBefore ?? 0}%` }} />
-          </div>
+          <TapeMeasure value={application.coverageAfter ?? 0} from={application.coverageBefore ?? 0} size="sm" />
         </div>
         {keywords.presentAfter.length > 0 && (
           <div>

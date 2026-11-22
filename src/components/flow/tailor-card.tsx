@@ -9,14 +9,15 @@ import { summarizeResume } from "@/lib/master-resume"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 import { runTailor, type ApplicationDetailDTO, type JobDraft, type MasterResumeDTO, type Quota } from "./api"
 import { Card, CardBody, CardFooter, CardHeader, ErrorNote, StageList } from "./ui"
+import { Stitching } from "@/components/ui/tailor"
 import { useAdvance } from "./use-advance"
 import { FitSummary, SkillCheck, useFit } from "./skill-check"
 
 const TAILOR_STAGES = [
-  { id: "reading", label: "Reading the job" },
-  { id: "rewriting", label: "Rewriting your bullets for this job" },
-  { id: "checking", label: "Fact-checking against your resume" },
-  { id: "saving", label: "Saving" },
+  { id: "reading", label: "Taking the job's measurements" },
+  { id: "rewriting", label: "Cutting your bullets to fit this job" },
+  { id: "checking", label: "Checking every seam against your resume" },
+  { id: "saving", label: "Pressing and saving" },
 ]
 
 export function TailorCard({
@@ -170,8 +171,9 @@ export function TailorCard({
         )}
 
         {checking ? null : running ? (
-          <div className="rounded-card border border-border bg-surface-raised p-4">
+          <div className="space-y-4 rounded-card border border-border bg-surface-raised p-4">
             <StageList stages={TAILOR_STAGES} current={stage} />
+            <Stitching label="Tailoring, from your real experience only" />
           </div>
         ) : outOfTailors ? (
           <div className="space-y-3 rounded-card bg-surface-raised p-4 text-sm">

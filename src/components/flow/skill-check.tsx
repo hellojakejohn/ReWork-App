@@ -6,12 +6,14 @@
 // master, so the tailor that follows can use them. Free for everyone.
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
-import { Check, ListChecks, Loader2 } from "lucide-react"
+import { Check, ListChecks } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { weightedScore } from "@/lib/keyword-coverage"
 import { LOW_FIT_SCORE, MAX_SKILL_NOTE, MAX_SKILL_QUESTIONS, type FitCoverage, type SkillAddition, type SkillAnswer, type SkillLevel } from "@/lib/skill-check-shared"
 import { applySkillAnswers, checkFit, placeSkillAnswers, type JobDraft, type MasterResumeDTO } from "./api"
 import { ErrorNote, inputClass } from "./ui"
+import { Stitching, TapeMeasure } from "@/components/ui/tailor"
+import { PILES, VERDICT_WORDS, verdictFor } from "@/lib/fit-words"
 
 export interface Fit {
   keywords: string[]
@@ -91,9 +93,7 @@ export function useFit(master: MasterResumeDTO | null, job: JobDraft | null, ena
 export function FitSummary({ fit, loading, failed, onCheck }: { fit: Fit | null; loading: boolean; failed: boolean; onCheck: () => void }) {
   if (loading) {
     return (
-      <p className="flex items-center gap-2 text-sm text-text-muted" aria-live="polite">
-        <Loader2 className="h-4 w-4 animate-spin" /> Checking how well your resume fits this job...
-      </p>
+      <Stitching label="Taking your measurements for this job..." />
     )
   }
   if (failed || !fit || fit.keywords.length === 0) return null
@@ -104,15 +104,15 @@ export function FitSummary({ fit, loading, failed, onCheck }: { fit: Fit | null;
   return (
     <div className="space-y-3 rounded-card border border-border bg-surface-raised p-4" aria-live="polite">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-medium text-text">Fit check</p>
+        <p className="text-sm font-medium text-text">
+          Your measurements <span className="font-normal text-text-muted">· {VERDICT_WORDS[verdictFor(score)].title}</span>
+        </p>
         <p className={cn("text-sm font-semibold", low ? "text-warn" : "text-success")}>{score}%</p>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-border" aria-hidden>
-        <div className={cn("h-full rounded-full", low ? "bg-warn" : "bg-success")} style={{ width: `${Math.max(score, 3)}%` }} />
-      </div>
+      <TapeMeasure value={score} size="sm" />
       <p className="text-sm text-text-secondary">
-        Your resume uses the job&apos;s words for {present.length} of the {fit.keywords.length} things it asks for
-        {related.length > 0 ? ` and shows ${related.length} more in other words, which tailoring rewords.` : "."} The job&apos;s top skills count most.
+        {PILES.present.title}: {present.length} of the {fit.keywords.length} things the job asks for, in its words.
+        {related.length > 0 ? ` ${related.length} more fit in other words, which a tailor rewords.` : ""} The job&apos;s top skills count most.
         {low && missing.length > 0 && " As it stands, this job is a stretch."}
       </p>
       {missing.length > 0 && (
