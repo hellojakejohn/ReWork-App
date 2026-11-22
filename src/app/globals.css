@@ -145,8 +145,13 @@
   .ticker-track { animation: none; }
 }
 
-/* Public fit check (src/components/site/fit-check.tsx): tape measure ticks (every 1 and
+/* Tape measure (src/components/ui/tailor.tsx): ticks (every 1 and
    every 10) and a running stitch while it measures. */
+.fit-tape-ticks-sm {
+  background-image: repeating-linear-gradient(to right, rgb(var(--text) / 0.35) 0 1px, transparent 1px 10%);
+  background-size: 100% 60%;
+  background-repeat: no-repeat;
+}
 .fit-tape-ticks {
   background-image:
     repeating-linear-gradient(to right, rgb(var(--text) / 0.45) 0 1px, transparent 1px 10%),

@@ -13,6 +13,7 @@ import { usState } from "@/lib/feed/prefilter"
 import { matchAgeNote } from "@/lib/job-checks"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
 import { ErrorNote, StageList, inputClass } from "./ui"
+import { TapeMeasure } from "@/components/ui/tailor"
 
 const STALE_MS = 20 * 60 * 60 * 1000
 
@@ -44,13 +45,9 @@ function CountUp({ to, ms = 600 }: { to: number; ms?: number }) {
 }
 
 /** Where the match is now and where tailoring can take it. */
+/** A short tape measure: the solid fill is the match now, the basting stitch is where a tailor takes it. */
 function ReachBar({ score, reach }: { score: number; reach: number }) {
-  return (
-    <span className="relative inline-block h-1.5 w-20 overflow-hidden rounded-full bg-surface-raised align-middle" aria-hidden>
-      <span className="absolute inset-y-0 left-0 rounded-full bg-success/30 motion-safe:transition-[width] motion-safe:duration-700" style={{ width: `${Math.min(100, reach)}%` }} />
-      <span className="absolute inset-y-0 left-0 rounded-full bg-success" style={{ width: `${Math.min(100, score)}%` }} />
-    </span>
-  )
+  return <TapeMeasure value={score} reach={reach} size="sm" className="w-24 pt-1" />
 }
 
 // The search is one request, so the steps follow the clock (about where the server is), and
@@ -323,7 +320,7 @@ export function MatchesPanel({
                   {m.reach >= m.score + 5 && (
                     <p className="mt-1 flex items-center gap-2 text-xs font-medium text-success" title="Your resume already shows more of this job's skills in other words. Tailoring puts them in the job's words.">
                       <ReachBar score={m.score} reach={m.reach} />
-                      Tailoring can lift this to {m.reach}%
+                      A tailor takes this to {m.reach}%
                     </p>
                   )}
                   {!compact && m.missing.length > 0 && <p className="mt-1 text-xs text-text-muted">Missing: {m.missing.slice(0, 4).join(", ")}</p>}

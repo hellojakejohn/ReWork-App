@@ -3,29 +3,24 @@
 // The public fit check, tailor-themed: two "pattern pieces" (your resume, the job) with
 // stitched edges, a tape measure for the score, and three piles: fits, fits in other words,
 // needs alterations. Posts to /api/fit; nothing is stored.
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, FileText, Ruler, Scissors, Upload, X } from "lucide-react"
+import { ArrowRight, FileText, Ruler, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
+import { PILES, VERDICT_WORDS, type FitVerdict } from "@/lib/fit-words"
+import { Stitching, TapeMeasure, stitchedEdge } from "@/components/ui/tailor"
 
 interface FitResult {
   score: number
-  verdict: "tailored" | "close" | "alterations" | "rework"
+  verdict: FitVerdict
   present: string[]
   related: string[]
   missing: string[]
 }
 
-const VERDICT: Record<FitResult["verdict"], { title: string; body: string }> = {
-  tailored: { title: "Fits like it was made for you.", body: "Your resume already speaks this job's language. A tailor sharpens it." },
-  close: { title: "Close. A few tucks and it's ready.", body: "Most of what they want is there. Tailoring puts it in their words." },
-  alterations: { title: "Needs alterations.", body: "You have more than this shows. Tailoring leads with what matches." },
-  rework: { title: "This one needs a real rework.", body: "Check the list below: if you have these skills, your resume isn't saying so yet." },
-}
-
-const piece = "relative rounded-panel border-2 border-dashed border-text/20 bg-surface p-5 sm:p-6"
+const piece = `relative rounded-panel ${stitchedEdge} bg-surface p-5 sm:p-6`
 
 export function FitCheck() {
   const [job, setJob] = useState("")
@@ -131,7 +126,7 @@ export function FitCheck() {
         </Button>
         <p className="text-sm text-text-muted">Nothing you add here is saved.</p>
       </div>
-      {busy && <Stitching />}
+      {busy && <Stitching label="Reading the job post..." className="mt-5" />}
       {error && <p className="mt-4 rounded-card bg-removed px-4 py-3 text-sm text-text">{error}</p>}
 
       {result && (
@@ -157,21 +152,8 @@ function PieceLabel({ n, id, title, hint }: { n: number; id: string; title: stri
   )
 }
 
-/** A running stitch while we measure. */
-function Stitching() {
-  return (
-    <div className="mt-5 flex items-center gap-3 text-sm text-text-muted" role="status">
-      <Scissors className="h-4 w-4" aria-hidden />
-      <svg viewBox="0 0 240 8" className="h-2 w-60" aria-hidden>
-        <line x1="0" y1="4" x2="240" y2="4" stroke="currentColor" strokeWidth="2" strokeDasharray="8 6" className="fit-stitch" />
-      </svg>
-      <span>Reading the job post...</span>
-    </div>
-  )
-}
-
 function Result({ result }: { result: FitResult }) {
-  const v = VERDICT[result.verdict]
+  const v = VERDICT_WORDS[result.verdict]
   return (
     <section aria-labelledby="fit-result" className="rounded-panel bg-surface p-6 shadow-float sm:p-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -187,19 +169,17 @@ function Result({ result }: { result: FitResult }) {
         </div>
       </div>
 
-      <TapeMeasure score={result.score} />
+      <TapeMeasure value={result.score} className="mt-8" />
 
       <div className="mt-8 grid gap-5 md:grid-cols-3">
-        <Pile title="Fits" hint="In your resume, in their words." words={result.present} chip="bg-sage text-text" />
+        <Pile {...PILES.present} words={result.present} chip="bg-sage text-text" />
         <Pile
-          title="Fits, in other words"
-          hint="You have it, said differently. A tailor uses their words."
+          {...PILES.related}
           words={result.related}
           chip="border border-dotted border-text/40 text-text"
         />
         <Pile
-          title="Needs alterations"
-          hint="Not in your resume. We never add these for you, but if you have them, tell us."
+          {...PILES.missing}
           words={result.missing}
           chip="border border-dashed border-accent/60 text-text"
         />
@@ -219,32 +199,6 @@ function Result({ result }: { result: FitResult }) {
         </Button>
       </div>
     </section>
-  )
-}
-
-/** A cloth tape measure, 0 to 100, with the needle at the score. */
-function TapeMeasure({ score }: { score: number }) {
-  // Starts at 0 and slides to the score, like pulling the tape.
-  const [at, setAt] = useState(0)
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setAt(Math.max(0, Math.min(100, score))))
-    return () => cancelAnimationFrame(id)
-  }, [score])
-  return (
-    <div className="mt-8" aria-hidden>
-      <div className="relative h-12 overflow-hidden rounded-md border border-text/15 bg-[rgb(var(--tape))]">
-        <div className="absolute inset-0 fit-tape-ticks" />
-        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90].map((n) => (
-          <span key={n} className="absolute bottom-1 text-[10px] font-semibold tabular-nums text-text/70" style={{ left: `calc(${n}% + 3px)` }}>
-            {n}
-          </span>
-        ))}
-        <div className="absolute inset-y-0 left-0 bg-success/25 motion-safe:transition-[width] motion-safe:duration-1000 motion-safe:ease-out" style={{ width: `${at}%` }} />
-      </div>
-      <div className="relative h-3">
-        <div className="absolute -top-1 h-0 w-0 -translate-x-1/2 border-x-[7px] border-b-[9px] border-x-transparent border-b-accent motion-safe:transition-[left] motion-safe:duration-1000 motion-safe:ease-out" style={{ left: `${at}%` }} />
-      </div>
-    </div>
   )
 }
 

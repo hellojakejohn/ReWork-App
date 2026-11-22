@@ -12,6 +12,9 @@ import { startOfUtcDay } from '@/lib/daily-ceiling'
 import { keywordCoverage } from '@/lib/keyword-coverage'
 import type { KeywordCoverage } from '@/types/tailor'
 import { normalizeSpace } from '@/lib/resume-text'
+import { verdictFor, type FitVerdict } from '@/lib/fit-words'
+
+export { verdictFor }
 
 export const PUBLIC_FIT_DAILY_MAX = 400
 export const PUBLIC_FIT_LIMIT_MESSAGE = "The free fit check is busy today. Sign up free to check your fit on any job, or try again tomorrow."
@@ -59,14 +62,7 @@ export function rememberKeywords(key: string, keywords: string[]): void {
 export interface PublicFit extends KeywordCoverage {
   keywords: string[]
   /** A word for the score, tailor style. */
-  verdict: 'tailored' | 'close' | 'alterations' | 'rework'
-}
-
-export function verdictFor(score: number): PublicFit['verdict'] {
-  if (score >= 70) return 'tailored'
-  if (score >= 50) return 'close'
-  if (score >= 30) return 'alterations'
-  return 'rework'
+  verdict: FitVerdict
 }
 
 export function publicFit(keywords: string[], resumeText: string): PublicFit {
