@@ -10,7 +10,7 @@ import { SiteFooter } from "@/components/site/site-footer"
 import { DeletedNotice } from "@/components/site/deleted-notice"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
-import { LANDING_EXAMPLE as EX } from "@/components/site/landing-example"
+import { LANDING_EXAMPLE as EX, highlightParts } from "@/components/site/landing-example"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 import { CONTACT_EMAIL, FAIR_USE, FREE_FEED_MATCHES, FREE_PLAN_SHORT, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING } from "@/lib/plans"
 import { showPoweredBy } from "@/lib/ai/routing"
@@ -175,7 +175,7 @@ export default async function HomePage() {
             <span className="rounded-full bg-sage px-2.5 py-0.5 text-xs font-semibold text-text">Example</span>
           </div>
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-text-secondary">
-            {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already in the original resume.
+            {EX.person}, tailored for an {EX.job}. Same facts, said in the job&apos;s words (highlighted). Every number on the right is already in the original resume.
           </p>
 
           <div className="mt-10 overflow-hidden rounded-panel bg-surface">
@@ -183,11 +183,13 @@ export default async function HomePage() {
               <div className="px-6 py-3">Your resume</div>
               <div className="hidden px-6 py-3 md:block">Tailored</div>
             </div>
-            {[{ before: EX.summary.before, after: EX.summary.after, why: "Summary leads with what this job needs." }, ...EX.bullets].map((row) => (
+            {[EX.summary, ...EX.bullets].map((row) => (
               <div key={row.before} className="grid grid-cols-1 border-b border-border last:border-b-0 md:grid-cols-2">
                 <p className="px-6 py-4 text-sm leading-relaxed text-text-muted">{row.before}</p>
                 <div className="px-6 pb-4 md:py-4">
-                  <p className="text-sm leading-relaxed text-text">{row.after}</p>
+                  <p className="text-sm leading-relaxed text-text">
+                    <JobWords text={row.after} words={row.jobWords} />
+                  </p>
                   <p className="mt-1 text-xs text-success">Why: {row.why}</p>
                 </div>
               </div>
@@ -274,6 +276,23 @@ export default async function HomePage() {
 }
 
 /** The hero's illustration of the receipt: one kept bullet, one left-out claim. */
+// The posting's words inside a rewrite, highlighted so the change is visible at a glance.
+function JobWords({ text, words }: { text: string; words: string[] }) {
+  return (
+    <>
+      {highlightParts(text, words).map((part, i) =>
+        part.hit ? (
+          <mark key={i} className="rounded bg-sage px-0.5 text-text">
+            {part.text}
+          </mark>
+        ) : (
+          <span key={i}>{part.text}</span>
+        )
+      )}
+    </>
+  )
+}
+
 // One bullet from the example below (src/components/site/landing-example.ts), shown the way
 // a tailor reads: before, after, why, the facts it kept and the skill it refused to add.
 function HeroReceipt() {
@@ -300,7 +319,7 @@ function HeroReceipt() {
           </span>
           <span>
             <span className="sr-only">After: </span>
-            {b.after}
+            <JobWords text={b.after} words={b.jobWords} />
           </span>
         </p>
         <p className="pl-9 text-sm text-text-secondary">{b.why}</p>
