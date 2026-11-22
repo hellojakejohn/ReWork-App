@@ -70,7 +70,7 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     // The adapter created the row on first Google sign-in.
-    // The source cookie is set by middleware (src/lib/signup-source.ts).
+    // The source cookie is set by the proxy (src/proxy.ts, rules in src/lib/signup-source.ts).
     createUser: async ({ user }) => {
       let source = null
       let invite: string | undefined
