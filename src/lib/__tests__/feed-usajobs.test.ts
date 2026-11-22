@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseUsajobs, searchUsajobs, usajobsConfigured, usajobsQueries, USAJOBS_BOARD } from '@/lib/feed/usajobs'
+import { parseUsajobs, pullUsajobs, searchUsajobs, usajobsConfigured, usajobsQueries, USAJOBS_BOARD } from '@/lib/feed/usajobs'
 import { closeStaleSearched, purgeClosedJobs } from '@/lib/feed/sync'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -63,6 +63,34 @@ describe('USAJOBS', () => {
     expect(await searchUsajobs(db, ['u1', 'u2'], { fetchFn, now, auth: { key: 'k', email: 'a@b.c' } })).toBe(1)
     expect(seen[0]).toMatchObject({ 'User-Agent': 'a@b.c', 'Authorization-Key': 'k' })
     expect(created[0]).toMatchObject({ id: 'usajobs:812345600', usState: 'MN', payLabel: '$84k to $125k a year' })
+  })
+})
+
+describe('pullUsajobs (daily)', () => {
+  const fakeDb = (created: any[]) => ({ job: { findMany: async () => [], createMany: async ({ data }: any) => { created.push(...data); return { count: data.length } }, updateMany: async () => ({ count: 0 }) } })
+  const many = (n: number, from: number) => Array.from({ length: n }, (_, i) => item({ PositionURI: `https://www.usajobs.gov/job/${from + i}` })).map((x, i) => ({ ...x, MatchedObjectId: String(from + i) }))
+
+  it('pages through public jobs until a short page, then stops', async () => {
+    const created: any[] = []
+    const urls: string[] = []
+    const pages = [many(500, 1), many(500, 1000), many(12, 2000)]
+    const fetchFn = (async (url: string) => { urls.push(url); return new Response(JSON.stringify(answer(pages[urls.length - 1] ?? []))) }) as never
+    const r = await pullUsajobs(fakeDb(created) as never, { fetchFn, now, auth: { key: 'k', email: 'a@b.c' } })
+    expect(r).toMatchObject({ pages: 3, listed: 1012, added: 1012, failed: null })
+    expect(urls[0]).toContain('HiringPath=public')
+    expect(urls[2]).toContain('Page=3')
+  })
+
+  it('stops at the page cap, reports a failed page, and does nothing without a key', async () => {
+    const fetchFn = (async () => new Response(JSON.stringify(answer(many(500, 1))))) as never
+    expect((await pullUsajobs(fakeDb([]) as never, { fetchFn, now, auth: { key: 'k', email: 'a@b.c' }, maxPages: 2 })).pages).toBe(2)
+    const down = (async () => new Response('no', { status: 503 })) as never
+    expect((await pullUsajobs(fakeDb([]) as never, { fetchFn: down, now, auth: { key: 'k', email: 'a@b.c' } })).failed).toBe('page 1: HTTP 503')
+    expect(await pullUsajobs(fakeDb([]) as never, { fetchFn, now, auth: null })).toMatchObject({ pages: 0, listed: 0 })
+  })
+
+  it('match-time searches only ask for jobs the public can apply to', () => {
+    expect(usajobsQueries(['Nurse'], 'both', 'MN').every((u) => u.includes('HiringPath=public'))).toBe(true)
   })
 })
 

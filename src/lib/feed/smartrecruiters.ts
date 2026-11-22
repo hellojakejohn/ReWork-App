@@ -30,6 +30,8 @@ export const SMARTRECRUITERS_BOARDS: SmartRecruitersBoard[] = [
   // pulled), restaurants, pharma.
   { id: 'Dominos', company: "Domino's" },
   { id: 'RaisingCanes', company: "Raising Cane's" },
+  // Nov 22 (checked live, 231 US postings): retail stores.
+  { id: 'Primark', company: 'Primark' },
   { id: 'Abbvie', company: 'AbbVie' },
 ]
 

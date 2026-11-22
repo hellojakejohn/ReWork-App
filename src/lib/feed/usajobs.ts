@@ -26,7 +26,8 @@ export function usajobsQueries(titles: string[], workplace: 'remote' | 'near' | 
   const state = homeState ? stateName(homeState) : null
   const out: string[] = []
   for (const t of titles) {
-    const p = new URLSearchParams({ Keyword: t, ResultsPerPage: '50', SortField: 'opendate', SortDirection: 'desc' })
+    // Only jobs anyone can apply to: most federal posts are open to current employees only.
+    const p = new URLSearchParams({ Keyword: t, ResultsPerPage: '50', SortField: 'opendate', SortDirection: 'desc', HiringPath: 'public' })
     if (workplace !== 'remote' && state) out.push(`${API}?${new URLSearchParams({ ...Object.fromEntries(p), LocationName: state })}`)
     if (workplace !== 'near' || !state) out.push(`${API}?${new URLSearchParams({ ...Object.fromEntries(p), RemoteIndicator: 'True' })}`)
   }
@@ -116,4 +117,50 @@ export async function searchUsajobs(
     })
   )
   return found.size
+}
+
+export interface UsajobsPull {
+  pages: number
+  listed: number
+  added: number
+  failed: string | null
+}
+
+/**
+ * The daily pull: every open federal job the public can apply to, newest first, so matches
+ * have them before anyone searches. 500 a page, at most `maxPages` (10,000 jobs, about 60 MB:
+ * the free database is 500 MB). Not a full list (absence means nothing), so closing stays with
+ * `closeStaleSearched` (14 days unseen); each pull marks the jobs it sees.
+ */
+export async function pullUsajobs(
+  db: Db,
+  { fetchFn = fetch, now = new Date(), auth = usajobsConfigured(), maxPages = 20, deadlineMs = 200_000 }: { fetchFn?: typeof fetch; now?: Date; auth?: { key: string; email: string } | null; maxPages?: number; deadlineMs?: number } = {}
+): Promise<UsajobsPull> {
+  const sum: UsajobsPull = { pages: 0, listed: 0, added: 0, failed: null }
+  if (!auth) return sum
+  const started = Date.now()
+  for (let page = 1; page <= maxPages && Date.now() - started < deadlineMs; page++) {
+    const url = `${API}?${new URLSearchParams({ HiringPath: 'public', ResultsPerPage: '500', Page: String(page), SortField: 'opendate', SortDirection: 'desc' })}`
+    try {
+      const res = await fetchFn(url, {
+        headers: { 'User-Agent': auth.email, 'Authorization-Key': auth.key, accept: 'application/json' },
+        signal: AbortSignal.timeout(30_000),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      const items = Array.isArray(data?.SearchResult?.SearchResultItems) ? data.SearchResult.SearchResultItems.length : 0
+      const jobs = parseUsajobs(data, now)
+      sum.pages++
+      if (jobs.length) {
+        const r = await syncBoard(db as never, USAJOBS_BOARD, jobs.map((j) => toJobRow(j, now)), { complete: false, now })
+        sum.listed += r.listed
+        sum.added += r.added
+      }
+      if (items < 500) break
+    } catch (e) {
+      sum.failed = `page ${page}: ${String((e as Error)?.message ?? e).slice(0, 120)}`
+      break
+    }
+  }
+  return sum
 }
