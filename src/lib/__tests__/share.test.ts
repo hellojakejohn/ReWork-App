@@ -36,7 +36,6 @@ describe('share detail', () => {
   })
 })
 
-
 describe('share to X and LinkedIn', () => {
   it('fills X with the words and a tagged link', async () => {
     const { xIntentUrl, linkedInShareUrl } = await import('@/lib/share')
@@ -48,6 +47,9 @@ describe('share to X and LinkedIn', () => {
     const li = new URL(linkedInShareUrl('https://rework.careers', fit))
     expect(li.hostname).toBe('www.linkedin.com')
     expect(new URL(li.searchParams.get('url')!).searchParams.get('ref')).toBe('share-linkedin')
+  })
+})
+
 describe('milestone cards', () => {
   const ms: ShareCard = { kind: 'milestone', stage: 'interview', nth: 1, applied: 14, interviews: 1, offers: 0 }
   it('round-trips and reads well', () => {
