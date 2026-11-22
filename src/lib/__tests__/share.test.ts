@@ -48,5 +48,12 @@ describe('share to X and LinkedIn', () => {
     const li = new URL(linkedInShareUrl('https://rework.careers', fit))
     expect(li.hostname).toBe('www.linkedin.com')
     expect(new URL(li.searchParams.get('url')!).searchParams.get('ref')).toBe('share-linkedin')
+describe('milestone cards', () => {
+  const ms: ShareCard = { kind: 'milestone', stage: 'interview', nth: 1, applied: 14, interviews: 1, offers: 0 }
+  it('round-trips and reads well', () => {
+    expect(parseShare(new URL(shareUrl('https://rework.careers', ms)).searchParams)).toEqual(ms)
+    expect(shareDetail(ms)).toBe('After 14 applications, each resume tailored to the job. Nothing made up.')
+    expect(parseShare(new URLSearchParams('k=ms&st=x&x=1&p=1&iv=1&of=0'))).toBeNull()
+    expect(parseShare(new URLSearchParams('k=ms&st=i&x=0&p=1&iv=1&of=0'))).toBeNull()
   })
 })

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
-import confetti from "canvas-confetti"
+import { celebrate } from "@/components/ui/celebrate"
 import { CheckCircle, Crown } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -13,15 +13,6 @@ import { PRO_WELCOME_HIGHLIGHTS, proWelcome } from "@/lib/pro-welcome"
 
 const POLL_MS = 1000
 const MAX_WAIT_MS = 10_000
-
-function celebrate() {
-  const base = { disableForReducedMotion: true, zIndex: 60 }
-  confetti({ ...base, particleCount: 160, spread: 90, origin: { y: 0.55 } })
-  setTimeout(() => {
-    confetti({ ...base, particleCount: 80, angle: 60, spread: 70, origin: { x: 0, y: 0.7 } })
-    confetti({ ...base, particleCount: 80, angle: 120, spread: 70, origin: { x: 1, y: 0.7 } })
-  }, 250)
-}
 
 /**
  * Handles /dashboard?checkout=success&offer=... The webhook may land a few seconds after

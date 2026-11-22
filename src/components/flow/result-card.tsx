@@ -300,6 +300,14 @@ function Result({
           />
           <div className="space-y-2 pt-1">
             <DownloadMenu application={application} template={template} isPro={isPro} onUpgrade={onUpgrade} className="h-12 w-full text-base" />
+            {!isPro && (
+              <p className="text-center text-xs text-text-muted">
+                Free PDFs end with a small &ldquo;Tailored with ReWork&rdquo; line.{" "}
+                <button type="button" className="underline hover:text-text" onClick={() => onUpgrade("Pro downloads have no ReWork line, and Word files for application portals.")}>
+                  Pro removes it
+                </button>
+              </p>
+            )}
             <ApplyBox key={application.id} application={application} />
             <div className="grid grid-cols-2 gap-2">
               <Button variant="secondary" onClick={onAnotherJob}>
