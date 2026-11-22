@@ -17,7 +17,8 @@ Tick them off here or just tell Claude "done with N".
 
 4. [x] **Support email** (ImprovMX on rework.careers, Nov 19; left: Stripe Public details support email): free forwarding `support@rework.careers` to your Gmail (ImprovMX or
    similar, two DNS records in Vercel Domains), then Claude switches the site and Stripe to it.
-5. [ ] **USAJOBS key** (federal jobs). Free key at developer.usajobs.gov. Vercel Production
+5. [ ] **Paste `docs/sql/paste-2026-11-23.sql`** in Supabase (referrals and email settings).
+5b. [ ] **USAJOBS key** (federal jobs). Free key at developer.usajobs.gov. Vercel Production
    env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
 6. [ ] **Adzuna**: decide on a licence (developer.adzuna.com). Claude builds it after a deal.
 7. [ ] **Chrome Web Store** (post-launch feature): $5 developer account, Claude builds the zip
@@ -29,6 +30,12 @@ Tick them off here or just tell Claude "done with N".
 - Run `npm run backup` in the project folder. It saves the database to `~/ReWork-backups`
   (outside the repo; it holds users' resumes). Supabase free has no backups of its own.
   Switch to Supabase Pro ($25/mo, daily backups) once revenue covers it.
+
+## Resend (weekly email)
+
+- [ ] Add domain `send.rework.careers` in Resend, paste its DNS records in Vercel Domains,
+  create an API key, add `RESEND_API_KEY` in Vercel (Production). Pick a mailing address for
+  the footer (PO box or virtual mailbox). Then Claude builds `docs/weekly-email-plan.md`.
 
 ## Read when you have 10 minutes
 
