@@ -4,10 +4,14 @@
 // fact guard -> cover letter) and reports cost, speed and quality, so routing (AI_* env)
 // is picked with data.
 //
-//   --models   comma-separated provider:model list. Default: Opus 5.5, Sonnet 5.5, gpt-4o,
-//              gpt-5.4-mini, openrouter moonshotai/kimi-k2.6
+//   --models   comma-separated provider:model list. Default: Opus 5.5, Sonnet 5.5
 //   --max-usd  stop starting new work once estimated spend passes this (default 3)
 //   --out      output directory (default eval-results/, gitignored: it quotes resumes)
+//   --keywords fit (default): pick the job's keywords first, like the app's fit check does on
+//              the Tailor card (Sonnet 5.5), and hand them to the tailor, as production does.
+//              model: let the tailor pick its own keywords (the old eval, no keyword brief).
+//   --cases    only fixtures whose name contains this text (case-insensitive)
+//   --no-cover skip the cover letters (cheaper when only the tailor changed)
 //
 // Fixtures: the 3 JSON resumes in scripts/fixtures/ (each with its own job), the
 // enhancv-swe.txt resume (parsed first) against jobs/greenhouse-swe.json, the restaurant
@@ -21,6 +25,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseResume, type ParseInput } from '@/lib/parse-resume'
+import { extractJobKeywords } from '@/lib/skill-check'
 import { applyTailorOutput, buildTailorInput, callTailorModel, type MasterResume, type TailorJob } from '@/lib/tailor'
 import { factGuard } from '@/lib/fact-guard'
 import { coverageReport } from '@/lib/keyword-coverage'
@@ -42,9 +47,6 @@ const FIXTURES = path.join(HERE, 'fixtures')
 export const DEFAULT_MODELS = [
   'anthropic:claude-opus-5-5',
   'anthropic:claude-sonnet-5-5',
-  'openai:gpt-4o',
-  'openai:gpt-5.4-mini',
-  'openrouter:moonshotai/kimi-k2.6',
 ]
 
 // ---------- args ----------
@@ -63,6 +65,11 @@ const models: ModelRoute[] = (arg('models')?.split(',') ?? DEFAULT_MODELS).map((
   return r
 })
 const maxUsd = Number(arg('max-usd') ?? 3)
+const keywordMode: 'fit' | 'model' = arg('keywords') === 'model' ? 'model' : 'fit'
+const caseFilter = arg('cases')?.toLowerCase()
+const withCover = !process.argv.includes('--no-cover')
+// The fit check's model in the app (src/lib/skill-check.ts runs on the free tier).
+const FIT_ROUTE: ModelRoute = { provider: 'anthropic', model: 'claude-sonnet-5-5' }
 const outDir = path.resolve(arg('out') ?? 'eval-results')
 
 // ---------- fixtures ----------
@@ -186,12 +193,21 @@ async function runCase(route: ModelRoute, c: Case): Promise<Row> {
   if (!master) return row
 
   const input = buildTailorInput(master)
-  const tailored = await measure(() => callTailorModel(input, c.job, opts))
+  // Production path: the fit check picks the keywords, the tailor gets them with a brief.
+  let targetKeywords: string[] | undefined
+  let keywordCost = 0
+  if (keywordMode === 'fit') {
+    const picked = await measure(() => extractJobKeywords({ title: c.job.title, company: c.job.company, description: c.job.description }, { route: FIT_ROUTE }))
+    keywordCost = picked.step.costUsd
+    if (picked.value && picked.value.length >= 5) targetKeywords = picked.value
+  }
+  const tailored = await measure(() => callTailorModel(input, c.job, { ...opts, targetKeywords }))
+  tailored.step.costUsd += keywordCost
   if (!tailored.value) {
     row.tailor = tailored.step
     return row
   }
-  const { cleaned, warnings } = factGuard(input, tailored.value.output)
+  const { cleaned, warnings } = factGuard(input, targetKeywords ? { ...tailored.value.output, targetKeywords } : tailored.value.output)
   const coverage = coverageReport(input, cleaned)
   row.detail = { ...row.detail, master: input, raw: tailored.value.output, cleaned, guardWarnings: warnings, coverage }
   row.tailor = {
@@ -203,6 +219,7 @@ async function runCase(route: ModelRoute, c: Case): Promise<Row> {
     bullets: (cleaned.roles[0]?.bullets ?? []).slice(0, 3).map((b) => b.text),
   }
 
+  if (!withCover) return row
   const tailoredResume = applyTailorOutput(master, input, cleaned)
   const candidateName = [
     (master.contactInfo as Record<string, string> | undefined)?.fullName,
@@ -248,18 +265,19 @@ interface Summary {
 
 function summarize(model: string, rows: Row[]): Summary {
   const mine = rows.filter((r) => r.model === model)
-  const fullJobs = mine.filter((r) => r.tailor?.ok && r.cover?.ok)
+  // With --no-cover a "job" is the tailor alone.
+  const fullJobs = mine.filter((r) => r.tailor?.ok && (r.cover?.ok || !withCover))
   const steps = mine.flatMap((r) => [r.parse, r.tailor, r.cover]).filter((s): s is StepResult => !!s)
   return {
     model,
     label: modelLabel(parseRoute(model)!.model),
     jobs: fullJobs.length,
-    avgJobCost: avg(fullJobs.map((r) => r.tailor!.costUsd + r.cover!.costUsd)),
+    avgJobCost: avg(fullJobs.map((r) => r.tailor!.costUsd + (r.cover?.costUsd ?? 0))),
     avgParseCost: avg(mine.filter((r) => r.parse?.ok).map((r) => r.parse!.costUsd)),
-    avgJobMs: avg(fullJobs.map((r) => r.tailor!.ms + r.cover!.ms)),
+    avgJobMs: avg(fullJobs.map((r) => r.tailor!.ms + (r.cover?.ms ?? 0))),
     avgWarnings: avg(fullJobs.map((r) => r.tailor!.warnings ?? 0)),
     avgCoverageGain: avg(fullJobs.map((r) => (r.tailor!.coverageAfter ?? 0) - (r.tailor!.coverageBefore ?? 0))),
-    bannedHits: fullJobs.reduce((s, r) => s + (r.cover!.bannedHits ?? 0), 0),
+    bannedHits: fullJobs.reduce((s, r) => s + (r.cover?.bannedHits ?? 0), 0),
     firstTryInvalid: steps.filter((s) => s.firstTryValid === false).length,
     failures: steps.filter((s) => !s.ok).length,
   }
@@ -372,14 +390,16 @@ function writeReport(rows: Row[], skipped: string[], stoppedEarly: boolean, case
 
 async function main() {
   // Real resumes first, so the spend cap never skips them.
-  const cases = loadCases().sort((a, b) => Number(b.name.startsWith('private/')) - Number(a.name.startsWith('private/')))
+  const cases = loadCases()
+    .filter((c) => !caseFilter || c.name.toLowerCase().includes(caseFilter))
+    .sort((a, b) => Number(b.name.startsWith('private/')) - Number(a.name.startsWith('private/')))
   const skipped: string[] = []
   const runnable = models.filter((m) => {
     if (providerConfigured(m.provider)) return true
     skipped.push(`${formatRoute(m)} (${PROVIDER_KEY_ENV[m.provider]} not set)`)
     return false
   })
-  console.log(`Model eval: ${runnable.length} model(s) x ${cases.length} fixture(s), cap ${money(maxUsd)}`)
+  console.log(`Model eval: ${runnable.length} model(s) x ${cases.length} fixture(s), keywords: ${keywordMode}, cap ${money(maxUsd)}`)
   if (skipped.length) console.log(`Skipping: ${skipped.join(', ')}`)
 
   const rows: Row[] = []
