@@ -175,7 +175,9 @@ export default function PrivacyPage() {
 
       <Section title="Cookies and local storage">
         <p>
-          We use one essential cookie to keep you signed in, plus the cookies Google and Stripe set during sign-in and checkout. Your browser’s
+          We use one essential cookie to keep you signed in, plus the cookies Google and Stripe set during sign-in and checkout. Before you sign
+          in, one more first-party cookie remembers which site or link brought you here (like a ?ref= tag or the referring site&apos;s name, never
+          the full address) for 30 days, so we can count which posts bring signups. Your browser’s
           local storage remembers small preferences like your resume template and avatar color. We don’t use advertising or cross-site tracking
           cookies.
         </p>

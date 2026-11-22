@@ -8,7 +8,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 export type EventName =
-  | 'signed_up'
+  | 'signed_up' // { provider, source, medium?, campaign?, landing? } source from src/lib/signup-source.ts
   | 'resume_parsed' // { ok, ms, source, kind? } + usage
   | 'job_fetched' // { ok, resolver | reason } + usage when the model read the page
   | 'tailored' // { ms, coverageBefore, coverageAfter, warnings } + usage

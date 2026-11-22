@@ -6,6 +6,8 @@ import { getAccess } from "@/lib/entitlements"
 import { isAdminEmail } from "@/lib/admin"
 import { track } from "@/lib/track"
 import { safeRedirect } from "@/lib/auth-redirect"
+import { cookies } from "next/headers"
+import { SOURCE_COOKIE, decodeSource, sourceProps } from "@/lib/signup-source"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -64,8 +66,15 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     // The adapter created the row on first Google sign-in.
+    // The source cookie is set by middleware (src/lib/signup-source.ts).
     createUser: async ({ user }) => {
-      await track('signed_up', { provider: 'google' }, user.id)
+      let source = null
+      try {
+        source = decodeSource((await cookies()).get(SOURCE_COOKIE)?.value)
+      } catch {
+        // Outside a request (tests, scripts): no cookie to read.
+      }
+      await track('signed_up', { provider: 'google', ...sourceProps(source) }, user.id)
     },
   },
   session: {

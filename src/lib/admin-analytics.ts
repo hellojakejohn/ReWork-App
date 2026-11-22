@@ -19,6 +19,8 @@ export interface AnalyticsReport {
   since: string
   counts: Record<string, number>
   funnel: FunnelStep[]
+  /** Signups in the window by where they came from (src/lib/signup-source.ts), and how far each got. */
+  signupsBySource: SourceRow[]
   recentErrors: { at: string; name: string; feature: string; kind: string; ms: number | null }[]
   errorsByKind: { feature: string; kind: string; count: number }[]
   spendByDay: { day: string; calls: number; tokensIn: number; tokensOut: number; costUsd: number }[]
@@ -27,6 +29,31 @@ export interface AnalyticsReport {
   pro: { activeUsers: number; subscriptions: number; passes: number; comps: number; mrrUsd: number; passRevenue30dUsd: number }
   /** Matches on upload. Null until the feed tables exist. */
   feed: FeedStats | null
+}
+
+export interface SourceRow {
+  source: string
+  signups: number
+  tailored: number
+  paid: number
+}
+
+/** Group signups by source; "unknown" covers signups from before source tracking. */
+export function signupSourceRows(signups: { userId: string; props: unknown }[], tailored: Set<string>, paid: Set<string>): SourceRow[] {
+  const rows = new Map<string, SourceRow>()
+  const seen = new Set<string>()
+  for (const { userId, props } of signups) {
+    if (seen.has(userId)) continue
+    seen.add(userId)
+    const raw = (props as Record<string, unknown> | null)?.source
+    const source = typeof raw === 'string' && raw ? raw : 'unknown'
+    const row = rows.get(source) ?? { source, signups: 0, tailored: 0, paid: 0 }
+    row.signups++
+    if (tailored.has(userId)) row.tailored++
+    if (paid.has(userId)) row.paid++
+    rows.set(source, row)
+  }
+  return [...rows.values()].sort((a, b) => b.paid - a.paid || b.signups - a.signups || a.source.localeCompare(b.source))
 }
 
 export interface FeedStats {
@@ -105,7 +132,7 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
 
   const [grouped, signups] = await Promise.all([
     prisma.event.groupBy({ by: ['name'], where: inWindow, _count: { _all: true } }),
-    prisma.event.findMany({ where: { name: 'signed_up', userId: { not: null }, ...inWindow }, select: { userId: true } }),
+    prisma.event.findMany({ where: { name: 'signed_up', userId: { not: null }, ...inWindow }, select: { userId: true, props: true } }),
   ])
   const counts = Object.fromEntries(grouped.map((g) => [g.name, g._count._all]))
   const cohort = [...new Set(signups.map((s) => s.userId as string))]
@@ -122,6 +149,16 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
             })
           ).length
     )
+  )
+  const usersWith = async (name: EventName) =>
+    cohort.length === 0
+      ? new Set<string>()
+      : new Set((await prisma.event.findMany({ where: { name, userId: { in: cohort } }, distinct: ['userId'], select: { userId: true } })).map((e) => e.userId as string))
+  const [tailoredUsers, paidUsers] = await Promise.all([usersWith('tailored'), usersWith('checkout_completed')])
+  const signupsBySource = signupSourceRows(
+    signups.map((s) => ({ userId: s.userId as string, props: s.props })),
+    tailoredUsers,
+    paidUsers
   )
   const funnel = buildFunnel([{ label: 'Signed up', users: cohort.length }, ...FUNNEL_STEPS.map((s, i) => ({ label: s.label, users: stepUsers[i] }))])
 
@@ -186,6 +223,7 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
     since: since.toISOString(),
     counts,
     funnel,
+    signupsBySource,
     recentErrors: errors.slice(0, 25).map((e) => ({ at: e.createdAt.toISOString(), name: e.name, ...describe(e) })),
     errorsByKind: [...byKind.values()].sort((a, b) => b.count - a.count),
     spendByDay,

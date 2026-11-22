@@ -159,6 +159,37 @@ export function AnalyticsPanel() {
 
             <div className="overflow-x-auto rounded-card bg-surface">
               <table className="w-full">
+                <caption className="px-3 pt-3 text-left text-sm font-semibold">
+                  Signups by source (add <span className="font-mono">?ref=name</span> to links you post)
+                </caption>
+                <thead className="bg-surface-raised">
+                  <tr>
+                    <th className={th}>Source</th>
+                    <th className={th}>Signups</th>
+                    <th className={th}>Tailored</th>
+                    <th className={th}>Paid</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {report.signupsBySource.length === 0 && (
+                    <tr>
+                      <td className={td} colSpan={4}>No signups in this window.</td>
+                    </tr>
+                  )}
+                  {report.signupsBySource.map((row) => (
+                    <tr key={row.source}>
+                      <td className={`${td} font-mono`}>{row.source}</td>
+                      <td className={td}>{row.signups}</td>
+                      <td className={td}>{row.tailored}</td>
+                      <td className={td}>{row.paid}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-x-auto rounded-card bg-surface">
+              <table className="w-full">
                 <caption className="px-3 pt-3 text-left text-sm font-semibold">Event counts</caption>
                 <thead className="bg-surface-raised">
                   <tr>
