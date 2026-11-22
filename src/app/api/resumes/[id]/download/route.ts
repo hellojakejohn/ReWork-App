@@ -35,7 +35,8 @@ export async function GET(
   const format = request.nextUrl.searchParams.get('format') === 'docx' ? 'docx' : 'pdf'
   // The extension attaching the resume to an application form: not a download the person made.
   const event = request.nextUrl.searchParams.get('via') === 'apply' ? 'apply_resume_attached' : 'download'
-  if (format === 'docx' && !canExportWord((await getAccess(session.user.id)).isPro)) {
+  const isPro = (await getAccess(session.user.id)).isPro
+  if (format === 'docx' && !canExportWord(isPro)) {
     await track('limit_hit', { kind: 'word_export' }, session.user.id)
     return new NextResponse(WORD_EXPORT_UPSELL, { status: 402 })
   }
@@ -78,7 +79,8 @@ export async function GET(
     }
   }
   try {
-    const buffer = await renderToBuffer(React.createElement(ResumePdf, { resume: parsed, template }) as never)
+    // Free PDFs carry the small "Tailored with ReWork" line; the extension's apply attach too.
+    const buffer = await renderToBuffer(React.createElement(ResumePdf, { resume: parsed, template, seam: !isPro }) as never)
     const filename = `${baseName}.pdf`
     await track(event, { format, doc: 'resume', template, tailored: !!applicationId }, session.user.id)
     return new NextResponse(new Uint8Array(buffer), {
