@@ -78,6 +78,7 @@ model User {
   referralCode           ReferralCode?
   referralsMade          Referral[]        @relation("referrer")
   referredBy             Referral?         @relation("referred")
+  emailPrefs             EmailPrefs?
   jobMatches             JobMatch[]
   feedPrefs              FeedPrefs[]
 
@@ -274,6 +275,18 @@ model Referral {
 
   @@index([referrerId, rewardedAt])
   @@map("referrals")
+}
+
+// Email settings (docs/weekly-email-plan.md). Own table so the app works before the SQL.
+model EmailPrefs {
+  userId         String    @id
+  weekly         Boolean   @default(true)
+  lastWeeklyAt   DateTime?
+  unsubscribedAt DateTime?
+  updatedAt      DateTime  @default(now()) @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_prefs")
 }
 
 // Processed Stripe webhook events, for idempotency.

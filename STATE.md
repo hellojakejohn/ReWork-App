@@ -246,13 +246,9 @@ Tuning ideas not done yet:
   "Tailoring can lift this to N%" when reach is 5+ points higher.
 - Audit and what's still open: `docs/audit-2026-11-14.md`.
 
-## Next session: launch (rework.careers)
-Jake's hand steps live in `docs/jake-todo.md`; open questions in `docs/questions-2026-11-18.md`.
-State Nov 17: live on rework.careers (old domain 308s), functions in pdx1 next to the
-database, Vercel Pro, Anthropic $500/month limit, `AI_FREE_DAILY_USD=10`, UptimeRobot,
-Web Analytics. Daily job pull runs about 13:20 UTC (~25.6k open jobs).
-Stripe: Managed Payments on (Stripe is merchant of record, 3.5% add-on); both products have
-tax code txcd_10103000 (SaaS, personal use). Without a tax code checkout returns 400
-"product tax code is missing". Any new product needs one.
-Left: the $29 test and refund (Jake), then launch. No marketing until it passes.
-Local shell defaults to Node 18; tests need Node 22 (`.nvmrc`, `nvm use`).
+## Next session (handoff Nov 23): `docs/handoff-2026-11-23.md`
+Live and launch-ready since Nov 19 ($29 test passed and refunded). PRs 54 to 82 merged.
+Jake's hand steps: `docs/jake-todo.md`. SQL to paste: `docs/sql/paste-2026-11-23.sql`
+(referrals and email settings; both fail soft until pasted).
+Stripe: Managed Payments on (merchant of record, 3.5%); products need tax code
+txcd_10103000 or checkout 400s. Local shell defaults to Node 18; use Node 22 (`.nvmrc`).
