@@ -168,7 +168,7 @@ upload failed). To check a route: `npm run build`, copy only the files in
 `.next/server/app/<route>/route.js.nft.json` into an empty folder and run the library there.
 
 ## Checks
-- `npx tsc --noEmit` clean, `npm test` (Vitest, offline), `npx next lint` 0 errors (lint now
+- `npx tsc --noEmit` clean, `npm test` (Vitest, offline), `npm run lint` (ESLint CLI since Next 16) 0 errors (lint now
   runs during `next build`), `npm run build` with no app env.
 - Lighthouse mobile on `/` (local prod build): performance 99-100, accessibility 100,
   SEO 100, best practices 96 (only the local 404 of the Vercel Analytics script).
