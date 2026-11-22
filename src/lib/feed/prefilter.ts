@@ -97,7 +97,20 @@ export function stateName(code: string): string | null {
   return name ? name.replace(/\b[a-z]/g, (ch) => ch.toUpperCase()) : null
 }
 
+// Places abroad whose region code is also a US state code: Noord-Holland (NH), Western
+// Australia (WA), Tamil Nadu (TN). Only these exact pairs: Amsterdam, NY and Paris, TX are real.
+const ABROAD_PAIRS: Record<string, string[]> = {
+  NH: ['amsterdam', 'haarlem', 'hoofddorp', 'schiphol'],
+  WA: ['perth', 'fremantle'],
+  TN: ['chennai', 'coimbatore', 'madurai'],
+}
+// A country named outright wins over a two-letter code that looks like a state.
+const ABROAD_COUNTRY = /\b(netherlands|australia|india|canada|united kingdom|(?<!new )england|ireland|germany|france|spain|portugal|poland|italy|israel|singapore|japan|brazil|(?<!new )mexico|philippines)\b/i
+
 export function usState(location: string): string | null {
+  if (ABROAD_COUNTRY.test(location) && !/\b(united states|usa)\b/i.test(location)) return null
+  const pair = location.match(/([A-Za-z .'-]+),\s*([A-Z]{2})\b/)
+  if (pair && ABROAD_PAIRS[pair[2]]?.includes(pair[1].trim().toLowerCase())) return null
   if (/\b(d\.c\.?|dc|district of columbia)(?![a-z])/i.test(location)) return 'DC'
   const code = location.match(/,\s*([A-Z]{2})\b/)?.[1]
   if (code && CODES.has(code)) return code
