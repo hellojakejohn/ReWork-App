@@ -89,6 +89,8 @@ const US_STATES: Record<string, string> = {
   virginia: 'VA', washington: 'WA', 'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY',
 }
 const CODES = new Set(Object.values(US_STATES))
+/** "minnesota" -> "MN" (lowercase names). */
+export const US_STATE_CODES: Readonly<Record<string, string>> = US_STATES
 
 /** "MN" -> "Minnesota" (for search text). */
 export function stateName(code: string): string | null {

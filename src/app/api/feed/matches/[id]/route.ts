@@ -20,10 +20,11 @@ async function own(id: string) {
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await own((await params).id)
   if ('error' in ctx) return ctx.error
-  const job = await prisma.job.findUnique({ where: { id: ctx.match.jobId }, select: { title: true, company: true, location: true, description: true, url: true, closedAt: true } })
+  const job = await prisma.job.findUnique({ where: { id: ctx.match.jobId }, select: { title: true, company: true, location: true, description: true, url: true, closedAt: true, source: true } })
   if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
   await prisma.jobMatch.update({ where: { id: ctx.match.id }, data: { seenAt: ctx.match.seenAt ?? new Date() } })
-  return NextResponse.json({ success: true, job: { ...job, closed: !!job.closedAt, closedAt: undefined } })
+  // Adzuna only sends a short preview of the ad: the Job card asks for the full post.
+  return NextResponse.json({ success: true, job: { ...job, closed: !!job.closedAt, closedAt: undefined, source: undefined, preview: job.source === 'adzuna' } })
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

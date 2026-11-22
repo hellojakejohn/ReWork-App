@@ -475,7 +475,8 @@ export function OneFlow() {
               onPickMatch={(j) => {
                 setApplication(null)
                 setJob(j)
-                go(2)
+                // A short preview goes to the Job card first, for the full post.
+                go(j.preview ? 1 : 2)
               }}
               onUpgrade={(reason) => setUpgrade({ open: true, reason })}
             />

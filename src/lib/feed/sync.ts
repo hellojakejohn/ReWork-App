@@ -125,7 +125,7 @@ export async function pullListBoards(
 }
 
 /**
- * Jobs we only find by searching (Workday, USAJOBS) can't be closed by a full board read.
+ * Jobs we only find by searching (Workday, USAJOBS, Adzuna) can't be closed by a full board read.
  * Close them once nobody's search has seen them for a while: 30 days for Workday, 14 for
  * USAJOBS (federal postings are short), unless someone saved or tailored them.
  */
@@ -136,7 +136,9 @@ export async function closeStaleSearched(db: Db, now = new Date()): Promise<numb
   const kept = { matches: { none: { OR: [{ savedAt: { not: null } }, { applicationId: { not: null } }] } } }
   const workday = await db.job.updateMany({ where: { source: 'workday', closedAt: null, lastSeenAt: { lt: daysAgo(30) }, ...kept }, data: { closedAt: now } })
   const federal = await db.job.updateMany({ where: { source: 'usajobs', closedAt: null, lastSeenAt: { lt: daysAgo(14) }, ...kept }, data: { closedAt: now } })
-  return workday.count + federal.count
+  // Adzuna ads are short-lived and re-found by the next search when still up.
+  const adzuna = await db.job.updateMany({ where: { source: 'adzuna', closedAt: null, lastSeenAt: { lt: daysAgo(21) }, ...kept }, data: { closedAt: now } })
+  return workday.count + federal.count + adzuna.count
 }
 
 export const PURGE_CLOSED_AFTER_DAYS = 60

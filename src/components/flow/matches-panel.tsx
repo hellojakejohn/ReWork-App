@@ -301,6 +301,7 @@ export function MatchesPanel({
                   </p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
                     <span className="font-medium text-text-secondary">{m.job.company}</span>
+                    {m.job.via && <span>via {m.job.via}</span>}
                     {m.job.location && (
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" aria-hidden /> {m.job.location.length > 60 ? `${m.job.location.slice(0, 57)}...` : m.job.location}

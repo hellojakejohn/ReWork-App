@@ -260,9 +260,12 @@ Tuning ideas not done yet:
   (`board-list.ts`) plus SmartRecruiters company lists. First run Nov 14: 23,880 open jobs from
   137 boards (Greenhouse 15,290, Ashby 3,123, Lever 3,031, SmartRecruiters 2,436); about 6,000
   remote, 15,000 with a US state.
-- At match time: Workday search by title (not pulled) and USAJOBS (off until
-  `USAJOBS_API_KEY` and `USAJOBS_EMAIL` are set). Searched jobs close after 30 days unseen
-  (USAJOBS 14), unless saved or tailored.
+- At match time: Workday search by title (not pulled), USAJOBS (off until
+  `USAJOBS_API_KEY` and `USAJOBS_EMAIL` are set) and Adzuna (`src/lib/feed/adzuna.ts`, off
+  until `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` are set; non-tech jobs near the person). Adzuna
+  only sends a short preview, so its matches show "via Adzuna" and picking one opens the
+  Job card's paste box with the preview and an "Open the job post" link. Searched jobs close
+  after 30 days unseen (USAJOBS 14, Adzuna 21), unless saved or tailored.
 - Rank = reach (exact + other words) plus half the title fit; the % shown is exact words.
   "Tailoring can lift this to N%" when reach is 5+ points higher.
 - Audit and what's still open: `docs/audit-2026-11-14.md`.

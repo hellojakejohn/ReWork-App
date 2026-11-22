@@ -16,6 +16,7 @@ import { prescore, resumeProfile, stateName, titleFit, titleRelevant, usState } 
 import { syncBoard, toJobRow } from './sync'
 import { payFromText } from '@/lib/pay'
 import { searchUsajobs, usajobsConfigured, usajobsQueries } from './usajobs'
+import { adzunaConfigured, adzunaQueries, searchAdzuna, type AdzunaAuth } from './adzuna'
 
 export type Workplace = 'remote' | 'near' | 'both'
 export const WORKPLACES: Workplace[] = ['remote', 'near', 'both']
@@ -47,6 +48,8 @@ export interface MatchDeps {
   top?: number
   /** USAJOBS key and email; null turns it off (tests). Default: from the env. */
   usajobs?: { key: string; email: string } | null
+  /** Adzuna keys; null turns it off (tests). Default: from the env. */
+  adzuna?: AdzunaAuth | null
   now?: Date
 }
 
@@ -54,6 +57,7 @@ export interface MatchRun {
   searched: string[]
   workdayJobs: number
   usajobsJobs: number
+  adzunaJobs: number
   pool: number
   scored: number
   extracted: number
@@ -152,16 +156,18 @@ export async function runMatch(deps: MatchDeps, input: { userId: string; resumeI
   const started = Date.now()
   const { db, fetchFn = fetch, extract = (j) => extractJobKeywords(j), canSpend = () => true, now = new Date() } = deps
   const { userId, resumeId, resume, prefs } = input
-  const run: MatchRun = { searched: searchTitles(resume, prefs), workdayJobs: 0, usajobsJobs: 0, pool: 0, scored: 0, extracted: 0, fetched: 0, skippedNoBudget: 0, ms: 0 }
+  const run: MatchRun = { searched: searchTitles(resume, prefs), workdayJobs: 0, usajobsJobs: 0, adzunaJobs: 0, pool: 0, scored: 0, extracted: 0, fetched: 0, skippedNoBudget: 0, ms: 0 }
 
   const homeState = usState(resume.contact.location)
-  // Workday employers and USAJOBS (when its key is set) at the same time.
-  const [workday, federal] = await Promise.all([
+  // Workday employers, USAJOBS and Adzuna (each when its key is set) at the same time.
+  const [workday, federal, adzuna] = await Promise.all([
     searchWorkday(db, workdayQueries(run.searched, prefs.workplace, homeState), { fetchFn, boards: deps.workdayBoards ?? WORKDAY_BOARDS, now }),
     searchUsajobs(db, usajobsQueries(run.searched, prefs.workplace, homeState), { fetchFn, now, auth: deps.usajobs === undefined ? usajobsConfigured() : deps.usajobs }),
+    searchAdzuna(db, adzunaQueries(run.searched, prefs.workplace, homeState), { fetchFn, now, auth: deps.adzuna === undefined ? adzunaConfigured() : deps.adzuna }),
   ])
   run.workdayJobs = workday
   run.usajobsJobs = federal
+  run.adzunaJobs = adzuna
 
   // Step 2a: titles only, everything open in their area.
   const profilePrefs = { targetTitles: prefs.targetTitles.filter((t) => t.trim()) }
@@ -249,7 +255,7 @@ export interface MatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
-  job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string }
+  job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 
 /**
@@ -269,13 +275,13 @@ export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: st
       where,
       orderBy: [{ rank: 'desc' }, { score: 'desc' }, { prescore: 'desc' }],
       take,
-      include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true, keywords: true } } },
+      include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true, keywords: true, source: true } } },
     }),
     db.jobMatch.count({ where }),
   ])
   return {
     total,
-    matches: rows.map(({ job: { keywords, ...job }, ...m }) => ({
+    matches: rows.map(({ job: { keywords, source, ...job }, ...m }) => ({
       id: m.id,
       jobId: m.jobId,
       score: m.score,
@@ -286,7 +292,8 @@ export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: st
       savedAt: m.savedAt?.toISOString() ?? null,
       applicationId: m.applicationId,
       isNew: !m.seenAt,
-      job: { ...job, postedAt: job.postedAt?.toISOString() ?? null },
+      // Ads found through a job search engine say where they came from (Adzuna's terms).
+      job: { ...job, postedAt: job.postedAt?.toISOString() ?? null, via: source === 'adzuna' ? 'Adzuna' : null },
     })),
   }
 }
