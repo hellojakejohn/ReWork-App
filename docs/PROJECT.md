@@ -1,6 +1,6 @@
 # ReWork: the whole project on one page
 
-Last updated 2026-11-23. Read this first, then `STATE.md` (current technical truth), then the latest `docs/handoff-*.md`. Deeper
+Last updated 2026-11-23. Read this first, then `STATE.md` (current technical truth), then the latest `docs/handoff-*.md`. The week-by-week plan to Feb 14: `docs/growth-plan.md`. Deeper
 docs: `docs/gameplan.md` (the plan after v1: business, metrics, marketing, roadmap, money), `docs/launch-audit.md` (launch go/no-go, Jake's by-hand list), `docs/AUDIT.md`
 (Oct 23 audit, competitor table, full roadmap), `docs/token-plan.md` ($REWORK).
 
