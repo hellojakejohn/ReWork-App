@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import { BarChart3, ChevronDown, Crown, FileStack, Gift, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SettingsModal, type TabType as SettingsTab } from "@/components/settings-modal"
+import { SettingsModal, isSettingsTab, type TabType as SettingsTab } from "@/components/settings-modal"
 import { LogoutModal } from "@/components/logout-modal"
 import type { Quota } from "./api"
 import { describeAccess } from "@/lib/entitlement-rules"
@@ -48,6 +48,19 @@ export function AppHeader({
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("account")
   const [logoutOpen, setLogoutOpen] = useState(false)
+  // Links from emails: /dashboard?settings=email opens that Settings tab.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get("settings")
+    if (!tab) return
+    params.delete("settings")
+    const query = params.toString()
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
+    if (isSettingsTab(tab)) {
+      setSettingsTab(tab)
+      setSettingsOpen(true)
+    }
+  }, [])
   // Quota changes after every tailor/cover letter, so the usage bar refreshes with it.
   const aiUsage = useAIUsage(`${session?.user?.id}:${quota?.used ?? ""}:${quota?.remaining ?? ""}:${recentCount}`)
 

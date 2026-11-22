@@ -1,4 +1,4 @@
-// Evidence interview types and helpers safe for client components (no OpenAI).
+// Evidence interview types and helpers safe for client components (no AI SDK).
 // The interview itself lives in src/lib/evidence.ts.
 
 export interface EvidenceQuestion {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { AnalyticsPanel } from '@/components/admin/analytics-panel'
+import { EmailPanel } from '@/components/admin/email-panel'
 import { Button } from '@/components/ui/button'
 
 interface User {
@@ -141,6 +142,7 @@ export default function AdminPage() {
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">
       <h1 className="font-serif text-3xl font-semibold mb-6 text-text">Admin Dashboard</h1>
       <AnalyticsPanel />
+      <EmailPanel />
       <div className="mb-8">
         <h2 className="font-serif text-2xl font-semibold mb-4 text-text">Users</h2>
         

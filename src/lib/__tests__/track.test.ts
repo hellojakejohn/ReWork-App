@@ -44,25 +44,25 @@ describe('track', () => {
 
 describe('AI usage', () => {
   const completion = (model: string, input: number, output: number, cached = 0) =>
-    usageRecord(model.startsWith('claude') ? 'anthropic' : 'openai', model, { inputTokens: input, outputTokens: output, cachedInputTokens: cached })
+    usageRecord('anthropic', model, { inputTokens: input, outputTokens: output, cachedInputTokens: cached })
 
   it('collects every call made inside collectUsage, including nested awaits', async () => {
     const { run, usage } = collectUsage(async () => {
-      recordUsage(completion('gpt-4o-2024-08-06', 1000, 500))
+      recordUsage(completion('claude-opus-5-5-20261001', 1000, 500))
       await new Promise((r) => setTimeout(r, 1))
-      recordUsage(completion('gpt-4o-mini', 2000, 100))
+      recordUsage(completion('claude-sonnet-5-5', 2000, 100))
       return 'ok'
     })
     expect(await run).toBe('ok')
     const summary = usage()
-    expect(summary).toMatchObject({ calls: 2, tokensIn: 3000, tokensOut: 600, model: 'gpt-4o-mini' })
-    // gpt-4o: 1000 * 2.5 + 500 * 10 = 7500; mini: 2000 * 0.15 + 100 * 0.6 = 360 -> per 1M
-    expect(summary.costUsd).toBeCloseTo(0.00786, 6)
+    expect(summary).toMatchObject({ calls: 2, tokensIn: 3000, tokensOut: 600, model: 'claude-sonnet-5-5' })
+    // Opus: 1000 * 4 + 500 * 20 = 14000; Sonnet: 2000 * 2 + 100 * 10 = 5000 -> per 1M
+    expect(summary.costUsd).toBeCloseTo(0.019, 6)
   })
 
   it('keeps usage when the work throws', async () => {
     const { run, usage } = collectUsage(async () => {
-      recordUsage(completion('gpt-4o', 10, 0))
+      recordUsage(completion('claude-opus-5-5', 10, 0))
       throw new Error('bad output')
     })
     await expect(run).rejects.toThrow('bad output')
@@ -70,11 +70,11 @@ describe('AI usage', () => {
   })
 
   it('ignores calls outside collectUsage and keeps concurrent requests apart', async () => {
-    recordUsage(completion('gpt-4o', 999, 999))
-    const a = collectUsage(async () => recordUsage(completion('gpt-4o', 1, 1)))
+    recordUsage(completion('claude-opus-5-5', 999, 999))
+    const a = collectUsage(async () => recordUsage(completion('claude-opus-5-5', 1, 1)))
     const b = collectUsage(async () => {
-      recordUsage(completion('gpt-4o', 2, 2))
-      recordUsage(completion('gpt-4o', 2, 2))
+      recordUsage(completion('claude-opus-5-5', 2, 2))
+      recordUsage(completion('claude-opus-5-5', 2, 2))
     })
     await Promise.all([a.run, b.run])
     expect(a.usage().calls).toBe(1)
@@ -96,7 +96,7 @@ describe('AI usage', () => {
   })
 
   it('prices from models.ts: dated snapshots by family, cache reads, unknown models like Opus', () => {
-    expect(costUsd('gpt-4o-mini-2024-07-18', { inputTokens: 1_000_000, outputTokens: 0, cachedInputTokens: 0 })).toBe(0.15)
+    expect(costUsd('claude-sonnet-5-5-20261001', { inputTokens: 1_000_000, outputTokens: 0, cachedInputTokens: 0 })).toBe(2)
     expect(costUsd('claude-opus-5-5', { inputTokens: 1_000_000, outputTokens: 1_000_000, cachedInputTokens: 1_000_000 })).toBe(24.2)
     expect(costUsd('claude-sonnet-5-5', { inputTokens: 1_000_000, outputTokens: 1_000_000, cachedInputTokens: 0 })).toBe(12)
     expect(costUsd('some-new-model', { inputTokens: 1_000_000, outputTokens: 0, cachedInputTokens: 0 })).toBe(4)

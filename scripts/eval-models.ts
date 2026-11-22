@@ -4,7 +4,7 @@
 // fact guard -> cover letter) and reports cost, speed and quality, so routing (AI_* env)
 // is picked with data.
 //
-//   --models   comma-separated provider:model list. Default: Opus 5.5, Sonnet 5.5
+//   --models   comma-separated provider:model list. Default: Opus 5.5 and Sonnet 5.5
 //   --max-usd  stop starting new work once estimated spend passes this (default 3)
 //   --out      output directory (default eval-results/, gitignored: it quotes resumes)
 //   --keywords fit (default): pick the job's keywords first, like the app's fit check does on

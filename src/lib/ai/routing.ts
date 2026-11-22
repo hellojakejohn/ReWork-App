@@ -5,13 +5,10 @@
 //   AI_FREE_TIER   FREE users' tailor/cover letter/evidence, and paid users past 75% of
 //                  their AI cap (src/lib/ai-cap-rules.ts). Recommended anthropic:claude-sonnet-5-5.
 //
-// Defaults: everything on Claude Opus 5.5 when ANTHROPIC_API_KEY is set, otherwise the
-// OpenAI models the app used before (and their old OPENAI_*_MODEL overrides).
+// Defaults: everything on Claude Opus 5.5; Sonnet 5.5 for the free tier.
 //
-// Privacy: resume text is personal data. It only ever goes to a provider named here by
-// env, and every default is a paid first-party API (Anthropic or OpenAI). There is no
-// fallback to a free or community endpoint; OpenRouter is used only when an AI_* var
-// names it explicitly.
+// Privacy: resume text is personal data. It only ever goes to Anthropic, a paid
+// first-party API. Anthropic is the only provider (OpenAI and OpenRouter removed Nov 2026).
 import type { ProviderId } from '@/lib/ai/models'
 import { POWERED_BY } from '@/lib/plans'
 
@@ -36,12 +33,10 @@ export interface ModelRoute {
   model: string
 }
 
-export const PROVIDERS: ProviderId[] = ['anthropic', 'openai', 'openrouter']
+export const PROVIDERS: ProviderId[] = ['anthropic']
 
 export const PROVIDER_KEY_ENV: Record<ProviderId, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
-  openai: 'OPENAI_API_KEY',
-  openrouter: 'OPENROUTER_API_KEY',
 }
 
 const env = (name: string) => process.env[name]?.trim() || ''
@@ -52,23 +47,7 @@ export function providerConfigured(provider: ProviderId): boolean {
 
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-opus-5-5'
 
-// What the app ran on before this layer existed. Old env overrides still apply.
-function legacyOpenAIModel(task: AITask): string {
-  switch (task) {
-    case 'parse':
-      return env('OPENAI_PARSE_MODEL') || 'gpt-4o'
-    case 'jobExtract':
-      return env('OPENAI_JOB_MODEL') || 'gpt-4o-mini'
-    case 'tailor':
-      return env('OPENAI_TAILOR_MODEL') || 'gpt-4o'
-    case 'coverLetter':
-      return env('OPENAI_COVER_LETTER_MODEL') || env('OPENAI_TAILOR_MODEL') || 'gpt-4o'
-    case 'evidence':
-      return env('OPENAI_EVIDENCE_MODEL') || env('OPENAI_TAILOR_MODEL') || 'gpt-4o'
-  }
-}
-
-/** Parses `provider:model`. OpenRouter ids contain a slash, never a colon prefix clash. */
+/** Parses `provider:model` (provider is always anthropic). */
 export function parseRoute(value: string | undefined | null): ModelRoute | null {
   const raw = value?.trim()
   if (!raw) return null
@@ -88,7 +67,7 @@ function routeFromEnv(name: string): ModelRoute | null {
   const route = parseRoute(raw)
   if (raw && !route && !warned.has(name)) {
     warned.add(name)
-    console.error(`[AI_ROUTING] ${name}="${raw}" is not provider:model (provider is anthropic, openai or openrouter). Using the default.`)
+    console.error(`[AI_ROUTING] ${name}="${raw}" is not provider:model (provider is anthropic). Using the default.`)
   }
   return route
 }
@@ -97,8 +76,7 @@ function routeFromEnv(name: string): ModelRoute | null {
 export function taskRoute(task: AITask): ModelRoute {
   const configured = routeFromEnv(TASK_ENV[task])
   if (configured) return configured
-  if (providerConfigured('anthropic')) return { provider: 'anthropic', model: DEFAULT_ANTHROPIC_MODEL }
-  return { provider: 'openai', model: legacyOpenAIModel(task) }
+  return { provider: 'anthropic', model: DEFAULT_ANTHROPIC_MODEL }
 }
 
 export const DEFAULT_FREE_TIER_MODEL = 'claude-sonnet-5-5'

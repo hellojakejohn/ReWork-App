@@ -10,8 +10,7 @@
 //   budget gets headroom.
 // - Refusals: a safety-classifier decline is re-run server-side on the model's named
 //   Anthropic fallback (models.ts refusalFallback; none today), using the
-//   array form of `fallbacks` (beta server-side-fallback-2026-06-01). Same provider only:
-//   resume text never goes to OpenAI or OpenRouter because Claude declined.
+//   array form of `fallbacks` (beta server-side-fallback-2026-06-01). Anthropic models only.
 import Anthropic from '@anthropic-ai/sdk'
 import { costUsd, modelInfo } from '@/lib/ai/models'
 import type { Adapter, AdapterRequest, AdapterResult } from '@/lib/ai/types'
