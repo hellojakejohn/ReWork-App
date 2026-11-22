@@ -1,12 +1,11 @@
 "use client"
 
-import { signIn, getProviders } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
+import { FREE_FEED_MATCHES, FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 
 const ERRORS: Record<string, string> = {
   OAuthSignin: "Google sign-in didn't start. Please try again.",
@@ -17,23 +16,19 @@ const ERRORS: Record<string, string> = {
   SessionRequired: "Sign in to see that page.",
 }
 
-export function SignInPanel() {
+/** `googleOn` comes from the server (is Google configured?), so the button shows at once. */
+export function SignInPanel({ googleOn }: { googleOn: boolean }) {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
   // Deep link to come back to; the server's redirect callback keeps it same-origin.
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const [providers, setProviders] = useState<Record<string, { id: string; name: string; type: string }> | null>(null)
   const [starting, setStarting] = useState(false)
-
-  useEffect(() => {
-    void getProviders().then(setProviders)
-  }, [])
 
   return (
     <div className="w-full max-w-md rounded-panel bg-surface p-8 shadow-float sm:p-10">
       <h1 className="font-serif text-4xl font-medium tracking-tight text-text">Sign in</h1>
       <p className="mt-3 leading-relaxed text-text-secondary">
-        Upload your resume once, paste a job link, and get a version written for that job. Nothing made up.
+        Upload your resume once. See open jobs that fit you, and get your resume tailored to each one. Nothing made up.
       </p>
 
       {error && (
@@ -43,11 +38,7 @@ export function SignInPanel() {
       )}
 
       <div className="mt-8">
-        {!providers ? (
-          <div className="flex h-12 items-center justify-center" aria-label="Loading">
-            <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
-          </div>
-        ) : providers.google ? (
+        {googleOn ? (
           <Button
             variant="inverse"
             size="lg"
@@ -73,7 +64,7 @@ export function SignInPanel() {
         )}
       </div>
 
-      <p className="mt-6 text-sm text-text-muted">New here? The same button creates your account. {FREE_TAILORS_PER_MONTH} free tailors a month, no card.</p>
+      <p className="mt-6 text-sm text-text-muted">New here? The same button creates your account. Your top {FREE_FEED_MATCHES} job matches and {FREE_TAILORS_PER_MONTH} tailors a month are free, no card.</p>
 
       <p className="mt-8 border-t border-border pt-6 text-xs leading-relaxed text-text-muted">
         By signing in, you agree to the{" "}
