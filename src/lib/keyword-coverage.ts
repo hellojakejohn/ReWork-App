@@ -110,8 +110,16 @@ const IRREGULAR: Record<string, string> = {
  * coordination/coordinated, documentation/documented all share a root. Short results fall
  * back to stem() so "nation" never reads as "n".
  */
+// The person who does the work reads as the work: a Restaurant General Manager shows
+// "Restaurant Management", a Logistics Coordinator "Logistics Coordination". Only these.
+const AGENT: Record<string, string> = {
+  manager: 'manage', coordinator: 'coordinate', supervisor: 'supervise', administrator: 'administrate',
+  developer: 'develop', trainer: 'train', scheduler: 'schedule', dispatcher: 'dispatch', recruiter: 'recruit', planner: 'plan',
+}
+
 export function root(word: string): string {
-  const s = stem(IRREGULAR[word.toLowerCase()] ?? word)
+  const plain = stem(IRREGULAR[word.toLowerCase()] ?? word)
+  const s = AGENT[plain] ? stem(AGENT[plain]) : plain
   if (s.length < 5) return s
   let r = s.replace(/(?:ations?|ions?)$/, '')
   // management -> manage, but document stays document
@@ -174,6 +182,9 @@ function managedMatch(lines: string[][], keyword: string): boolean {
 const SQL_DATABASES = ['PostgreSQL', 'Postgres', 'MySQL', 'SQLite', 'SQL Server', 'T-SQL', 'MSSQL', 'MariaDB', 'PL/SQL', 'Supabase']
 const NOSQL_DATABASES = ['MongoDB', 'DynamoDB', 'Firestore', 'Cassandra', 'Redis', 'Couchbase']
 const MS_OFFICE = ['Microsoft Office', 'MS Office', 'Microsoft 365', 'Office 365', 'M365']
+// Handling guests' and customers' problems is customer service, in any industry.
+const CUSTOMER_SERVICE = ['guest complaints', 'guest service', 'guest services', 'guest experience', 'guest relations', 'customer complaints', 'customer issues', 'customer support', 'client service', 'client services']
+const SCHEDULING_SOFTWARE = ['7shifts', 'When I Work', 'Homebase', 'HotSchedules', 'Deputy', 'Kronos', 'UKG']
 
 /**
  * Keywords a resume shows through a more specific name. Only true implications: anyone
@@ -199,6 +210,12 @@ const IMPLIED: Record<string, string[]> = {
   microsoftpowerpoint: MS_OFFICE,
   outlook: MS_OFFICE,
   microsoftoutlook: MS_OFFICE,
+  // ServSafe and food handler cards are food safety certifications.
+  foodsafety: ['ServSafe', 'food handler'],
+  customerservice: CUSTOMER_SERVICE,
+  // These are scheduling apps, so listing one shows scheduling software.
+  schedulsoftware: SCHEDULING_SOFTWARE, // squash('scheduling software')
+  schedultool: SCHEDULING_SOFTWARE,
 }
 
 /** The more specific names in `text` that show `keyword` ("PostgreSQL" for "SQL"). */

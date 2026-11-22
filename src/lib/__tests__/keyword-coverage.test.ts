@@ -136,6 +136,28 @@ describe('other words for career changers', () => {
     expect(keywordCoverage(['presentations'], 'Gave monthly presentations to the board').present).toEqual(['presentations'])
   })
 
+  it('reads the person as the work: a manager shows management, a coordinator coordination', () => {
+    expect(root('manager')).toBe(root('management'))
+    expect(root('coordinators')).toBe(root('coordination'))
+    expect(root('supervisor')).toBe(root('supervision'))
+    expect(root('administrator')).toBe(root('administration'))
+    expect(root('developer')).toBe(root('development'))
+    expect(root('trainer')).toBe(root('training'))
+    const gm = 'Restaurant general manager with 6 years of experience running high-volume dining rooms'
+    expect(keywordCoverage(['restaurant management', 'retail management'], gm)).toMatchObject({ related: ['restaurant management'], missing: ['retail management'] })
+    expect(keywordCoverage(['Logistics Coordination'], 'Logistics Coordinator, Ryder').related).toEqual(['Logistics Coordination'])
+  })
+
+  it('counts honest non-tech implications: ServSafe, guest complaints, scheduling apps', () => {
+    const c = keywordCoverage(['food safety', 'customer service', 'scheduling software', 'property management'], `${restaurant}
+Resolved guest complaints and escalations
+ServSafe Manager`)
+    expect(c.related).toEqual(['food safety', 'customer service', 'scheduling software'])
+    expect(c.missing).toEqual(['property management'])
+    // Not from look-alikes: "guest" alone, or a customer list, isn't customer service.
+    expect(keywordCoverage(['customer service'], 'Hosted guest speakers\nBuilt a customer list in Excel').missing).toEqual(['customer service'])
+  })
+
   it('does not read a field from a look-alike word', () => {
     expect(keywordCoverage(['Accounting', 'Marketing'], 'Grew key account revenue 20%\nLed the go-to-market plan').missing).toEqual(['Accounting', 'Marketing'])
     expect(keywordCoverage(['Accounting'], 'Accounting Clerk').present).toEqual(['Accounting'])

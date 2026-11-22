@@ -190,6 +190,13 @@ Last run (14 cases, after PR #13): no failures, no invented skills. Per full job
 letter) Opus ~$0.096 / 31s, Sonnet ~$0.034 / 14s. Letter rewrites 3 of 14 (all real
 catches). Jake's resume vs the Web3 support job: 65% (Opus) / 75% (Sonnet) keyword coverage.
 
+Nov 22 overnight run (`--keywords fit`, the production path: the fit check picks keywords,
+the tailor gets the keyword brief): career-change cases went 40% -> 66% and 29% -> 58% on Opus
+(+28 points), +12 on Sonnet, 0 fact-guard warnings, after the matcher learned job-title roots
+(manager = management) and honest non-tech implications (ServSafe = food safety, guest
+complaints = customer service, 7shifts = scheduling software). The old eval (`--keywords
+model`) gave the tailor no brief, so it showed about +3 and undersold the product.
+
 Tuning ideas not done yet:
 - Tailoring itself adds only ~+3 coverage points (it never adds skills the resume lacks).
   Nov 1 (`docs/match-audit-2026-11-01.md`): the prompt now lists which job keywords the
