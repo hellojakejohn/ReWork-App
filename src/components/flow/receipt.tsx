@@ -13,6 +13,7 @@ import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/eviden
 import { applyEvidence, submitEvidence, type ApplicationDetailDTO, type MasterResumeDTO } from "./api"
 import { ErrorNote, inputClass } from "./ui"
 import { TapeMeasure, stitchedEdge } from "@/components/ui/tailor"
+import { ShareButtons } from "@/components/ui/share-button"
 
 export const ADD_IT_UPSELL =
   "Adding the real number uses the evidence interview, a Pro feature: it rewrites the bullet from your answer only, and checks it the same way."
@@ -56,6 +57,9 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
           <dd className="font-bold tabular-nums text-success">{receipt.invented}</dd>
         </div>
       </dl>
+      {receipt.match && receipt.match.after > receipt.match.before && (
+        <ShareButtons card={{ kind: "tailor", before: receipt.match.before, after: receipt.match.after, kept: receipt.kept }} className="mt-4 border-t border-dashed border-input pt-3" />
+      )}
     </section>
   )
 }
