@@ -34,7 +34,8 @@ const PAY_WORD_BEFORE = /(salary|pay|compensation|wage|rate|range|base|earn|ote|
 const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', CAD: '$', AUD: '$', EUR: '€', GBP: '£' }
 
 function amount(raw: string, k: string | undefined): number {
-  const n = Number(raw.replace(/,/g, ''))
+  // "102.700" is 102,700 written the European way: cents never have three digits.
+  const n = /^\d{1,3}(?:\.\d{3})+$/.test(raw) ? Number(raw.replace(/\./g, '')) : Number(raw.replace(/,/g, ''))
   return k ? n * 1000 : n
 }
 
@@ -72,6 +73,8 @@ export function payLabel(pay: Omit<Pay, 'label'>): string {
 interface Candidate {
   pay: Omit<Pay, 'label'>
   explicit: boolean // the ad said the period, or a pay word comes right before it
+  /** How sure: the ad said the period (4), it's a range (2), a pay word comes right before (1). */
+  strength: number
 }
 
 function accept(text: string, index: number, end: number, min: number, max: number, currency: string, periodWord: string | undefined): Candidate | null {
@@ -88,7 +91,12 @@ function accept(text: string, index: number, end: number, min: number, max: numb
   if (period === 'hour' && max > 500) return null
   // A monthly figure under $1,000 is a perk or a fee, not a salary.
   if (period === 'month' && max < 1000) return null
-  return { pay: { min, max, currency, period }, explicit: !!said || PAY_WORD_BEFORE.test(before) || min !== max }
+  const payWord = PAY_WORD_BEFORE.test(before)
+  return {
+    pay: { min, max, currency, period },
+    explicit: !!said || payWord || min !== max,
+    strength: (said ? 4 : 0) + (min !== max ? 2 : 0) + (payWord ? 1 : 0),
+  }
 }
 
 export function payFromText(text: string | null | undefined): Pay | null {
@@ -107,8 +115,9 @@ export function payFromText(text: string | null | undefined): Pay | null {
     const c = accept(text, m.index!, m.index! + m[0].length, Number(m[1]) * 1000, Number(m[2]) * 1000, '$', m[3])
     if (c) found.push(c)
   }
-  // Prefer a range or a figure the ad clearly calls pay; otherwise the first plausible one.
-  const best = found.find((c) => c.explicit) ?? null
+  // The surest figure wins ("$22 - $24 per hour" over "$250 new hire gift card" near the word
+  // "annual"); among equals, the first.
+  const best = found.filter((c) => c.explicit).reduce<Candidate | null>((b, c) => (!b || c.strength > b.strength ? c : b), null)
   if (!best) return null
   return { ...best.pay, label: payLabel(best.pay) }
 }

@@ -57,3 +57,15 @@ describe('perks are not pay', () => {
     expect(payFromText('Pay: $4,500 a month')?.label).toBe('$4.5k a month')
   })
 })
+
+describe('pay: the surest figure wins, European thousands', () => {
+  it('takes the stated hourly range over a perk near a pay word', () => {
+    const text =
+      '• $300 annual free bedding, plus an employee discount and $250 new hire gift card\nCompensation\nThis is an hourly (non-exempt) role that has a pay range of $22.00- $24.00 per hour dependent on experience'
+    expect(payFromText(text)?.label).toBe('$22 to $24 an hour')
+  })
+  it('reads 102.700 as 102,700, not 102.70', () => {
+    expect(payFromText('The annual salary range is €102.700 - €162.500.')).toMatchObject({ min: 102700, max: 162500, period: 'year' })
+    expect(payFromText('Pay: $22.50 per hour')).toMatchObject({ min: 22.5, period: 'hour' })
+  })
+})
