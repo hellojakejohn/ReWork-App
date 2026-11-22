@@ -53,23 +53,28 @@ a well-known book. We will never rank for "rework" alone. Always say **ReWork** 
 
 **Weeks 1-3: get the first 100 real users through free tools and one honest launch. Weeks
 4-6: fix what they hit and fill the job gap for non-tech users. Weeks 7-10: January push.
-Weeks 11-12: first partner pilot and a pricing-free look at conversion.**
+Weeks 11-12: a look at conversion. Partners run from week 2, in person, because Jake is a
+short walk from CareerForce downtown.**
 
 North star: **paid customers per week.** Leading signals: signups per week, % who tailor
 once, % who come back in week 2.
 
 ## Week by week
 
-Each week: **Jake** (about 5 hours), **Claude** (builds in PRs), **Target** (the number that
+Each week: **Jake** (10+ hours, decided Nov 22: about 5 posting and replying, 3 partners,
+2 video or a workshop), **Claude** (builds in PRs), **Target** (the number that
 says it worked). Mondays: 20-minute review in `/admin`, pick next week's one build.
 
 ### Week 1: Nov 23-29 (Thanksgiving week). Merge and launch quietly.
-- **Jake:** merge #85 to #89 (#87 before #88). Pick the mailing address and set
-  `EMAIL_MAILING_ADDRESS`, then `EMAIL_WEEKLY=dry`. Add rework.careers to Google Search
+- **Jake:** merge #85 to #89 (#87 before #88). Set `EMAIL_MAILING_ADDRESS` to the building
+  address (decided Nov 22; switch to a virtual mailbox later if home privacy matters), then
+  `EMAIL_WEEKLY=dry`. Add rework.careers to Google Search
   Console and submit `/sitemap.xml` (10 minutes, free). Post the launch thread on X and
   LinkedIn (`docs/launch-posts.md`) Monday or Tuesday; skip Thursday.
 - **Claude:** check USAJOBS fills on the first real match; fix whatever the first users hit;
   "Amsterdam, NH" location bug; `/check` share card (an image like `/s` cards).
+- **Jake (partners):** read `docs/marketing/partners.md`, send the first 5 emails from it
+  (CareerForce Saint Paul and Ramsey County Workforce Solutions first).
 - **Target:** 25 signups, 10 people tailor once, 0 errors in `/admin` that a user saw.
 
 ### Week 2: Nov 30-Dec 6. Lead with the free tools.
@@ -80,16 +85,25 @@ says it worked). Mondays: 20-minute review in `/admin`, pick next week's one bui
 - **Claude:** weekly email to `admins`, then `live` after Jake gets a good one. Welcome email
   on. Role pages: add "Check your fit for this kind of job" with the role's common keywords
   once enough jobs have keywords.
-- **Target:** 75 total signups, 500 `/check` runs, first weekly email sent to real users.
+- **Jake (partners, video):** walk into CareerForce downtown (121 7th Place E) with the
+  one-pager; book 2 calls. Record 3 short screen videos (`/check` on a real ghost job, a
+  before/after, a match list) and post one on TikTok, Shorts and Reels.
+- **Claude:** partner links (`?ref=` a partner code, counted in `/admin`), a printable
+  one-pager PDF for counselors, a 30-minute workshop deck ("Find real jobs and tailor
+  honestly") Jake can give at a library or workforce center.
+- **Target:** 75 total signups, 500 `/check` runs, first weekly email sent to real users,
+  2 partner calls booked.
 
 ### Week 3: Dec 7-13. Product Hunt + fill the job gap.
 - **Jake:** Product Hunt launch on a Tuesday (copy in `docs/launch-posts.md`), be there all
-  day. Get an Adzuna developer key (free tier, an aggregator with lots of non-tech jobs) if
-  we want it; paste it in Vercel.
-- **Claude:** Adzuna source (or more Workday/SmartRecruiters employers by industry: health,
-  retail, logistics, local Minnesota employers) so non-tech roles have 50+ jobs from 10+
+  day. Adzuna: sign up, ask about the licence for a paid app
+  (`docs/jake-todo.md` item 6), then paste the keys in Vercel. Code is PR #96.
+- **Claude:** check Adzuna on real matches once the keys are in; more Workday and
+  SmartRecruiters employers by industry (health, retail, logistics, local Minnesota employers) so non-tech roles have 50+ jobs from 10+
   employers. Move the biggest Workday employers from per-match search to the daily pull.
-- **Target:** 150 total signups, 3 paid. Role pages for ops coordinator, customer service and
+- **Jake (partners):** first workshop (Saint Paul Public Library or a workforce center), or
+  a free group session over Zoom for one partner's clients.
+- **Target:** 150 total signups, 3 paid, 1 partner pilot agreed. Role pages for ops coordinator, customer service and
   restaurant manager each show 10+ employers.
 
 ### Week 4: Dec 14-20. Fix what people hit.
@@ -121,13 +135,14 @@ says it worked). Mondays: 20-minute review in `/admin`, pick next week's one bui
   fix fast; interview prep upgrade if users ask.
 - **Target:** 1,000 total signups, 20 paid, under $5 AI per paying user.
 
-### Weeks 9-10: Jan 18-31. Partners.
-- **Jake:** reach 5 career coaches and 2 workforce centers (CareerForce in Saint Paul and
-  Minneapolis is local). Pitch: free Pro for their clients for a month, we track outcomes.
-  Federal money is flowing into AI job-seeker tools at American Job Centers this year.
+### Weeks 9-10: Jan 18-31. Partners, wider.
+- **Jake:** with the first pilot's numbers, reach 10 more (Minneapolis Employment and
+  Training, Goodwill-Easter Seals, college alumni offices, coaches on LinkedIn). Pitch: free
+  Pro for their clients for a month, we track outcomes. Federal money is flowing into AI
+  job-seeker tools at American Job Centers this year.
 - **Claude:** a coach view: invite clients, see their tracker counts (with consent), bulk
   Pro codes. Simple data agreement template for partners.
-- **Target:** 1 pilot agreed.
+- **Target:** 3 pilots running.
 
 ### Weeks 11-12: Feb 1-14. Decide what's working.
 - **Jake + Claude:** a one-page review: channel by channel (signups by source in `/admin`),
@@ -135,7 +150,8 @@ says it worked). Mondays: 20-minute review in `/admin`, pick next week's one bui
   the rest. Pricing stays settled; look at conversion copy and limits instead.
 - **Claude:** LinkedIn profile helper (headline and About from the master resume, fact-guarded)
   if users asked for it; otherwise whatever the review says.
-- **Target:** 2,000 total signups, 40 paid customers total, one partner pilot running.
+- **Target:** 2,000 total signups, 40 paid customers total, 3 partner pilots with outcome
+  numbers.
 
 ## Where to promote (ranked for a solo founder, with what to post)
 
@@ -153,10 +169,11 @@ says it worked). Mondays: 20-minute review in `/admin`, pick next week's one bui
    January.
 8. **Paid:** only after 10+ customers and a known conversion rate; tiny tests only.
 
-## Things Jake should decide (none urgent)
+## Decided (Nov 22, Jake)
 
-1. The mailing address for emails (blocks all email).
-2. Adzuna (or similar) for non-tech jobs: OK to sign up for a free key?
-3. Partners: any coach, workforce center or college you know personally? A warm intro beats
-   everything.
-4. How many hours a week for marketing through January (this plan assumes about 5).
+1. Mailing address: Jake's building address (he sets it in Vercel). A virtual mailbox
+   later if needed.
+2. Adzuna: yes. Built in PR #96, off until the keys are in.
+3. Partners: no warm contacts yet; partner outreach is the first collab. List and emails in
+   `docs/marketing/partners.md`.
+4. Marketing time: 10+ hours a week through January.
