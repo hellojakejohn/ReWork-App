@@ -32,6 +32,11 @@ describe('role pages', () => {
     expect(titleInRole('RN, Care Management', rn)).toBe(true)
     expect(titleInRole('Nurse Practitioner', rn)).toBe(false)
     expect(roleBySlug('nope')).toBeNull()
+    const tech = roleBySlug('automotive-technician')!
+    expect(titleInRole('Mechanical Design Engineer, Battery Pack', tech)).toBe(false)
+    expect(titleInRole('Diesel Mechanic', tech)).toBe(true)
+    expect(titleInRole('Western Region Sales', rn)).toBe(false)
+    expect(titleInRole('Account Executive (SDR)', roleBySlug('sales-development-representative')!)).toBe(true)
   })
 
   it('summarizes counts, remote, pay medians, states, companies and newest', () => {
