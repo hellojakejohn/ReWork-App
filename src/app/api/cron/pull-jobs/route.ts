@@ -29,7 +29,8 @@ export async function GET(req: Request) {
       staleClosed: await closeStaleSearched(prisma),
       purged: await purgeClosedJobs(prisma),
     }
-    await track('feed_pull', { ...summary, failed: summary.failed.length })
+    // The first few failures by name, so /admin can say which board and why.
+    await track('feed_pull', { ...summary, failed: summary.failed.length, failedBoards: summary.failed.slice(0, 5).join(' | ').slice(0, 500) })
     return NextResponse.json({ ok: true, summary, at: new Date().toISOString() })
   } catch (e) {
     // Before the jobs table exists (chunk 1 SQL not pasted) every board fails the same way.

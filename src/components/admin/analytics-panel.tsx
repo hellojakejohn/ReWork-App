@@ -121,9 +121,10 @@ export function AnalyticsPanel() {
                   <div className="text-2xl font-bold">{report.feed.lastPull ? `${report.feed.lastPull.ok}/${report.feed.lastPull.boards}` : "–"}</div>
                   <div className="text-sm text-text-muted">
                     {report.feed.lastPull
-                      ? `Boards read ${new Date(report.feed.lastPull.at).toLocaleDateString()}: +${report.feed.lastPull.added} new, ${report.feed.lastPull.closed} closed${report.feed.lastPull.failed ? `, ${report.feed.lastPull.failed} failed` : ""}`
+                      ? `Boards read ${new Date(report.feed.lastPull.at).toLocaleDateString()}: +${report.feed.lastPull.added} new, ${report.feed.lastPull.closed} closed${report.feed.lastPull.failed ? `, ${report.feed.lastPull.failed} failed` : ""}${report.feed.lastPull.usajobs != null ? `, ${report.feed.lastPull.usajobs.toLocaleString()} federal` : ""}`
                       : "No daily pull yet"}
                   </div>
+                  {report.feed.lastPull?.failedBoards && <div className="mt-1 break-words text-xs text-text-muted">Failed: {report.feed.lastPull.failedBoards}</div>}
                 </div>
               </div>
               <p className="mt-3 text-xs text-text-muted">By source: {report.feed.openBySource.map((s) => `${s.source} ${s.jobs.toLocaleString()}`).join(", ") || "none yet"}</p>

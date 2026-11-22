@@ -138,7 +138,10 @@ export async function closeStaleSearched(db: Db, now = new Date()): Promise<numb
   const federal = await db.job.updateMany({ where: { source: 'usajobs', closedAt: null, lastSeenAt: { lt: daysAgo(14) }, ...kept }, data: { closedAt: now } })
   // Adzuna ads are short-lived and re-found by the next search when still up.
   const adzuna = await db.job.updateMany({ where: { source: 'adzuna', closedAt: null, lastSeenAt: { lt: daysAgo(21) }, ...kept }, data: { closedAt: now } })
-  return workday.count + federal.count + adzuna.count
+  // SmartRecruiters companies read only in part (Domino's: newest 2,000 of 25k). Fully read
+  // ones are seen daily, so this never touches them.
+  const partial = await db.job.updateMany({ where: { source: 'smartrecruiters', closedAt: null, lastSeenAt: { lt: daysAgo(14) }, ...kept }, data: { closedAt: now } })
+  return workday.count + federal.count + adzuna.count + partial.count
 }
 
 export const PURGE_CLOSED_AFTER_DAYS = 60
