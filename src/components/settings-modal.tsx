@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
-import { Copy, Crown, CreditCard, Download, Gift, Settings, Shield, Trash2, User } from "lucide-react"
+import { Copy, Crown, CreditCard, Download, Gift, Mail, Settings, Shield, Trash2, User } from "lucide-react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -23,12 +23,15 @@ interface SettingsModalProps {
   initialTab?: TabType
 }
 
-export type TabType = "account" | "billing" | "invite" | "data"
+export type TabType = "account" | "billing" | "invite" | "email" | "data"
+
+export const isSettingsTab = (v: unknown): v is TabType => v === "account" || v === "billing" || v === "invite" || v === "email" || v === "data"
 
 const TABS = [
   { id: "account" as const, label: "Account", icon: User },
   { id: "billing" as const, label: "Plan & billing", icon: CreditCard },
   { id: "invite" as const, label: "Invite friends", icon: Gift },
+  { id: "email" as const, label: "Email", icon: Mail },
   { id: "data" as const, label: "Your data", icon: Shield },
 ]
 
@@ -148,6 +151,7 @@ export function SettingsModal({ isOpen, onClose, initialTab = "account" }: Setti
             )}
 
             {activeTab === "invite" && <InviteTab />}
+            {activeTab === "email" && <EmailTab />}
             {activeTab === "data" && <DataTab />}
           </div>
         </div>
@@ -165,6 +169,72 @@ interface ReferralInfo {
   pendingForMe?: boolean
   days?: number
   monthlyCap?: number
+}
+
+function EmailTab() {
+  const [weekly, setWeekly] = useState<boolean | null>(null)
+  const [unavailable, setUnavailable] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    fetch("/api/email/prefs")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data: { available: boolean; weekly?: boolean }) => {
+        if (!live) return
+        if (!data.available) setUnavailable(true)
+        else setWeekly(!!data.weekly)
+      })
+      .catch(() => live && setUnavailable(true))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const change = async (on: boolean) => {
+    const before = weekly
+    setWeekly(on)
+    setSaving(true)
+    try {
+      const res = await fetch("/api/email/prefs", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ weekly: on }) })
+      if (!res.ok) throw new Error(String(res.status))
+      toast.success(on ? "Weekly job emails are on." : "Weekly job emails are off.")
+    } catch {
+      setWeekly(before)
+      toast.error("Couldn't save that. Try again in a minute.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-text mb-2">Email</h3>
+        <p className="text-sm text-text-secondary">
+          On Mondays we send the best new jobs for your resume, each with its match and one tap to tailor. Nothing new that week, no email.
+        </p>
+      </div>
+      {unavailable && <p className="text-sm text-text-muted">Email settings aren&apos;t available right now. Check back soon.</p>}
+      {!unavailable && weekly === null && <p className="text-sm text-text-muted">Loading...</p>}
+      {!unavailable && weekly !== null && (
+        <label className="flex items-start gap-3 rounded-card bg-surface-raised p-4">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[rgb(var(--text))]"
+            checked={weekly}
+            disabled={saving}
+            onChange={(e) => void change(e.currentTarget.checked)}
+          />
+          <span>
+            <span className="block font-medium text-text">Weekly job matches</span>
+            <span className="block text-sm text-text-muted">Jobs and match numbers only, never your resume text. Every email has a one-click unsubscribe.</span>
+          </span>
+        </label>
+      )}
+      <p className="text-xs text-text-muted">Receipts and account emails (like a deleted account) still come when they need to.</p>
+    </div>
+  )
 }
 
 function InviteTab() {

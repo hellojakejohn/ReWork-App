@@ -86,6 +86,10 @@ export default function PrivacyPage() {
           <li>To handle billing and plan limits.</li>
           <li>To find and fix problems, prevent abuse, and understand which parts of the product people use.</li>
           <li>To reply when you contact us.</li>
+          <li>
+            To email you: a welcome note when you sign up and, on Mondays, the best new jobs for your resume (jobs and match numbers only, never your
+            resume text). Turn the weekly email off in Settings, Email, or with the unsubscribe link in any email.
+          </li>
         </ul>
         <p>
           We don’t sell your data, we don’t use it for advertising, and we don’t share your resume with employers or recruiters. We don’t use your
@@ -116,6 +120,9 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Google</strong>: sign-in.
+          </li>
+          <li>
+            <strong>Resend</strong>: sends our emails. It gets your email address, your first name and what the email says.
           </li>
         </ul>
         <p>
@@ -165,6 +172,9 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>Correct it</strong>: edit your resume in the app any time.
+          </li>
+          <li>
+            <strong>Stop emails</strong>: Settings, Email, or the unsubscribe link at the bottom of any email. It takes effect right away.
           </li>
           <li>
             <strong>Delete it</strong>: delete resumes one at a time, or your whole account.

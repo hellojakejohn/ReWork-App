@@ -14,6 +14,10 @@
     {
       "path": "/api/cron/pull-jobs",
       "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-email",
+      "schedule": "0,20,40 13-16 * * 1"
     }
   ]
 }

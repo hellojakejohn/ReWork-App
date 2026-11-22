@@ -233,6 +233,21 @@ Tuning ideas not done yet:
 - The read-only Supabase connector in Claude sessions points at another project (TripQuest),
   so prod numbers come from `/admin`, not that connector.
 
+## Emails (weekly "Your measurements" + welcome)
+- `src/lib/email/`: templates (plain HTML tables + text), Resend over HTTP (no SDK), signed
+  unsubscribe links, `email_prefs` per user (no row = weekly on).
+- Cron `/api/cron/weekly-email` Mondays 13:00 to 16:40 UTC every 20 minutes; each pass sends to
+  whoever is left (claimed by `lastWeeklyAt`, so passes never double-send). Refreshes each
+  person's matches first (same run as the Job card), then up to 5 jobs first seen since their
+  last email. Nothing new = no email. One `weekly_email` event per person.
+- Who: has a resume with match settings, weekly on, not unsubscribed, active in 90 days.
+- Switches: `EMAIL_WEEKLY` off (default) | dry | admins | live; `EMAIL_WELCOME=1`. Needs
+  `RESEND_API_KEY` and `EMAIL_MAILING_ADDRESS` (CAN-SPAM) or nothing sends.
+- Unsubscribe: `/unsubscribe?t=` (a page with one button, so link scanners can't unsubscribe
+  people) and one-click POST `/api/email/unsubscribe` (List-Unsubscribe headers). Settings has
+  an Email tab; `/dashboard?settings=email` opens it, `/dashboard?match=<id>` opens a match.
+- `/admin` > Emails: preview both emails from your own account, send yourself a test.
+
 ## Job feed (matches on upload, live Nov 14)
 - Upload a resume, see the jobs that fit (`src/lib/feed/`, plan in `docs/job-feed-plan.md`).
 - Daily pull at 6:30am CT (`/api/cron/pull-jobs`): Greenhouse, Lever, Ashby boards
