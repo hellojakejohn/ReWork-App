@@ -11,6 +11,7 @@ import { cookies } from "next/headers"
 import { SOURCE_COOKIE, decodeSource, sourceProps } from "@/lib/signup-source"
 import { INVITE_COOKIE } from "@/lib/referral-rules"
 import { linkReferral } from "@/lib/referrals"
+import { grantPartnerDays } from "@/lib/partners"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -82,6 +83,7 @@ export const authOptions: NextAuthOptions = {
       }
       await track('signed_up', { provider: 'google', ...sourceProps(source) }, user.id)
       await linkReferral(user.id, invite)
+      await grantPartnerDays(user.id, source?.s)
       await sendWelcome(user)
     },
   },
