@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 import { PILES, VERDICT_WORDS, type FitVerdict } from "@/lib/fit-words"
 import { Stitching, TapeMeasure, stitchedEdge } from "@/components/ui/tailor"
+import { ShareButtons } from "@/components/ui/share-button"
 
 interface FitResult {
   score: number
@@ -170,6 +171,10 @@ function Result({ result }: { result: FitResult }) {
       </div>
 
       <TapeMeasure value={result.score} className="mt-8" />
+      <ShareButtons
+        card={{ kind: "fit", score: result.score, fits: result.present.length, otherWords: result.related.length, alterations: result.missing.length }}
+        className="mt-4"
+      />
 
       <div className="mt-8 grid gap-5 md:grid-cols-3">
         <Pile {...PILES.present} words={result.present} chip="bg-sage text-text" />
