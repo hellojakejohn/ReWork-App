@@ -10,6 +10,14 @@ Read `docs/PROJECT.md`, `STATE.md`, then `docs/growth-plan.md` (the week-by-week
 3. **#87** Free `/check` ghost job + scam checker (no AI).
 4. **#88** `/jobs` role pages. Stacked on #87: merge #87 first.
 5. **#89** Matcher: honest +28 points for career changers; eval runs the production path.
+6. **#90** This plan and handoff (docs).
+7. **#91** Jobs abroad no longer read as US states ("Amsterdam, NH").
+8. **#92** Landing "Free tools" section. Stacked on #88.
+9. **#93** Marketing kit: week 1 posts + `scripts/job-drop.ts`. Stacked on #92.
+10. **#94** Pay parsing fixes (439 labels); `scripts/backfill-pay.ts` is a dry run until `--apply`.
+11. **#95** `/check` social card. Stacked on #87.
+
+Stacks: 87 -> 95, and 87 -> 88 -> 92 -> 93. Merge the base first.
 
 #86 and #87 both add event names in `src/lib/track.ts` next to `feed_pull`: if Git flags a
 conflict there, keep both lines.
@@ -31,4 +39,4 @@ conflict there, keep both lines.
 ## Next (from the plan, week 1)
 
 - After merges: watch the first real users in `/admin`; check USAJOBS jobs appear after a match.
-- `/check` share image; fix "Amsterdam, NH"; weekly email to admins then live.
+- Weekly email to admins, then live. Non-tech job source (Adzuna key from Jake).
