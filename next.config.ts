@@ -41,6 +41,7 @@ const config: NextConfig = {
     '/api/resumes/**/download': ['./src/lib/fonts/**'],
     // Share card images (src/app/api/og/share) draw with the same fonts.
     '/api/og/share': ['./src/lib/fonts/**'],
+    '/api/og/check': ['./src/lib/fonts/**'],
     // pdfjs (src/lib/resume-source-text.ts): its worker (belt and braces with the import
     // there) and @napi-rs/canvas, which it loads by a runtime require for DOMMatrix. Without
     // it pdf.mjs throws "DOMMatrix is not defined" on import. The glob picks up whichever
