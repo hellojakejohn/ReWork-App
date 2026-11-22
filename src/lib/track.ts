@@ -42,6 +42,7 @@ export type EventName =
   | 'weekly_email' // { status: sent | dry | skipped | failed, mode, reason?, jobs?, resendId?, error? } src/lib/email/weekly.ts
   | 'welcome_email' // { status: sent | failed, resendId?, error? }
   | 'email_prefs' // { weekly, via: settings | unsubscribe }
+  | 'admin_digest' // { status: sent | dry | failed, alerts, to?, error? } the daily admin email (src/lib/email/admin-digest.ts)
   | 'feed_pull' // { boards, ok, failed, skipped, listed, added, closed, staleClosed, purged, ms } the daily job pull (src/lib/feed/sync.ts)
 
 export type EventProps = Record<string, string | number | boolean | null | undefined>

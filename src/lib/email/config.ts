@@ -7,6 +7,8 @@
 //   EMAIL_WEEKLY            off (default) | dry (log who would get what, send nothing)
 //                           | admins (send only to ADMIN_EMAILS / Jake) | live (everyone)
 //   EMAIL_WELCOME           1 to send the welcome email on sign-up
+//   EMAIL_ADMIN_DIGEST      off (default) | dry | on: the daily numbers email to ADMIN_EMAILS
+//                           (src/lib/email/admin-digest.ts)
 export type WeeklyMode = 'off' | 'dry' | 'admins' | 'live'
 
 const env = (n: string) => process.env[n]?.trim() || ''

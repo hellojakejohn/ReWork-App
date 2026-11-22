@@ -32,6 +32,8 @@ Tick them off here or just tell Claude "done with N".
    pull, 6:30am CT) and the weekly email dry-run log. Tell Claude what you see.
 11. [ ] Tue Nov 24: launch posts on X and LinkedIn (`docs/launch-posts.md`), links with `?ref=x` / `?ref=linkedin`.
 12. [ ] This week: first 5 partner emails (`docs/marketing/partners.md`, CareerForce Saint Paul first).
+13. [ ] Any time: daily numbers email. In Vercel (Production) add `EMAIL_ADMIN_DIGEST=dry`, redeploy,
+    check /admin events for `admin_digest` the next morning, then set it to `on`. It lands at 8:45am CT.
 
 ## Every Sunday (2 minutes, until Supabase Pro)
 
