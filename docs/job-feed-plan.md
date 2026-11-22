@@ -295,3 +295,26 @@ were added (about 21k listed jobs between them, searched per match like the rest
 
 Workday is searched live per match (24 at a time, 20s budget), so past ~100 employers move the
 big ones to a daily pull instead.
+
+## Paid-per-click job partners (checked Nov 22)
+
+Read from each one's public pages; rates and full terms only come after applying.
+
+- **Jooble** (affiliate program): pays monthly per click and per apply (CPC/CPA), net 45, by
+  PayPal/Wise/Payoneer/wire. US traffic accepted; traffic bands start at 0, so a small site
+  can apply. Asks for a job-search audience and a site that shows jobs from other sources.
+  Delivered as a custom XML feed (an API is on the form). Snippet vs full text, caching and
+  attribution: not public. Its site sits behind a bot check, so Jake applies by hand.
+- **Careerjet** (publisher program): free publisher account, pays per click. The API needs
+  the end user's IP and user agent on every call, so it's searched live at match time (like
+  Adzuna), not pulled in bulk. Descriptions are excerpts (`fragment_size`, default 120
+  characters): same "short preview, paste the full post" path as Adzuna. Rates not public.
+- **Talent.com** (publisher program): XML feed, self-serve job API or affiliate links, 30M+
+  jobs in 79 countries. Rates and requirements only on contact.
+- **Talroo** (Jobs2Careers): CPC, US only, $10 minimum payout, but needs 6+ months of
+  verifiable traffic. Not eligible yet.
+- **Not available:** Indeed (partner program closed), LinkedIn (settled: never),
+  CareerOneStop (no new API sign-ups), NLx (research use only).
+
+Order: Jooble first (US accepted at any traffic, a feed we can pull daily, pays), then
+Careerjet. Each one's terms get read in full before any code, like Adzuna's.
