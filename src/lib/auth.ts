@@ -1,3 +1,4 @@
+import { sendWelcome } from '@/lib/email/welcome'
 import { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
@@ -81,6 +82,7 @@ export const authOptions: NextAuthOptions = {
       }
       await track('signed_up', { provider: 'google', ...sourceProps(source) }, user.id)
       await linkReferral(user.id, invite)
+      await sendWelcome(user)
     },
   },
   session: {
