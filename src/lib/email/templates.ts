@@ -2,6 +2,8 @@
 // renders), plus a text version. Pure functions, no env, no DB: tests and the /admin
 // preview call them directly. Never the resume text: jobs, fit numbers and skills only.
 
+import { ADZUNA_HOME, ADZUNA_LABEL, ADZUNA_LABEL_MIN } from '@/lib/feed/adzuna-label'
+
 const C = {
   paper: '#FBFAF7',
   card: '#FFFFFF',
@@ -81,6 +83,8 @@ export interface WeeklyJob {
   location: string
   remote: boolean
   payLabel: string | null
+  /** An Adzuna ad: shows their linked label (their terms). */
+  adzuna?: boolean
   /** Exact-words Job match, 0-100. */
   score: number
   /** What a tailor can honestly reach (exact plus "in other words"). */
@@ -108,6 +112,11 @@ export function weeklySubject(count: number): string {
   return `Your measurements this week: ${count} new ${count === 1 ? 'job' : 'jobs'} that fit`
 }
 
+/** Adzuna's required label: the word Adzuna, at least 116 x 23 px, linked to their site. */
+function adzunaLabel(): string {
+  return `<div style="padding:0 0 12px;"><a href="${ADZUNA_HOME}" style="display:inline-block;min-width:${ADZUNA_LABEL_MIN.width}px;line-height:${ADZUNA_LABEL_MIN.height}px;padding:0 8px;border:1px solid ${C.border};border-radius:4px;text-align:center;font-family:${SANS};font-size:12px;color:${C.forest};text-decoration:none;">${ADZUNA_LABEL}</a></div>`
+}
+
 export function weeklyEmail(d: WeeklyData, f: Footer): EmailContent {
   const n = d.jobs.length
   const subject = weeklySubject(n)
@@ -124,7 +133,7 @@ export function weeklyEmail(d: WeeklyData, f: Footer): EmailContent {
       return `<tr><td style="padding:0 0 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.card};border:1px solid ${C.border};border-radius:12px;"><tr><td style="padding:16px;">
 <div style="font-family:${SERIF};font-size:18px;line-height:24px;color:${C.forest};">${esc(j.title)}</div>
 <div style="padding:2px 0 12px;font-family:${SANS};font-size:13px;color:${C.muted};">${meta}</div>
-${tape(j.score)}${lift}
+${j.adzuna ? adzunaLabel() : ''}${tape(j.score)}${lift}
 ${skills.length ? `<div style="padding:10px 0 12px;font-family:${SANS};font-size:12px;color:${C.muted};">You already show: ${skills.map((s) => `<span style="display:inline-block;background:${C.sage};color:${C.forest};border-radius:999px;padding:2px 8px;margin:2px 2px 0 0;">${esc(s)}</span>`).join('')}</div>` : '<div style="height:12px;"></div>'}
 ${button(j.tailorUrl, 'Tailor for this job')}
 </td></tr></table></td></tr>`

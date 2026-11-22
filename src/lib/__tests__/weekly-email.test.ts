@@ -134,6 +134,13 @@ describe('the emails', () => {
     expect(e.html).toContain(FOOTER.unsubscribeUrl)
     expect(e.text).toContain('Start with your resume: https://d')
   })
+  it('labels Adzuna ads with their linked logo text, and only those', () => {
+    const e = weeklyEmail({ firstName: 'Jake', jobs: [JOB, { ...JOB, title: 'Warehouse Lead', adzuna: true }], checked: 100, followUpsDue: 0, trackerUrl: 'https://t', dashboardUrl: 'https://d' }, FOOTER)
+    expect(e.html.match(/href="https:\/\/www\.adzuna\.com"/g)).toHaveLength(1)
+    expect(e.html).toContain('Jobs by Adzuna')
+    expect(e.html).toContain('min-width:116px')
+  })
+
   it('never uses em-dashes', () => {
     const all = [weeklyEmail({ firstName: 'J', jobs: [JOB], checked: 1, followUpsDue: 1, trackerUrl: 't', dashboardUrl: 'd' }, FOOTER), welcomeEmail({ firstName: 'J', dashboardUrl: 'd', freeTailors: 3 }, FOOTER)]
     for (const e of all) expect(`${e.subject}${e.html}${e.text}${e.preheader}`).not.toMatch(/—/)

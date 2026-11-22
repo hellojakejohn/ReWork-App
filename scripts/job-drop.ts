@@ -33,7 +33,7 @@ async function main() {
   const since = new Date(Date.now() - 10 * 86_400_000)
   const jobs = await db.job.findMany({
     // Pay listed, US or remote, seen in the last 10 days: the ones worth a stranger's click.
-    where: { closedAt: null, firstSeenAt: { gte: since }, payLabel: { not: null }, country: { not: 'other' } },
+    where: { closedAt: null, firstSeenAt: { gte: since }, payLabel: { not: null }, country: { not: 'other' }, source: { not: 'adzuna' } },
     select: { title: true, company: true, location: true, remote: true, payLabel: true, url: true },
     orderBy: { firstSeenAt: 'desc' },
     take: 5000,
