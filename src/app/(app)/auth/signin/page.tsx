@@ -30,7 +30,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
       <SiteHeader links={false} />
       <main className="flex flex-1 items-start justify-center px-4 py-10 sm:items-center sm:py-16">
         <Suspense fallback={<div className="h-96 w-full max-w-md rounded-panel bg-surface" />}>
-          <SignInPanel />
+          <SignInPanel googleOn={!!process.env.GOOGLE_CLIENT_ID?.trim() && !!process.env.GOOGLE_CLIENT_SECRET?.trim()} />
         </Suspense>
       </main>
       <SiteFooter />

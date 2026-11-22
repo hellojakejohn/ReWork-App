@@ -139,7 +139,7 @@ export function placeFilter(workplace: Workplace, homeState: string | null) {
 }
 
 /** Full text for a job we only know by title (Workday), through the resolver's own parser. */
-async function fetchDescription(job: { url: string }, fetchFn: typeof fetch): Promise<{ description: string; payLabel: string | null } | null> {
+export async function fetchDescription(job: { url: string }, fetchFn: typeof fetch): Promise<{ description: string; payLabel: string | null } | null> {
   const ats = matchAtsUrl(job.url)
   if (!ats) return null
   try {

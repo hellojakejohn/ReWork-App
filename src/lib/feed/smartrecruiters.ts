@@ -67,7 +67,12 @@ export function parseSmartRecruitersList(b: SmartRecruitersBoard, data: Json): (
   return out
 }
 
-/** Every US posting of one company. Closes what's gone only when every page was read. */
+/**
+ * Every US posting of one company (newest first, up to 2,000). Closes what's gone only when
+ * every posting was read: Domino's has 25k, so its newest 2,000 are a window, not the list,
+ * and jobs that slid out of it are still open. Those close after 14 days unseen
+ * (`closeStaleSearched`).
+ */
 export async function pullSmartRecruiters(db: Db, b: SmartRecruitersBoard, { fetchFn = fetch, now = new Date() }: { fetchFn?: typeof fetch; now?: Date } = {}): Promise<SyncResult> {
   const jobs: ReturnType<typeof parseSmartRecruitersList> = []
   let total = Infinity
@@ -81,7 +86,7 @@ export async function pullSmartRecruiters(db: Db, b: SmartRecruitersBoard, { fet
     total = Number(data?.totalFound) || 0
     jobs.push(...parseSmartRecruitersList(b, data))
   }
-  const complete = jobs.length > 0 && jobs.length >= Math.min(total, MAX_PAGES * PAGE)
+  const complete = jobs.length > 0 && jobs.length >= total
   return syncBoard(db, srBoardId(b), jobs.map((j) => toJobRow(j, now)), { complete, now })
 }
 

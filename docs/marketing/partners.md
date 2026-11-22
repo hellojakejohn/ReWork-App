@@ -7,7 +7,10 @@ one-pager beats any cold email.
 ## The offer (same for everyone)
 
 - **Free for their clients for a month:** a 30-day Pro pass for every client they send. We
-  comp it from `/admin`, or a partner code once Claude builds partner links (growth plan week 2).
+  comp it from `/admin`, or give them a partner link. When a partner says yes, Claude adds
+  a line to `PARTNERS` in `src/lib/partner-rules.ts` (code, name, 30 days, a cap like 100, an
+  end date) and their link is `rework.careers/?ref=<code>`. Each signup through it gets the
+  days as a comp, up to the cap; `/admin` shows signups, tailors and payers per code.
 - **What they get:** a tool that finds real, open jobs near the client (not ghost jobs),
   tailors the resume to each one without inventing anything, and shows the receipt of every
   change. Counselors can trust the "nothing made up" part, which they can't with ChatGPT.
