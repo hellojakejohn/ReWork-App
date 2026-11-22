@@ -113,6 +113,27 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
   },
 ]
 
+const FREE_TOOLS = [
+  {
+    href: "/check",
+    title: "Is this job real?",
+    body: "Paste a job link. See scam signs, ghost-job signs, and whether it's still on the employer's own job board.",
+    cta: "Check a job",
+  },
+  {
+    href: "/fit",
+    title: "How well do you fit?",
+    body: "Paste a job and your resume. See the skills you match, the ones you show in other words, and what's missing.",
+    cta: "Take your measurements",
+  },
+  {
+    href: "/jobs",
+    title: "Jobs by role",
+    body: "Open jobs from employers' own boards, updated every morning: how many, typical pay, and who's hiring.",
+    cta: "Browse roles",
+  },
+]
+
 const container = "mx-auto max-w-6xl px-4 sm:px-6"
 const h2 = "font-serif text-3xl font-medium tracking-tight text-text sm:text-4xl"
 const card = "rounded-card bg-surface p-6 sm:p-7"
@@ -208,6 +229,25 @@ export default async function HomePage() {
               </p>
             </div>
           </div>
+        </section>
+
+        {/* Free tools: no account needed */}
+        <section id="free-tools" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
+          <h2 className={h2}>Free tools, no sign-up</h2>
+          <p className="mt-3 max-w-2xl text-text-secondary">Try the honest parts first. Nothing is saved.</p>
+          <ul className="mt-10 grid gap-5 md:grid-cols-3">
+            {FREE_TOOLS.map((tool) => (
+              <li key={tool.href}>
+                <Link href={tool.href} className={`${card} group flex h-full flex-col gap-2.5 border border-transparent hover:border-border`}>
+                  <h3 className="text-xl font-bold text-text">{tool.title}</h3>
+                  <p className="leading-relaxed text-text-secondary">{tool.body}</p>
+                  <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-semibold text-accent-strong group-hover:underline">
+                    {tool.cta} <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Pricing */}
