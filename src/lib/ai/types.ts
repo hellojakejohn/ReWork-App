@@ -15,12 +15,10 @@ export interface AIMessage {
 }
 
 // Injected SDK clients (tests, the eval). Typed loosely so mocks only need the one method
-// an adapter calls: anthropic.beta.messages.create, openai/openrouter.chat.completions.create.
+// the adapter calls: anthropic.beta.messages.create.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface ProviderClients {
   anthropic?: any
-  openai?: any
-  openrouter?: any
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -30,7 +28,7 @@ export interface StructuredRequest {
   messages: AIMessage[]
   schema: JsonSchema
   schemaName: string
-  files?: AIFile[] // attached to the first user message; dropped for text-only providers
+  files?: AIFile[] // attached to the first user message
   maxTokens: number // the answer's budget; adapters add thinking headroom where needed
   temperature?: number // sent only to models that accept it
   effort?: 'low' | 'medium' | 'high' // Anthropic thinking depth

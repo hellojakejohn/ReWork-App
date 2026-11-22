@@ -12,14 +12,12 @@ vi.mock('@/lib/ai/adapters/anthropic', async (orig) => ({
 
 import { checkProviders } from '@/lib/ai/health'
 
-const KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY']
+const KEYS = ['ANTHROPIC_API_KEY']
 const saved: Record<string, string | undefined> = {}
 
 beforeEach(() => {
   for (const k of KEYS) saved[k] = process.env[k]
   process.env.ANTHROPIC_API_KEY = 'sk-ant-test'
-  delete process.env.OPENAI_API_KEY
-  delete process.env.OPENROUTER_API_KEY
   api.create.mockReset()
   api.retrieve.mockReset()
   api.retrieve.mockImplementation(async (id: string) => ({ id, allowed_fallback_models: id === 'claude-opus-5-5' ? ['claude-opus-4-8'] : [] }))

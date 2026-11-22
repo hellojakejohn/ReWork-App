@@ -1,13 +1,10 @@
 // Provider layer with mocked SDK clients: structured output, repair, PDF shape, routing,
-// temperature handling, and error classification across providers.
+// temperature handling, and error classification. Anthropic is the only provider.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Anthropic from '@anthropic-ai/sdk'
-import { APIError as OpenAIAPIError } from 'openai'
 import { generateStructured, parseAndValidate, callOverrides } from '@/lib/ai'
 import { buildAnthropicRequest, FALLBACK_BETA, refusalFallbackFor } from '@/lib/ai/adapters/anthropic'
-import { buildOpenAIRequest } from '@/lib/ai/adapters/openai'
-import { buildOpenRouterRequest } from '@/lib/ai/adapters/openrouter'
 import { downgradeAvailable, freeTierRoute, parseRoute, resolveRoute, showPoweredBy, taskRoute } from '@/lib/ai/routing'
 import { AIOutputError, classifyAIError } from '@/lib/ai-errors'
 import { collectUsage } from '@/lib/ai-usage'
@@ -48,22 +45,7 @@ const anthropicReply = (text: string, extra: Record<string, any> = {}) => ({
   ...extra,
 })
 
-function chatMock(...replies: any[]) {
-  const create = vi.fn(async () => {
-    const next = replies.shift()
-    if (next instanceof Error) throw next
-    return next
-  })
-  return { client: { chat: { completions: { create } } }, create }
-}
-
-const chatReply = (content: string, model = 'gpt-4o-2024-08-06') => ({
-  model,
-  choices: [{ finish_reason: 'stop', message: { content, refusal: null } }],
-  usage: { prompt_tokens: 1200, completion_tokens: 300, prompt_tokens_details: { cached_tokens: 200 } },
-})
-
-const ENV_KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'AI_PARSE', 'AI_JOB_EXTRACT', 'AI_TAILOR', 'AI_COVER_LETTER', 'AI_EVIDENCE', 'AI_FREE_TIER', 'OPENAI_TAILOR_MODEL', 'OPENAI_JOB_MODEL']
+const ENV_KEYS = ['ANTHROPIC_API_KEY', 'AI_PARSE', 'AI_JOB_EXTRACT', 'AI_TAILOR', 'AI_COVER_LETTER', 'AI_EVIDENCE', 'AI_FREE_TIER']
 let saved: Record<string, string | undefined> = {}
 beforeEach(() => {
   saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]))
@@ -144,7 +126,7 @@ describe('anthropic adapter', () => {
     expect(classifyAIError(error).kind).toBe('invalid_output')
   })
 
-  it('refusal fallback stays on Anthropic, never OpenAI or OpenRouter (none configured today)', async () => {
+  it('refusal fallback stays on Anthropic (none configured today)', async () => {
     expect(FALLBACK_BETA).toBe('server-side-fallback-2026-06-01') // the array form's beta
     expect(refusalFallbackFor('claude-opus-5-5')).toBeNull()
     // Sonnet 5.5 only accepts the category-routed "default" form, so it gets no fallback.
@@ -162,7 +144,7 @@ describe('anthropic adapter', () => {
     // Even a misconfigured entry pointing elsewhere is dropped, not sent.
     const original = MODELS['claude-opus-5-5'].refusalFallback
     try {
-      for (const bad of ['gpt-4o', 'moonshotai/kimi-k2.6']) {
+      for (const bad of ['gpt-4o', 'some/other-model']) {
         MODELS['claude-opus-5-5'].refusalFallback = bad
         expect(refusalFallbackFor('claude-opus-5-5')).toBeNull()
         const body = buildAnthropicRequest({ model: 'claude-opus-5-5', system: 's', messages: [{ role: 'user', content: 'x' }], files: [], schema: SCHEMA, schemaName: 'x', maxTokens: 10 })
@@ -172,25 +154,19 @@ describe('anthropic adapter', () => {
       MODELS['claude-opus-5-5'].refusalFallback = original
     }
 
-    // A decline that survives the Sonnet retry is an error, not a hop to another provider.
-    process.env.OPENAI_API_KEY = 'sk-test'
-    process.env.OPENROUTER_API_KEY = 'or-test'
+    // A decline that survives the Sonnet retry is an error.
     const refused = anthropicMock(
       anthropicReply('', { stop_reason: 'refusal' }),
       anthropicReply('', { stop_reason: 'refusal', model: 'claude-sonnet-5-5' })
     )
-    const openai = chatMock(chatReply(JSON.stringify(GOOD)))
-    const openrouter = chatMock(chatReply(JSON.stringify(GOOD), 'moonshotai/kimi-k2.6'))
     const error = await generateStructured({
       ...base,
       route: { provider: 'anthropic', model: 'claude-opus-5-5' },
-      clients: { anthropic: refused.client, openai: openai.client, openrouter: openrouter.client },
+      clients: { anthropic: refused.client },
     }).catch((e) => e)
     expect(error).toBeInstanceOf(AIOutputError)
     expect(error).toMatchObject({ reason: 'refusal', provider: 'anthropic' })
     expect(refused.create).toHaveBeenCalledTimes(2)
-    expect(openai.create).not.toHaveBeenCalled()
-    expect(openrouter.create).not.toHaveBeenCalled()
   })
 
   it('prices a fallback answer at the model that served it', async () => {
@@ -211,67 +187,7 @@ describe('anthropic adapter', () => {
   })
 })
 
-describe('openai adapter', () => {
-  it('keeps the old behavior: json_schema strict, temperature, file part for PDFs', async () => {
-    const { client, create } = chatMock(chatReply(JSON.stringify(GOOD)))
-    const res = await generateStructured<typeof GOOD>({
-      ...base,
-      files: [{ kind: 'pdf', data: Buffer.from('pdf'), filename: 'r.pdf' }],
-      route: { provider: 'openai', model: 'gpt-4o' },
-      clients: { openai: client },
-    })
-    expect(res.data).toEqual(GOOD)
-    // prompt_tokens includes the cached ones
-    expect(res.usage).toMatchObject({ inputTokens: 1000, cachedInputTokens: 200, outputTokens: 300 })
-    const body = (create.mock.calls[0] as any[])[0]
-    expect(body.temperature).toBe(0.3)
-    expect(body.max_tokens).toBe(1000)
-    expect(body.response_format).toEqual({ type: 'json_schema', json_schema: { name: 'out', strict: true, schema: SCHEMA } })
-    expect(body.messages[0]).toEqual({ role: 'system', content: 'You tailor resumes.' })
-    expect(body.messages[1].content[0]).toEqual({ type: 'file', file: { filename: 'r.pdf', file_data: `data:application/pdf;base64,${Buffer.from('pdf').toString('base64')}` } })
-  })
-
-  it('drops temperature and uses max_completion_tokens on reasoning models', () => {
-    const body = buildOpenAIRequest({ model: 'gpt-5.4-mini', system: 's', messages: [{ role: 'user', content: 'x' }], files: [], schema: SCHEMA, schemaName: 'x', maxTokens: 500, temperature: 0.5 })
-    expect(body).not.toHaveProperty('temperature')
-    expect(body).not.toHaveProperty('max_tokens')
-    expect(body.max_completion_tokens).toBeGreaterThanOrEqual(500)
-  })
-})
-
-describe('openrouter adapter', () => {
-  it('uses JSON mode with the schema in the prompt, denies data collection, and never sends files', async () => {
-    const { client, create } = chatMock(chatReply('```json\n' + JSON.stringify(GOOD) + '\n```', 'moonshotai/kimi-k2.6'))
-    const res = await generateStructured<typeof GOOD>({
-      ...base,
-      files: [{ kind: 'pdf', data: Buffer.from('pdf'), filename: 'r.pdf' }],
-      route: { provider: 'openrouter', model: 'moonshotai/kimi-k2.6' },
-      clients: { openrouter: client },
-    })
-    expect(res.data).toEqual(GOOD) // code fence stripped
-    const body = (create.mock.calls[0] as any[])[0]
-    expect(body.response_format).toEqual({ type: 'json_object' })
-    expect(body.provider).toEqual({ data_collection: 'deny' })
-    expect(body.messages[0].content).toContain('"additionalProperties":false')
-    expect(JSON.stringify(body.messages)).not.toContain('application/pdf')
-  })
-
-  it('repairs a schema-invalid answer with the validation errors spelled out', async () => {
-    const { client, create } = chatMock(chatReply(JSON.stringify({ title: 'x' }), 'moonshotai/kimi-k2.6'), chatReply(JSON.stringify(GOOD), 'moonshotai/kimi-k2.6'))
-    const res = await generateStructured<typeof GOOD>({ ...base, route: { provider: 'openrouter', model: 'moonshotai/kimi-k2.6' }, clients: { openrouter: client } })
-    expect(res.attempts).toBe(2)
-    const retry = (create.mock.calls[1] as any[])[0]
-    expect(retry.messages.at(-1).content).toMatch(/Does not match the schema: .*bullets/)
-  })
-
-  it('builds requests without temperature for unknown models (conservative default)', () => {
-    const body = buildOpenRouterRequest({ model: 'some/new-model', system: 's', messages: [], files: [], schema: SCHEMA, schemaName: 'x', maxTokens: 10, temperature: 0.5 })
-    expect(body).not.toHaveProperty('temperature')
-    expect(modelInfo('some/new-model').provider).toBe('openrouter')
-  })
-})
-
-describe('error classification across providers', () => {
+describe('error classification', () => {
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -300,18 +216,6 @@ describe('error classification across providers', () => {
     expect(errorSpy.mock.calls.some((c) => String(c[0]).includes('ANTHROPIC_QUOTA_EXHAUSTED'))).toBe(true)
   })
 
-  it('treats OpenRouter 402 (no credits) as quota and 429 as a rate limit', async () => {
-    for (const [status, kind] of [
-      [402, 'quota'],
-      [429, 'rate_limit'],
-    ] as const) {
-      const err = OpenAIAPIError.generate(status, { error: { message: 'x', code: status } } as never, undefined, {} as never)
-      const { client } = chatMock(err)
-      const thrown = await generateStructured({ ...base, route: { provider: 'openrouter', model: 'moonshotai/kimi-k2.6' }, clients: { openrouter: client } }).catch((e) => e)
-      expect(classifyAIError(thrown).kind).toBe(kind)
-    }
-  })
-
   it('reports a missing key as not_configured for the right provider', async () => {
     const thrown = await generateStructured({ ...base, route: { provider: 'anthropic', model: 'claude-opus-5-5' } }).catch((e) => e)
     expect(classifyAIError(thrown).kind).toBe('not_configured')
@@ -319,22 +223,22 @@ describe('error classification across providers', () => {
 })
 
 describe('routing', () => {
-  it('defaults to Opus 5.5 everywhere when ANTHROPIC_API_KEY is set, else the old OpenAI models', () => {
-    expect(taskRoute('tailor')).toEqual({ provider: 'openai', model: 'gpt-4o' })
-    expect(taskRoute('jobExtract')).toEqual({ provider: 'openai', model: 'gpt-4o-mini' })
-    process.env.OPENAI_TAILOR_MODEL = 'gpt-4.1'
-    expect(taskRoute('coverLetter').model).toBe('gpt-4.1') // old override still honored
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test'
+  it('defaults to Opus 5.5 everywhere', () => {
     for (const task of ['parse', 'jobExtract', 'tailor', 'coverLetter', 'evidence'] as const) {
       expect(taskRoute(task)).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
     }
   })
 
-  it('reads provider:model per task, OpenRouter ids included', () => {
-    process.env.AI_COVER_LETTER = 'openrouter:moonshotai/kimi-k2.6'
-    expect(taskRoute('coverLetter')).toEqual({ provider: 'openrouter', model: 'moonshotai/kimi-k2.6' })
+  it('reads provider:model per task; other providers never route', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    process.env.AI_COVER_LETTER = 'anthropic:claude-sonnet-5-5'
+    expect(taskRoute('coverLetter')).toEqual({ provider: 'anthropic', model: 'claude-sonnet-5-5' })
     expect(parseRoute('nope')).toBeNull()
-    expect(parseRoute('free-llm:x')).toBeNull() // unknown providers never route
+    expect(parseRoute('free-llm:x')).toBeNull()
+    expect(parseRoute('openai:gpt-4o')).toBeNull()
+    expect(parseRoute('openrouter:moonshotai/kimi-k2.6')).toBeNull()
+    process.env.AI_TAILOR = 'openai:gpt-4o'
+    expect(taskRoute('tailor')).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
   })
 
   it('applies AI_FREE_TIER to FREE users and the 75% downgrade, but never to parse', () => {
@@ -353,7 +257,7 @@ describe('routing', () => {
 
   it('defaults AI_FREE_TIER to Sonnet 5.5 when ANTHROPIC_API_KEY is set; env still overrides', () => {
     expect(freeTierRoute()).toBeNull()
-    expect(resolveRoute('tailor', { tier: 'free' })).toEqual({ provider: 'openai', model: 'gpt-4o' })
+    expect(resolveRoute('tailor', { tier: 'free' })).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
     process.env.ANTHROPIC_API_KEY = 'k'
     const sonnet = { provider: 'anthropic', model: 'claude-sonnet-5-5' }
     expect(freeTierRoute()).toEqual(sonnet)
@@ -361,8 +265,9 @@ describe('routing', () => {
     expect(resolveRoute('coverLetter', { tier: 'pro', downgraded: true })).toEqual(sonnet)
     expect(resolveRoute('tailor', { tier: 'pro' })).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
     expect(downgradeAvailable()).toBe(true)
-    process.env.AI_FREE_TIER = 'openai:gpt-4o-mini'
-    expect(resolveRoute('tailor', { tier: 'free' })).toEqual({ provider: 'openai', model: 'gpt-4o-mini' })
+    process.env.AI_FREE_TIER = 'anthropic:claude-opus-5-5'
+    expect(resolveRoute('tailor', { tier: 'free' })).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
+    expect(downgradeAvailable()).toBe(false)
   })
 
   it('routes inside a usage scope by its plan context', async () => {
@@ -376,18 +281,16 @@ describe('routing', () => {
   })
 
   it('shows "Powered by Claude Opus 5.5" only when Pro tailoring is really on it', () => {
-    expect(showPoweredBy()).toBe(false)
-    process.env.ANTHROPIC_API_KEY = 'k'
     expect(showPoweredBy()).toBe(true)
     process.env.AI_TAILOR = 'anthropic:claude-sonnet-5-5'
     expect(showPoweredBy()).toBe(false)
   })
 
-  it('pins the legacy `client` test hook to the OpenAI adapter', () => {
-    process.env.ANTHROPIC_API_KEY = 'k'
+  it('pins the `client` test hook to Anthropic on the task model', () => {
     const o = callOverrides('tailor', { client: { fake: true } })
-    expect(o.route).toEqual({ provider: 'openai', model: 'gpt-4o' })
-    expect(o.clients?.openai).toEqual({ fake: true })
+    expect(o.route).toEqual({ provider: 'anthropic', model: 'claude-opus-5-5' })
+    expect(o.clients?.anthropic).toEqual({ fake: true })
+    expect(callOverrides('tailor', { client: {}, model: 'claude-sonnet-5-5' }).route?.model).toBe('claude-sonnet-5-5')
   })
 })
 

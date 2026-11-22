@@ -108,7 +108,7 @@ describe('refusal: Opus -> (app-side Sonnet retry) -> declined', () => {
   it('the retry is only ever Anthropic', () => {
     expect(refusalRetryFor(OPUS)).toEqual(SONNET)
     expect(refusalRetryFor(SONNET)).toBeNull()
-    expect(refusalRetryFor({ provider: 'openai', model: 'gpt-4o' })).toBeNull()
+    expect(refusalRetryFor({ provider: 'anthropic', model: 'gpt-4o' })).toBeNull()
   })
 
   it('a decline after a repair still gets its one Sonnet retry, then fails', async () => {

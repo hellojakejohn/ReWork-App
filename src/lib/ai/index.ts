@@ -12,10 +12,8 @@ import Ajv, { type ValidateFunction } from 'ajv'
 import { AIOutputError } from '@/lib/ai-errors'
 import { currentDeadline, currentRouting, recordUsage, takeCallSlot, usageRecord } from '@/lib/ai-usage'
 import { costUsd, modelInfo, type ProviderId, type TokenUsage } from '@/lib/ai/models'
-import { resolveRoute, taskRoute, type ModelRoute } from '@/lib/ai/routing'
+import { DEFAULT_ANTHROPIC_MODEL, resolveRoute, taskRoute, type ModelRoute } from '@/lib/ai/routing'
 import { anthropicAdapter } from '@/lib/ai/adapters/anthropic'
-import { openAIAdapter } from '@/lib/ai/adapters/openai'
-import { openRouterAdapter } from '@/lib/ai/adapters/openrouter'
 import type { Adapter, AdapterRequest, AdapterResult, AIMessage, JsonSchema, StructuredRequest, StructuredResult } from '@/lib/ai/types'
 
 export type { StructuredRequest, StructuredResult, AIFile, AIMessage, ProviderClients, JsonSchema } from '@/lib/ai/types'
@@ -23,8 +21,6 @@ export type { AITask, ModelRoute } from '@/lib/ai/routing'
 
 export const ADAPTERS: Record<ProviderId, Adapter> = {
   anthropic: anthropicAdapter,
-  openai: openAIAdapter,
-  openrouter: openRouterAdapter,
 }
 
 const ajv = new Ajv({ allErrors: true, strict: false })
@@ -38,7 +34,7 @@ function validatorFor(schema: JsonSchema): ValidateFunction {
   return v
 }
 
-/** Strips a ```json fence some JSON-mode models wrap their answer in. */
+/** Strips a ```json fence, in case a model wraps its answer in one. */
 function unfence(text: string): string {
   const t = text.trim()
   const fenced = t.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
@@ -104,7 +100,6 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
     const adapter = ADAPTERS[route.provider]
     const info = modelInfo(route.model, route.provider)
     const client = req.clients?.[route.provider]
-    // Text-only providers never see files (and resume PDFs never leave for them).
     const files = info.pdf ? (req.files ?? []) : []
     const deadline = currentDeadline()
     const timeLeft = deadline ? deadline - Date.now() : undefined
@@ -182,9 +177,9 @@ export async function generateStructured<T>(req: StructuredRequest): Promise<Str
 }
 
 /**
- * Per-call overrides every AI lib accepts. `client` is the old hook (an OpenAI-shaped
- * client; tests use it) and pins the call to the OpenAI adapter. `model` alone picks that
- * model on its own provider. `route`/`clients` are the general form (the eval uses them).
+ * Per-call overrides every AI lib accepts. `client` is the short test hook: an
+ * Anthropic-shaped client (`beta.messages.create`) used for the task's configured model.
+ * `model` alone picks that model. `route`/`clients` are the general form (the eval uses them).
  */
 export interface AICallOptions {
   client?: unknown
@@ -199,9 +194,8 @@ export function callOverrides(
 ): Pick<StructuredRequest, 'route' | 'clients'> {
   if (o.route) return { route: o.route, clients: o.clients }
   if (o.client) {
-    const configured = taskRoute(task)
-    const model = o.model ?? (configured.provider === 'openai' ? configured.model : 'gpt-4o')
-    return { route: { provider: 'openai', model }, clients: { ...o.clients, openai: o.client } }
+    const model = o.model ?? taskRoute(task).model ?? DEFAULT_ANTHROPIC_MODEL
+    return { route: { provider: 'anthropic', model }, clients: { ...o.clients, anthropic: o.client } }
   }
   if (o.model) return { route: { provider: modelInfo(o.model).provider, model: o.model }, clients: o.clients }
   return { clients: o.clients }

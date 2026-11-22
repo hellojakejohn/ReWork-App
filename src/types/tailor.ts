@@ -1,5 +1,5 @@
 // Types for the tailor pipeline: master resume -> model input -> model output -> fact guard.
-// Kept free of runtime imports so fact-guard and tests can use them without pulling in OpenAI.
+// Kept free of runtime imports so fact-guard and tests can use them without pulling in the AI SDK.
 
 // What we send to the model. Contact info is deliberately absent.
 export interface TailorInputRole {

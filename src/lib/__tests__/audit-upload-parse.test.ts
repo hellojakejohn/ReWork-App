@@ -1,8 +1,9 @@
 // Launch audit: parseResume and the validator on hostile or unusual inputs. Real pdfjs and
-// mammoth, fake OpenAI-shaped client (no network). it.fails = proven bug; comment says
+// mammoth, fake Anthropic client (no network). it.fails = proven bug; comment says
 // what correct behavior is.
 import React from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { anthropicText, fakeAnthropic } from './fixtures/fake-anthropic'
 import { Document, Link, Page, View, renderToBuffer } from '@react-pdf/renderer'
 import { PARSE_FAILED_MESSAGE, parseResume, ResumeParseError } from '@/lib/parse-resume'
 import { validateParsedResume } from '@/lib/parse-validate'
@@ -37,11 +38,8 @@ const hex32 = 'a'.repeat(64)
 const encryptedPdf = () =>
   buildPdf([...PAGE_OBJS('BT /F1 12 Tf 72 720 Td (secret) Tj ET'), `<< /Filter /Standard /V 1 /R 2 /O <${hex32}> /U <${hex32}> /P -4 >>`], `/Encrypt 6 0 R /ID [<0123456789abcdef0123456789abcdef> <0123456789abcdef0123456789abcdef>]`)
 
-function fakeClient(impl: () => unknown) {
-  const create = vi.fn(async () => impl())
-  return { client: { chat: { completions: { create } } } as never, create }
-}
-const reply = (content: string) => ({ model: 'gpt-test', choices: [{ finish_reason: 'stop', message: { content } }] })
+const fakeClient = (impl: () => unknown) => fakeAnthropic(impl)
+const reply = (content: string) => anthropicText(content)
 
 function emptyParse(): ParsedResume {
   return {
@@ -164,7 +162,7 @@ describe('parseResume failure paths always carry a human userMessage', () => {
     spy.mockRestore()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body = (create.mock.calls[0] as unknown as [Record<string, any>])[0]
-    expect(body.messages[1].content).toContain('Shipped project number 249')
+    expect(body.messages[0].content).toContain('Shipped project number 249')
   })
 })
 

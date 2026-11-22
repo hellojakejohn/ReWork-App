@@ -1,9 +1,8 @@
 // Resume parsing: file -> structured resume, validated against the file's own text.
 //
-// PDF: the PDF itself goes to the model (Anthropic document block / OpenAI file input; it
-// sees the layout, which matters for two-column and date-column designs) plus cleaned
-// positional text from pdfjs as a second input. Text-only providers (OpenRouter) get the
-// cleaned text alone. DOCX and pasted text: text only. Output is schema-constrained JSON
+// PDF: the PDF itself goes to the model (an Anthropic document block; it sees the layout,
+// which matters for two-column and date-column designs) plus cleaned positional text from
+// pdfjs as a second input. DOCX and pasted text: text only. Output is schema-constrained JSON
 // (src/lib/ai/), then validateParsedResume() drops anything that isn't in the source text.
 //
 // Routing: AI_PARSE for everyone (no plan override), see src/lib/ai/routing.ts.

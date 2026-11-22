@@ -1,6 +1,7 @@
 // Cover letter: banned phrases trigger one regenerate, the fact guard removes what the
-// resume doesn't support, and nothing ever calls the real OpenAI API.
+// resume doesn't support, and nothing ever calls the real model API.
 import { describe, expect, it, vi } from 'vitest'
+import { anthropicJson, bodyOf } from './fixtures/fake-anthropic'
 import { buildTailorInput } from '@/lib/tailor'
 import { parsedToMaster } from '@/lib/master-resume'
 import {
@@ -66,9 +67,9 @@ function mockClient(drafts: CoverLetterDraft[]) {
   const create = vi.fn(async () => {
     const next = drafts.shift()
     if (!next) throw new Error('unexpected extra call')
-    return { model: 'gpt-test', choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(next), refusal: null } }] }
+    return anthropicJson(next)
   })
-  return { client: { chat: { completions: { create } } } as never, create }
+  return { client: { beta: { messages: { create } } } as never, create }
 }
 
 describe('banned phrases', () => {
@@ -85,7 +86,7 @@ describe('banned phrases', () => {
     ])
     const letter = await generateCoverLetter(input, { client })
     expect(create).toHaveBeenCalledTimes(2)
-    const retryPrompt = (create.mock.calls[1] as unknown as [{ messages: { content: string }[] }])[0].messages[1].content
+    const retryPrompt = bodyOf(create, 1).messages[0].content
     expect(retryPrompt).toContain('"i am writing to express my interest"')
     expect(letter.text).not.toMatch(/i am writing to/i)
     expect(letter.warnings.map((w) => w.type)).toEqual(['regenerated'])

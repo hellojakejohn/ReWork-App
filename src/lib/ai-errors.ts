@@ -1,20 +1,15 @@
-// Turn provider SDK errors (OpenAI, Anthropic, OpenRouter) into something honest for
-// users and loud for us. One classification for every provider: it feeds the user
-// messages in each feature and the checks on /api/health.
+// Turn Anthropic SDK errors into something honest for users and loud for us. One
+// classification: it feeds the user messages in each feature and the checks on /api/health.
 //
 // Anthropic: 401 authentication_error, 403 permission_error, 402 billing_error, 429
 // rate_limit_error, 529 overloaded_error, and a 400 "credit balance is too low" when the
-// account is out of credit. OpenRouter: 402 when the account has no credits left, and
-// OpenAI-shaped bodies otherwise.
+// account is out of credit. Out of credit means nothing the user can do and retrying
+// won't help (we need to top up), while a plain rate limit clears in seconds. Only the
+// second gets a "try again" message.
 //
-// A 429 is two different things: `insufficient_quota` means the account is out of credit
-// (nothing the user can do, retrying won't help, we need to top up), while a plain rate
-// limit clears in seconds. Only the second gets a "try again" message.
-//
-// openai-node v4 puts the response body's `error` object on `err.error` and copies its
-// `code`/`type` onto the error itself, but the code can be null with only `type` set, and
-// wrappers (ours, Next, fetch) sometimes nest the original under `cause`. So every place
-// a code can live is checked, not just the first non-null one.
+// The SDK puts the response body's `error` object on `err.error`, and wrappers (ours,
+// Next, fetch) sometimes nest the original under `cause`. So every place a code can live
+// is checked, not just the first non-null one.
 
 export type AIErrorKind =
   | 'quota'
@@ -33,7 +28,7 @@ export interface ClassifiedAIError {
   retryable: boolean
 }
 
-// Codes/types OpenAI uses when the account (not the request) can't be billed.
+// Codes/types that mean the account (not the request) can't be billed.
 const QUOTA_CODES = new Set(['insufficient_quota', 'billing_hard_limit_reached', 'billing_not_active', 'access_terminated', 'billing_error'])
 const QUOTA_MESSAGE =
   /insufficient_quota|exceeded your current quota|billing hard limit|billing_not_active|check your plan and billing|credit balance is too low|insufficient credits|requires more credits/i
@@ -83,12 +78,12 @@ export function isInsufficientQuota(error: unknown): boolean {
   return statusOf(error) === 402 || errorCodes(error).some((c) => QUOTA_CODES.has(c)) || QUOTA_MESSAGE.test(messages(error))
 }
 
-/** The provider an adapter tagged the error with (src/lib/ai/), else OpenAI (the old default). */
+/** The provider an adapter tagged the error with (src/lib/ai/), else Anthropic. */
 function providerOf(error: unknown): string {
   for (const layer of layers(error)) {
     if (typeof layer.provider === 'string' && layer.provider) return layer.provider
   }
-  return 'openai'
+  return 'anthropic'
 }
 
 /** Thrown by the AI layer when the provider answered but the answer can't be used. */
@@ -131,7 +126,7 @@ export function classifyAIError(error: unknown, feature = 'Tailoring'): Classifi
     return { kind: 'invalid_output', status: 502, userMessage: `${feature} failed. Please try again.`, retryable: true }
   }
   if (/_API_KEY/.test(message) && /not configured|required|not set/i.test(message)) {
-    console.error(`[${/ANTHROPIC/.test(message) ? 'ANTHROPIC' : /OPENROUTER/.test(message) ? 'OPENROUTER' : 'OPENAI'}_NOT_CONFIGURED]`, message)
+    console.error('[ANTHROPIC_NOT_CONFIGURED]', message)
     return { kind: 'not_configured', status: 503, userMessage: unavailable(feature), retryable: false }
   }
   if (isInsufficientQuota(error)) {

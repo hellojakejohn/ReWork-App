@@ -1,4 +1,4 @@
-// Cover letter types and constants safe to import from client components (no OpenAI).
+// Cover letter types and constants safe to import from client components (no AI SDK).
 export type CoverLetterTone = 'professional' | 'warm' | 'direct'
 export const COVER_LETTER_TONES: { id: CoverLetterTone; label: string }[] = [
   { id: 'professional', label: 'Professional' },
