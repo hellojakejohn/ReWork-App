@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { useSession } from "next-auth/react"
+import { toast } from "sonner"
 import { ArrowDown, ArrowRight, Briefcase, FileText, Sparkles } from "lucide-react"
 import { summarizeResume } from "@/lib/master-resume"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
@@ -43,6 +45,7 @@ export function TailorCard({
   onOpenPrevious?: (id: string) => void
   onMasterSaved: (master: MasterResumeDTO) => void
 }) {
+  const { update: updateSession } = useSession()
   const [stage, setStage] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [limitHit, setLimitHit] = useState(false)
@@ -69,6 +72,10 @@ export function TailorCard({
       return
     }
     onDone(result.result.application, result.result.tailorsRemaining)
+    if (result.result.referralDays) {
+      toast.success(`You and the friend who invited you just got ${result.result.referralDays} days of Pro.`)
+      void updateSession()
+    }
   }
 
   // Enter doesn't re-tailor a job already tailored: that takes the button, on purpose.

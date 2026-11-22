@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { BarChart3, ChevronDown, Crown, FileStack, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
+import { BarChart3, ChevronDown, Crown, FileStack, Gift, History, Home, KanbanSquare, LogOut, RotateCcw, Settings, Sparkles, Tag, Wand2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SettingsModal } from "@/components/settings-modal"
+import { SettingsModal, type TabType as SettingsTab } from "@/components/settings-modal"
 import { LogoutModal } from "@/components/logout-modal"
 import type { Quota } from "./api"
 import { describeAccess } from "@/lib/entitlement-rules"
@@ -46,6 +46,7 @@ export function AppHeader({
 }) {
   const { data: session } = useSession()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("account")
   const [logoutOpen, setLogoutOpen] = useState(false)
   // Quota changes after every tailor/cover letter, so the usage bar refreshes with it.
   const aiUsage = useAIUsage(`${session?.user?.id}:${quota?.used ?? ""}:${quota?.remaining ?? ""}:${recentCount}`)
@@ -158,8 +159,21 @@ export function AppHeader({
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setSettingsTab("account")
+                    setSettingsOpen(true)
+                  }}
+                >
                   <Settings className="mr-2 h-4 w-4" /> Settings & billing
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setSettingsTab("invite")
+                    setSettingsOpen(true)
+                  }}
+                >
+                  <Gift className="mr-2 h-4 w-4" /> Invite friends, get Pro
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/?home=1">
@@ -193,7 +207,7 @@ export function AppHeader({
         </div>
       </header>
       <AIUsageBanner usage={aiUsage} />
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} initialTab={settingsTab} />
       <LogoutModal isOpen={logoutOpen} onClose={() => setLogoutOpen(false)} />
     </>
   )

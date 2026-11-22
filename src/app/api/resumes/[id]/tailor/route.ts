@@ -15,6 +15,7 @@ import { checkDailyCeiling } from '@/lib/daily-ceiling';
 import { collectUsage, usageProps } from '@/lib/ai-usage';
 import { aiPausedCheck, getAIBudget } from '@/lib/ai-cap';
 import { msSince, track } from '@/lib/track';
+import { rewardReferral } from '@/lib/referrals';
 import { ndjsonResponse, type StreamEvent } from '@/lib/ndjson';
 import { toApplicationDetail } from '@/lib/application-dto';
 import { evidenceFacts } from '@/lib/evidence-shared';
@@ -282,11 +283,15 @@ export async function POST(
       data: { lastOptimized: new Date() }
     }).catch((error) => console.error('[tailor] lastOptimized update failed:', error));
 
+    // A friend invited them: the first finished tailor gives both of them Pro days.
+    const referralDays = await rewardReferral(userId);
+
     send({
       type: 'done',
       result: {
         application: toApplicationDetail(application),
-        tailorsRemaining: quota.limit === Infinity ? null : Math.max(0, quota.remaining - 1)
+        tailorsRemaining: quota.limit === Infinity ? null : Math.max(0, quota.remaining - 1),
+        referralDays
       }
     });
   };

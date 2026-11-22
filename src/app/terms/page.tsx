@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { LegalPage, Section } from "@/components/site/legal-page"
 import { CONTACT_EMAIL, DAILY_CEILINGS, FAIR_USE, FREE_PLAN_SUMMARY, PASS_DAYS, PRICING } from "@/lib/plans"
+import { REFERRAL_DAYS, REFERRER_MONTHLY_CAP } from "@/lib/referral-rules"
 
 
 export const metadata: Metadata = {
@@ -125,6 +126,15 @@ export default function TermsPage() {
           </li>
           <li>To ask, email {mail} from the address you sign in with. Refunds go back to the original card through Stripe.</li>
         </ul>
+      </Section>
+
+      <Section title="Invites">
+        <p>
+          You can invite friends with your personal link. When someone who signed up through it finishes their first tailored resume, you
+          both get {REFERRAL_DAYS} days of Pro, added after any Pro you already have. You can earn days from up to {REFERRER_MONTHLY_CAP} friends
+          a month. Invite real people: we may remove days earned from fake or duplicate accounts. Pro days from invites have no cash value
+          and can&apos;t be refunded.
+        </p>
       </Section>
 
       <Section title="Changes and availability">

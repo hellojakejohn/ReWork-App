@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
-import { Crown, CreditCard, Download, Settings, Shield, Trash2, User } from "lucide-react"
+import { Copy, Crown, CreditCard, Download, Gift, Settings, Shield, Trash2, User } from "lucide-react"
+import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,19 +19,25 @@ import { AvatarColorPicker } from "@/components/ui/avatar"
 interface SettingsModalProps {
   isOpen: boolean
   onClose: () => void
+  /** Tab to open on (the account menu's "Invite friends" opens "invite"). */
+  initialTab?: TabType
 }
 
-type TabType = "account" | "billing" | "data"
+export type TabType = "account" | "billing" | "invite" | "data"
 
 const TABS = [
   { id: "account" as const, label: "Account", icon: User },
   { id: "billing" as const, label: "Plan & billing", icon: CreditCard },
+  { id: "invite" as const, label: "Invite friends", icon: Gift },
   { id: "data" as const, label: "Your data", icon: Shield },
 ]
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, initialTab = "account" }: SettingsModalProps) {
   const { data: session } = useSession()
-  const [activeTab, setActiveTab] = useState<TabType>("account")
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab)
+  useEffect(() => {
+    if (isOpen) setActiveTab(initialTab)
+  }, [isOpen, initialTab])
   const access = session?.user?.access ?? NO_ACCESS
   const isPro = access.isPro
 
@@ -140,11 +147,97 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
+            {activeTab === "invite" && <InviteTab />}
             {activeTab === "data" && <DataTab />}
           </div>
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+interface ReferralInfo {
+  available: boolean
+  link?: string
+  joined?: number
+  rewarded?: number
+  daysEarned?: number
+  pendingForMe?: boolean
+  days?: number
+  monthlyCap?: number
+}
+
+function InviteTab() {
+  const [info, setInfo] = useState<ReferralInfo | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    fetch("/api/referrals")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+      .then((data: ReferralInfo) => live && setInfo(data))
+      .catch(() => live && setFailed(true))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const copy = async () => {
+    if (!info?.link) return
+    try {
+      await navigator.clipboard.writeText(info.link)
+      toast.success("Link copied. Send it to someone who's job hunting.")
+    } catch {
+      toast.error("Couldn't copy. Select the link and copy it instead.")
+    }
+  }
+
+  const days = info?.days ?? 7
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-text mb-2">Invite friends, get Pro</h3>
+        <p className="text-sm text-text-secondary">
+          Know someone job hunting? Send them your link. When they finish their first tailored resume, you both get {days} days of Pro.
+        </p>
+      </div>
+      {failed && <p className="text-sm text-text-muted">Couldn&apos;t load your link. Try again in a minute.</p>}
+      {!failed && !info && <p className="text-sm text-text-muted">Loading your link...</p>}
+      {info && !info.available && <p className="text-sm text-text-muted">Invites are almost ready. Check back soon.</p>}
+      {info?.available && info.link && (
+        <>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input value={info.link} readOnly className="bg-surface-raised font-mono text-sm" aria-label="Your invite link" onFocus={(e) => e.currentTarget.select()} />
+            <Button onClick={() => void copy()} className="shrink-0">
+              <Copy className="h-4 w-4" /> Copy link
+            </Button>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-4 bg-surface-raised rounded-card">
+              <p className="text-sm text-text-muted mb-1">Joined</p>
+              <p className="font-serif text-3xl text-text">{info.joined ?? 0}</p>
+            </div>
+            <div className="p-4 bg-surface-raised rounded-card">
+              <p className="text-sm text-text-muted mb-1">Earned you Pro</p>
+              <p className="font-serif text-3xl text-text">{info.rewarded ?? 0}</p>
+            </div>
+            <div className="p-4 bg-surface-raised rounded-card">
+              <p className="text-sm text-text-muted mb-1">Pro days earned</p>
+              <p className="font-serif text-3xl text-text">{info.daysEarned ?? 0}</p>
+            </div>
+          </div>
+          {info.pendingForMe && (
+            <p className="rounded-card bg-sage px-4 py-3 text-sm text-text">
+              A friend invited you. Finish your first tailored resume and you both get {days} days of Pro.
+            </p>
+          )}
+          <p className="text-xs text-text-muted">
+            Your days are added on top of any Pro you already have. You can earn from up to {info.monthlyCap ?? 5} friends a month; your friends always get
+            their days.
+          </p>
+        </>
+      )}
+    </div>
   )
 }
 

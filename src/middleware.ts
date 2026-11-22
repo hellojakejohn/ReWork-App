@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { INVITE_COOKIE, INVITE_COOKIE_DAYS, INVITE_PARAM, cleanInviteCode } from '@/lib/referral-rules'
 import { SOURCE_COOKIE, SOURCE_COOKIE_DAYS, decodeSource, encodeSource, shouldRemember, sourceFromVisit } from '@/lib/signup-source'
 
 // Auth uses the database session strategy (Prisma adapter), so the session cookie
@@ -66,11 +67,25 @@ export function middleware(request: NextRequest) {
 /** First touch (or a tagged link after an untagged visit) for signed-out page views. */
 function rememberSource(request: NextRequest, response: NextResponse) {
   if (request.method !== 'GET' || request.nextUrl.pathname.startsWith('/api/')) return
+  rememberInvite(request, response)
   const visit = sourceFromVisit(request.nextUrl, request.headers.get('referer'))
   const existing = decodeSource(request.cookies.get(SOURCE_COOKIE)?.value)
   if (!shouldRemember(existing, visit)) return
   response.cookies.set(SOURCE_COOKIE, encodeSource(visit), {
     maxAge: SOURCE_COOKIE_DAYS * 24 * 60 * 60,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: request.nextUrl.protocol === 'https:',
+    path: '/',
+  })
+}
+
+/** A friend's invite link (?invite=CODE): kept 30 days so sign-up can credit them. Latest link wins. */
+function rememberInvite(request: NextRequest, response: NextResponse) {
+  const code = cleanInviteCode(request.nextUrl.searchParams.get(INVITE_PARAM))
+  if (!code) return
+  response.cookies.set(INVITE_COOKIE, code, {
+    maxAge: INVITE_COOKIE_DAYS * 24 * 60 * 60,
     httpOnly: true,
     sameSite: 'lax',
     secure: request.nextUrl.protocol === 'https:',
