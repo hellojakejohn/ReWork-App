@@ -78,11 +78,11 @@ So fixed costs are roughly $25 to $50 a month: two passes cover it.
 | 3 | **No automatic backups (Supabase free tier)** | Losing the database would lose every user's resumes | Weekly `npm run backup` (Nov 22) until revenue covers Supabase Pro ($25/mo, daily backups) | Done, then $25/mo | Runs it Sundays |
 | 4 | **No email out** | Can't send welcome, follow-up reminders, job alerts or receipts of our own | Resend (free tier: 3k emails/mo), domain records in Vercel | 2 to 3 h | Yes: new account, DNS |
 | 5 | **Errors only show when someone opens `/admin`** | A broken checkout could go unnoticed for a day | A daily summary email (needs #4), or Sentry free tier | 1 to 2 h | Yes: account |
-| 6 | **Old OpenAI/OpenRouter code still in the repo** | Dead code, and the `openai` package carries known security warnings | Remove the adapters and the package | 1 h | No |
+| 6 | **Old OpenAI/OpenRouter code still in the repo** | Dead code, and the `openai` package carries known security warnings (not reachable: production never calls OpenAI) | Remove the adapters and the package. Bigger than it looks: six test files fake the AI through the OpenAI-shaped hook, so they move to Anthropic-shaped fakes first | Half a day | No |
 | 7 | **Rate limits are per server instance** | Fine at this size; a determined abuser could burst | A database-backed limit, only if abuse shows up | 2 h | No |
 | 8 | **Content-security rules are report-only** | The safety net isn't enforced yet | Read a week of `[csp]` reports in Vercel logs, then enforce | 1 h | Yes: share the logs |
 | 9 | **Schema changes are pasted by hand** | Easy to forget a step (RLS, REVOKE) | A checklist in `STATE.md` (exists); keep each migration file self-contained | Ongoing | Pastes them |
-| 10 | **Closed jobs pile up in the database** | The jobs table grows forever | Delete jobs closed more than 60 days ago in the daily cron | 1 h | No |
+| 10 | **Closed jobs pile up in the database** | The jobs table is 128 of the 141 MB (free tier: 500 MB) | Done Nov 22: the daily cron deletes jobs closed 60+ days ago (saved or tailored ones stay) | Done | No |
 | 11 | **Framework upgrades waiting** | Next 16 and Prisma 7 exist | Plan them for a quiet week, one at a time, with tests | Half day each | Prisma needs OK |
 
 **Recommended order:** 2 (CI), 1 (dev database), 3 (backups) this coming week, since
