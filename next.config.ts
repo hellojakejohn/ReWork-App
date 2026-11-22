@@ -32,10 +32,6 @@ const config: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },
-  eslint: {
-    // Lint errors fail the build. Warnings don't.
-    ignoreDuringBuilds: false,
-  },
   // The PDF fonts are read from disk at render time (src/lib/resume-pdf.tsx).
   outputFileTracingIncludes: {
     '/api/resumes/**/download': ['./src/lib/fonts/**'],
@@ -63,30 +59,6 @@ const config: NextConfig = {
       canvas: 'false',
       encoding: 'false',
     },
-  },
-  
-  webpack: (config: any, { isServer }: { isServer: boolean }) => {
-    // Exclude problematic modules for browser builds
-    config.resolve.alias.canvas = false;
-    config.resolve.alias.encoding = false;
-    
-    // For PDF.js compatibility
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        crypto: false,
-        canvas: false, // Exclude canvas for browser
-      };
-    }
-    
-    config.experiments = {
-      ...config.experiments,
-      topLevelAwait: true,
-    };
-
-    return config;
   },
 
   images: {
