@@ -29,6 +29,7 @@
     --accent-fg: 255 255 255;
     --accent-strong: 156 47 24;     /* accent text on tints */
     --removed: 251 234 229;         /* left-out claims */
+    --tape: 247 236 196;            /* cloth tape measure (/fit) */
     --success: 46 125 79;           /* kept, verified */
     --success-tint: 226 240 230;
     --warn: 135 90 0;               /* needs review (not in BRAND.md: derived ochre) */
@@ -58,6 +59,7 @@
     --accent-fg: 15 26 19;
     --accent-strong: 246 184 168;
     --removed: 58 31 24;            /* #3A1F18 */
+    --tape: 66 60 38;               /* tape measure, dark */
     --success: 127 209 155;
     --success-tint: 29 54 38;
     --warn: 229 192 123;
@@ -142,3 +144,17 @@
   .ticker { overflow-x: auto; }
   .ticker-track { animation: none; }
 }
+
+/* Public fit check (src/components/site/fit-check.tsx): tape measure ticks (every 1 and
+   every 10) and a running stitch while it measures. */
+.fit-tape-ticks {
+  background-image:
+    repeating-linear-gradient(to right, rgb(var(--text) / 0.45) 0 1px, transparent 1px 10%),
+    repeating-linear-gradient(to right, rgb(var(--text) / 0.25) 0 1px, transparent 1px 1%);
+  background-size: 100% 55%, 100% 28%;
+  background-repeat: no-repeat;
+  background-position: top left, top left;
+}
+@keyframes fit-stitch { to { stroke-dashoffset: -28; } }
+.fit-stitch { animation: fit-stitch 0.8s linear infinite; }
+

@@ -182,7 +182,7 @@ export interface AIBudget {
 }
 
 /** Logs one ai_call event per provider call: the source of truth for spend. */
-function logCall(userId: string, tier: SpendTier, record: UsageRecord): Promise<void> {
+function logCall(userId: string | null, tier: SpendTier, record: UsageRecord): Promise<void> {
   return track(
     'ai_call',
     {
@@ -228,6 +228,28 @@ export async function getAIBudget(userId: string, now = new Date()): Promise<AIB
       for (const band of crossedBands(state, addedUsd)) {
         await track('ai_cap_band', { band, period: state.period.kind, percent: band === 'paused' ? 100 : 75 }, userId)
       }
+    },
+  }
+}
+
+/**
+ * For the public fit check (no account): free-tier routing, every call logged as a free
+ * ai_call with no user, so it counts toward the same global free ceiling. Null when AI is
+ * paused for free accounts (kill switch or ceiling).
+ */
+export async function getPublicAIScope(now = new Date()): Promise<{ scope: UsageScope; settle: () => Promise<void> } | null> {
+  if (await globalAIBlock('free', now)) return null
+  const pending: Promise<void>[] = []
+  return {
+    scope: {
+      routing: { tier: 'free' },
+      onCall: (record) => {
+        pending.push(logCall(null, 'free', record))
+      },
+      deadline: Date.now() + 25_000,
+    },
+    settle: async () => {
+      await Promise.all(pending)
     },
   }
 }
