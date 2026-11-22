@@ -148,6 +148,9 @@ export default async function HomePage() {
             <p className="text-sm text-text-muted">
               Your top {FREE_FEED_MATCHES} job matches and {FREE_TAILORS_PER_MONTH} tailors a month, free. No card needed.
             </p>
+            <Link href="/fit" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-strong hover:underline">
+              Or take your measurements first: check your fit on any job, no sign-up <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
           <HeroReceipt />
         </section>

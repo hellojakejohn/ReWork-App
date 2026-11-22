@@ -14,6 +14,7 @@ export function SiteHeader({ links = true }: { links?: boolean }) {
         {links && (
           <nav aria-label="Main" className="flex items-center gap-1 text-sm sm:gap-2">
             <Link href="/#how-it-works" className="hidden rounded-full px-3 py-2 text-text-secondary hover:text-text md:inline">How it works</Link>
+            <Link href="/fit" className="hidden rounded-full px-3 py-2 text-text-secondary hover:text-text sm:inline">Fit check</Link>
             <Link href="/pricing" className="rounded-full px-2 py-2 text-text-secondary hover:text-text sm:px-3">Pricing</Link>
             <Link href="/auth/signin" className="hidden rounded-full px-3 py-2 text-text-secondary hover:text-text sm:inline">Sign in</Link>
             <Button asChild variant="inverse" size="md" className="ml-1">
