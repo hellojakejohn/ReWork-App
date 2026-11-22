@@ -8,7 +8,7 @@ import type { JobSource, ResolvedJob } from './types'
 type Json = any
 
 export interface AtsMatch {
-  ats: Exclude<JobSource, 'json-ld' | 'page' | 'usajobs'>
+  ats: Exclude<JobSource, 'json-ld' | 'page' | 'usajobs' | 'adzuna'>
   apiUrl: string
   company: string // slug-derived fallback when the API doesn't name the company
   jobId: string

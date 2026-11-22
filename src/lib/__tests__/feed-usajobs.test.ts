@@ -67,10 +67,12 @@ describe('USAJOBS', () => {
 })
 
 describe('closeStaleSearched', () => {
-  it('closes Workday jobs unseen for 30 days and USAJOBS jobs unseen for 14', async () => {
+  it('closes Workday jobs unseen for 30 days, USAJOBS for 14 and Adzuna for 21', async () => {
     const calls: any[] = []
     const db: any = { job: { updateMany: async (q: any) => { calls.push(q); return { count: 2 } } } }
-    expect(await closeStaleSearched(db, now)).toBe(4)
+    expect(await closeStaleSearched(db, now)).toBe(6)
+    expect(calls[2].where).toMatchObject({ source: 'adzuna', closedAt: null })
+    expect(calls[2].where.lastSeenAt.lt.toISOString()).toBe('2026-10-24T12:00:00.000Z')
     expect(calls[0].where).toMatchObject({ source: 'workday', closedAt: null })
     expect(calls[0].where.matches.none.OR).toHaveLength(2)
     expect(calls[0].where.lastSeenAt.lt.toISOString()).toBe('2026-10-15T12:00:00.000Z')

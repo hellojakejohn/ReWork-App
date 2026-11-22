@@ -6,6 +6,7 @@ export type JobSource =
   | 'ashby'
   | 'workday'
   | 'usajobs'
+  | 'adzuna'
   | 'smartrecruiters'
   | 'workable'
   | 'oracle'

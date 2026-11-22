@@ -103,6 +103,6 @@ export async function matchForResume(userId: string, resume: { id: string } & Pa
   }
 }
 
-const flat = (r: MatchRun) => ({ searched: r.searched.join(' | '), workdayJobs: r.workdayJobs, usajobsJobs: r.usajobsJobs, pool: r.pool, scored: r.scored, extracted: r.extracted, fetched: r.fetched, skippedNoBudget: r.skippedNoBudget, ms: r.ms })
+const flat = (r: MatchRun) => ({ searched: r.searched.join(' | '), workdayJobs: r.workdayJobs, usajobsJobs: r.usajobsJobs, adzunaJobs: r.adzunaJobs, pool: r.pool, scored: r.scored, extracted: r.extracted, fetched: r.fetched, skippedNoBudget: r.skippedNoBudget, ms: r.ms })
 
 export { listMatches }

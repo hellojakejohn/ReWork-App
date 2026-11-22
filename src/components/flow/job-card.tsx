@@ -25,6 +25,9 @@ export function jobIsValid(job: JobDraft): boolean {
   )
 }
 
+/** Shown when a match only has a short preview of the ad. */
+const PREVIEW_NOTE = "We only have a short preview of this job. Open the job post, copy the whole thing and paste it over the preview, so your resume is tailored to all of it."
+
 export function JobCard({
   job,
   isActiveStep,
@@ -72,6 +75,10 @@ export function JobCard({
     if (job === null) {
       setDraft(EMPTY)
       setMode("url")
+    } else if (job.preview) {
+      setDraft({ ...job, preview: false })
+      setPasteNote(PREVIEW_NOTE)
+      setMode("paste")
     } else {
       setDraft(job)
       setMode("fetched")
@@ -150,6 +157,16 @@ export function JobCard({
   }, [draft.description, mode, editing, expanded])
 
   const set = (patch: Partial<JobDraft>) => setDraft((d) => ({ ...d, ...patch }))
+  // A match with only a short preview of the ad: ask for the full post here first.
+  const pickMatch = (picked: JobDraft) => {
+    if (!picked.preview) return onConfirm(picked)
+    request.current++
+    setError("")
+    setOfferSaveButton(false)
+    setDraft({ ...picked, preview: false })
+    setPasteNote(PREVIEW_NOTE)
+    setMode("paste")
+  }
   // A job board reposting another company's ad: the cover letter would greet the wrong one.
   const otherCompany = otherCompanyNamed(draft.description, draft.company)
   const companyNote = otherCompany && (
@@ -242,7 +259,7 @@ export function JobCard({
           <>
             {resumeId && opened && (
               <>
-                <MatchesPanel resumeId={resumeId} home={home} onPick={onConfirm} onUpgrade={(r) => onUpgrade?.(r)} />
+                <MatchesPanel resumeId={resumeId} home={home} onPick={pickMatch} onUpgrade={(r) => onUpgrade?.(r)} />
                 <p className="flex items-center gap-3 pt-1 text-xs font-medium text-text-muted">
                   <span className="h-px flex-1 bg-border" aria-hidden /> Or paste a job you found <span className="h-px flex-1 bg-border" aria-hidden />
                 </p>
@@ -296,6 +313,13 @@ export function JobCard({
             {(pasteNote || offerSaveButton) && (
               <div className="rounded-input border border-border bg-surface-raised px-3 py-2 text-sm text-text-secondary">
                 {pasteNote && <p>{pasteNote}</p>}
+                {pasteNote === PREVIEW_NOTE && draft.url && (
+                  <p className="mt-1">
+                    <a href={draft.url} target="_blank" rel="noopener" className="font-medium text-text underline underline-offset-2">
+                      Open the job post
+                    </a>
+                  </p>
+                )}
                 {offerSaveButton && (
                   <p className="mt-1">
                     Faster next time:{" "}

@@ -20,7 +20,10 @@ Tick them off here or just tell Claude "done with N".
 5. [x] **Paste `docs/sql/paste-2026-11-23.sql`** in Supabase (done Nov 23; tables checked, RLS on).
 5b. [x] **USAJOBS key** (done Nov 23: both env vars in Vercel Production, redeployed). Free key at developer.usajobs.gov. Vercel Production
    env: `USAJOBS_API_KEY` and `USAJOBS_EMAIL` (the same email), redeploy. Tell Claude.
-6. [ ] **Adzuna**: decide on a licence (developer.adzuna.com). Claude builds it after a deal.
+6. [ ] **Adzuna** (built Nov 22, off until keys are set): sign up at developer.adzuna.com, then
+   email them that ReWork is a paid app that shows their ads as job matches and ask if the
+   free tier covers it (an earlier read said commercial use needs a licence). Once they say
+   yes: Vercel Production env `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`, redeploy. Tell Claude.
 7. [ ] **Chrome Web Store** (post-launch feature): $5 developer account, Claude builds the zip
    and writes the listing. When approved, Claude adds the install link and turns the copy on.
 8. [ ] Vercel failed-deployment email alert (Settings, Notifications).

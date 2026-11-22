@@ -34,6 +34,8 @@ export interface JobDraft {
   facts?: JobFacts
   /** Picked from Top matches: the match gets marked tailored once the resume is done. */
   matchId?: string
+  /** The match only has a short preview of the ad (Adzuna): ask for the full post first. */
+  preview?: boolean
 }
 
 export type Failure = { ok: false; error: string; status: number; upgradeRequired?: boolean }
@@ -455,7 +457,7 @@ export interface FeedMatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
-  job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string }
+  job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 export interface FeedDTO {
   prefs: FeedPrefsDTO | null
@@ -499,7 +501,7 @@ export async function openMatch(id: string): Promise<{ ok: true; job: JobDraft &
     const res = await fetch(`/api/feed/matches/${id}`)
     if (!res.ok) return failure(res, "Couldn't open this job.")
     const { job } = await res.json()
-    return { ok: true, job: { url: job.url ?? "", title: job.title, company: job.company, location: job.location ?? "", description: job.description ?? "", matchId: id, closed: !!job.closed } }
+    return { ok: true, job: { url: job.url ?? "", title: job.title, company: job.company, location: job.location ?? "", description: job.description ?? "", matchId: id, closed: !!job.closed, preview: !!job.preview } }
   } catch {
     return NETWORK
   }
