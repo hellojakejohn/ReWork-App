@@ -1,7 +1,7 @@
 # ReWork: the whole project on one page
 
 Last updated 2026-10-29. Read this first, then `STATE.md` (current technical truth). Deeper
-docs: `docs/launch-audit.md` (launch go/no-go, Jake's by-hand list), `docs/AUDIT.md`
+docs: `docs/gameplan.md` (the plan after v1: business, metrics, marketing, roadmap, money), `docs/launch-audit.md` (launch go/no-go, Jake's by-hand list), `docs/AUDIT.md`
 (Oct 23 audit, competitor table, full roadmap), `docs/token-plan.md` ($REWORK).
 
 ## What it is
