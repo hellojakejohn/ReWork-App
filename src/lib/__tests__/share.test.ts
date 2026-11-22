@@ -36,3 +36,17 @@ describe('share detail', () => {
   })
 })
 
+
+describe('share to X and LinkedIn', () => {
+  it('fills X with the words and a tagged link', async () => {
+    const { xIntentUrl, linkedInShareUrl } = await import('@/lib/share')
+    const x = new URL(xIntentUrl('https://rework.careers', fit))
+    expect(x.origin + x.pathname).toBe('https://x.com/intent/post')
+    expect(x.searchParams.get('text')).toBe(shareText(fit))
+    expect(x.searchParams.get('via')).toBe('reworkcareers')
+    expect(new URL(x.searchParams.get('url')!).searchParams.get('ref')).toBe('share-x')
+    const li = new URL(linkedInShareUrl('https://rework.careers', fit))
+    expect(li.hostname).toBe('www.linkedin.com')
+    expect(new URL(li.searchParams.get('url')!).searchParams.get('ref')).toBe('share-linkedin')
+  })
+})

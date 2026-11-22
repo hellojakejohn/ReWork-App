@@ -50,9 +50,29 @@ export function shareQuery(card: ShareCard): string {
   return q.toString()
 }
 
-/** The link to post. `ref=share` lets /admin count signups from shared cards. */
-export function shareUrl(origin: string, card: ShareCard): string {
-  return `${origin.replace(/\/$/, '')}/s?${shareQuery(card)}&ref=share`
+export type ShareVia = 'x' | 'linkedin' | 'link'
+
+export const X_HANDLE = 'reworkcareers'
+
+/**
+ * The link to post. `ref` lets /admin count signups by where the card was shared:
+ * share-x, share-linkedin, or share (copied or the phone's share sheet).
+ */
+export function shareUrl(origin: string, card: ShareCard, via: ShareVia = 'link'): string {
+  const ref = via === 'link' ? 'share' : `share-${via}`
+  return `${origin.replace(/\/$/, '')}/s?${shareQuery(card)}&ref=${ref}`
+}
+
+/** X's compose window with the words and the link filled in. */
+export function xIntentUrl(origin: string, card: ShareCard): string {
+  // via= adds "via @reworkcareers" to the post, so people can find the account.
+  const q = new URLSearchParams({ text: shareText(card), url: shareUrl(origin, card, 'x'), via: X_HANDLE })
+  return `https://x.com/intent/post?${q.toString()}`
+}
+
+/** LinkedIn's share window (it takes only the link; the card image comes from the link). */
+export function linkedInShareUrl(origin: string, card: ShareCard): string {
+  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl(origin, card, 'linkedin'))}`
 }
 
 export function shareImagePath(card: ShareCard): string {
