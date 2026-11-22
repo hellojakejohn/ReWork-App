@@ -75,7 +75,7 @@ So fixed costs are roughly $25 to $50 a month: two passes cover it.
 | --- | --- | --- | --- | --- | --- |
 | 1 | **Local dev and scripts use the production database** | One wrong script or test signup touches real users' data | A second Supabase project (free) for local and preview; point the local env at it | 1 to 2 h | Yes: create the project, paste the URL locally |
 | 2 | **No automatic checks on PRs** | A broken change can merge if a step is skipped | GitHub Actions: typecheck, lint, tests on every PR (free for this repo size) | 1 h | Just merge it |
-| 3 | **Backups unknown** | Losing the database would lose every user's resumes | Confirm the Supabase plan has daily backups; if not, a weekly export, or upgrade to Pro when revenue allows | 30 min | Yes: check the plan |
+| 3 | **No automatic backups (Supabase free tier)** | Losing the database would lose every user's resumes | Weekly `npm run backup` (Nov 22) until revenue covers Supabase Pro ($25/mo, daily backups) | Done, then $25/mo | Runs it Sundays |
 | 4 | **No email out** | Can't send welcome, follow-up reminders, job alerts or receipts of our own | Resend (free tier: 3k emails/mo), domain records in Vercel | 2 to 3 h | Yes: new account, DNS |
 | 5 | **Errors only show when someone opens `/admin`** | A broken checkout could go unnoticed for a day | A daily summary email (needs #4), or Sentry free tier | 1 to 2 h | Yes: account |
 | 6 | **Old OpenAI/OpenRouter code still in the repo** | Dead code, and the `openai` package carries known security warnings | Remove the adapters and the package | 1 h | No |
