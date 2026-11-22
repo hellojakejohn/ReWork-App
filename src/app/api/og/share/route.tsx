@@ -47,7 +47,34 @@ function Tape({ value, from }: { value: number; from?: number }) {
   )
 }
 
+function Stat({ label, value, strong }: { label: string; value: number; strong?: boolean }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', width: 330, padding: '22px 28px', border: '3px dashed rgba(23,48,31,0.25)', borderRadius: 18, background: strong ? 'rgba(46,125,79,0.14)' : '#FFFFFF' }}>
+      <div style={{ fontSize: 24, color: SECONDARY }}>{label}</div>
+      <div style={{ fontFamily: 'Tinos', fontSize: 72, fontWeight: 700, color: strong ? SUCCESS : FOREST }}>{String(value)}</div>
+    </div>
+  )
+}
+
 function Card({ card }: { card: ShareCard }) {
+  if (card.kind === 'milestone') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: PAPER, padding: '56px 64px', fontFamily: 'Arimo', color: FOREST }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontFamily: 'Tinos', fontSize: 48, fontWeight: 700, letterSpacing: -1 }}>ReWork</div>
+          <div style={{ display: 'flex', background: 'rgba(194,61,34,0.12)', color: ACCENT, padding: '10px 22px', borderRadius: 999, fontSize: 24, fontWeight: 700 }}>Milestone</div>
+        </div>
+        <div style={{ display: 'flex', marginTop: 46, fontFamily: 'Tinos', fontSize: 96, fontWeight: 700, letterSpacing: -2, lineHeight: 1 }}>{shareHeadline(card)}</div>
+        <div style={{ display: 'flex', marginTop: 18, fontSize: 30, lineHeight: 1.3, color: SECONDARY, maxWidth: 1072 }}>{shareDetail(card)}</div>
+        <div style={{ display: 'flex', marginTop: 40, gap: 41 }}>
+          <Stat label="Applied" value={card.applied} />
+          <Stat label="Interviews" value={card.interviews} strong={card.stage === 'interview'} />
+          <Stat label="Offers" value={card.offers} strong={card.stage === 'offer'} />
+        </div>
+        <div style={{ display: 'flex', marginTop: 'auto', fontSize: 28, fontWeight: 700, color: ACCENT }}>Same you. Better fit. rework.careers</div>
+      </div>
+    )
+  }
   const fit = card.kind === 'fit'
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', background: PAPER, padding: '56px 64px', fontFamily: 'Arimo', color: FOREST }}>

@@ -90,3 +90,34 @@ export function trackerStats(apps: StatsInput[], now = new Date()): TrackerStats
   }
   return { appliedThisWeek, interviews, applied, responseRate: applied ? Math.round((responses / applied) * 100) : null }
 }
+
+export interface Milestone {
+  stage: 'interview' | 'offer'
+  /** Which one this is: 1 for their first interview (or offer). */
+  nth: number
+  applied: number
+  interviews: number
+  offers: number
+}
+
+/**
+ * A move worth celebrating: a job reaching Interview (from Saved or Applied) or Offer.
+ * Counts are after the move. Null for anything else, including moving back.
+ */
+export function milestoneFor(apps: (StatsInput & { id: string })[], moved: { id: string; status: StatsInput['status'] }, to: TrackerColumn): Milestone | null {
+  const from = columnOf(moved.status)
+  const forward = (to === 'interview' && (from === 'saved' || from === 'applied')) || (to === 'offer' && from !== 'offer')
+  if (!forward) return null
+  let applied = 0
+  let interviews = 0
+  let offers = 0
+  for (const app of apps) {
+    const column = app.id === moved.id ? to : columnOf(app.status)
+    if (column === 'saved') continue
+    applied++
+    if (column === 'interview' || column === 'offer') interviews++
+    if (column === 'offer') offers++
+  }
+  return { stage: to as Milestone['stage'], nth: to === 'offer' ? offers : interviews, applied, interviews, offers }
+}
+
