@@ -10,7 +10,7 @@ import { SiteFooter } from "@/components/site/site-footer"
 import { DeletedNotice } from "@/components/site/deleted-notice"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
-import { LANDING_EXAMPLE as EX } from "@/components/site/landing-example"
+import { LANDING_EXAMPLE as EX, highlightParts } from "@/components/site/landing-example"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 import { CONTACT_EMAIL, FAIR_USE, FREE_FEED_MATCHES, FREE_PLAN_SHORT, FREE_TAILORS_PER_MONTH, POWERED_BY, PRICING } from "@/lib/plans"
 import { showPoweredBy } from "@/lib/ai/routing"
@@ -175,7 +175,7 @@ export default async function HomePage() {
             <span className="rounded-full bg-sage px-2.5 py-0.5 text-xs font-semibold text-text">Example</span>
           </div>
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-text-secondary">
-            {EX.person}, tailored for an {EX.job}. Same facts, pointed at the job. Every number on the right is already in the original resume.
+            {EX.person}, tailored for an {EX.job}. Same facts, said in the job&apos;s words (highlighted). Every number on the right is already in the original resume.
           </p>
 
           <div className="mt-10 overflow-hidden rounded-panel bg-surface">
@@ -183,11 +183,13 @@ export default async function HomePage() {
               <div className="px-6 py-3">Your resume</div>
               <div className="hidden px-6 py-3 md:block">Tailored</div>
             </div>
-            {[{ before: EX.summary.before, after: EX.summary.after, why: "Summary leads with what this job needs." }, ...EX.bullets].map((row) => (
+            {[EX.summary, ...EX.bullets].map((row) => (
               <div key={row.before} className="grid grid-cols-1 border-b border-border last:border-b-0 md:grid-cols-2">
                 <p className="px-6 py-4 text-sm leading-relaxed text-text-muted">{row.before}</p>
                 <div className="px-6 pb-4 md:py-4">
-                  <p className="text-sm leading-relaxed text-text">{row.after}</p>
+                  <p className="text-sm leading-relaxed text-text">
+                    <JobWords text={row.after} words={row.jobWords} />
+                  </p>
                   <p className="mt-1 text-xs text-success">Why: {row.why}</p>
                 </div>
               </div>
@@ -274,30 +276,69 @@ export default async function HomePage() {
 }
 
 /** The hero's illustration of the receipt: one kept bullet, one left-out claim. */
-function HeroReceipt() {
+// The posting's words inside a rewrite, highlighted so the change is visible at a glance.
+function JobWords({ text, words }: { text: string; words: string[] }) {
   return (
-    <figure className="flex flex-col gap-4 rounded-panel bg-surface p-6 shadow-float sm:p-8">
+    <>
+      {highlightParts(text, words).map((part, i) =>
+        part.hit ? (
+          <mark key={i} className="rounded bg-sage px-0.5 text-text">
+            {part.text}
+          </mark>
+        ) : (
+          <span key={i}>{part.text}</span>
+        )
+      )}
+    </>
+  )
+}
+
+// One bullet from the example below (src/components/site/landing-example.ts), shown the way
+// a tailor reads: before, after, why, the facts it kept and the skill it refused to add.
+function HeroReceipt() {
+  const b = EX.bullets[0]
+  return (
+    <figure className="flex flex-col gap-5 rounded-panel bg-surface p-6 shadow-float sm:p-8">
       <div className="flex items-start justify-between gap-3">
-        <p className="font-serif text-2xl font-semibold text-text">Senior Engineer, Payments</p>
-        <span className="mt-1.5 shrink-0 text-xs font-bold text-success">Invented: 0</span>
+        <div>
+          <p className="font-serif text-2xl font-semibold text-text">Operations Coordinator</p>
+          <p className="mt-1 text-sm text-text-muted">Tailoring a restaurant manager&apos;s resume</p>
+        </div>
+        <span className="mt-1.5 shrink-0 rounded-full bg-success-tint px-2.5 py-1 text-xs font-bold text-success">Invented: 0</span>
       </div>
-      <p className="flex gap-3 text-base leading-relaxed text-text">
-        <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-inverse text-inverse-fg">
-          <Check className="h-3.5 w-3.5" aria-hidden />
-        </span>
-        <span>Led the migration of 14 services to Kubernetes, cutting deploy time from hours to minutes.</span>
-      </p>
-      <p className="flex gap-3 text-base leading-relaxed text-text-muted">
-        <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-removed text-sm font-bold text-accent-strong" aria-hidden>
-          !
-        </span>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sm leading-relaxed text-text-muted">
+          <span className="mr-1.5 text-xs font-semibold uppercase tracking-wide">Before</span>
+          {b.before}
+        </p>
+        <ArrowRight className="h-4 w-4 rotate-90 text-text-muted" aria-hidden />
+        <p className="flex gap-3 text-base leading-relaxed text-text">
+          <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-inverse text-inverse-fg">
+            <Check className="h-3.5 w-3.5" aria-hidden />
+          </span>
+          <span>
+            <span className="sr-only">After: </span>
+            <JobWords text={b.after} words={b.jobWords} />
+          </span>
+        </p>
+        <p className="pl-9 text-sm text-text-secondary">{b.why}</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-xs font-semibold text-text-muted">Kept from the original</span>
+        {EX.factsKept.map((fact) => (
+          <span key={fact} className="rounded-full bg-sage px-2.5 py-0.5 text-xs font-semibold text-text">
+            {fact}
+          </span>
+        ))}
+      </div>
+
+      <p className="flex gap-3 rounded-2xl bg-removed px-4 py-3.5 text-sm leading-relaxed text-text">
+        <X className="mt-0.5 h-4 w-4 flex-none text-accent-strong" aria-hidden />
         <span>
-          <s>Increased revenue by 40%</s>
-          <span className="sr-only"> (left out)</span>
+          The job wants <strong className="font-semibold">{EX.notAdded[0]}</strong>. It isn&apos;t in the resume, so we didn&apos;t add it.
         </span>
-      </p>
-      <p className="rounded-2xl bg-removed px-4 py-3.5 text-sm leading-relaxed text-text">
-        We left this out. It isn&apos;t in your resume. If revenue really went up, tell us how much and we&apos;ll add it.
       </p>
       <figcaption className="text-xs text-text-muted">Example</figcaption>
     </figure>
