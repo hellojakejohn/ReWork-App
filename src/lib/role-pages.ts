@@ -50,7 +50,7 @@ export const ROLES: RoleDef[] = [
   { slug: 'mechanical-engineer', title: 'Mechanical Engineer', any: ['mechanical engineer', 'manufacturing engineer'], intro: 'Designing and building physical products and lines.' },
   { slug: 'electrical-engineer', title: 'Electrical Engineer', any: ['electrical engineer', 'hardware engineer'], intro: 'Circuits, power and hardware.' },
   { slug: 'nurse-practitioner', title: 'Nurse Practitioner', any: ['nurse practitioner', 'physician assistant'], intro: 'Advanced practice roles, many remote or telehealth.' },
-  { slug: 'registered-nurse', title: 'Registered Nurse', any: ['registered nurse', ' rn ', 'rn,', 'nurse case manager', 'clinical nurse'], not: /\bpractitioner\b/i, intro: 'Clinical and care-management nursing roles.' },
+  { slug: 'registered-nurse', title: 'Registered Nurse', any: ['registered nurse', 'rn', 'nurse case manager', 'clinical nurse'], not: /\bpractitioner\b/i, intro: 'Clinical and care-management nursing roles.' },
   { slug: 'therapist', title: 'Therapist', any: ['therapist', 'counselor', 'psychologist', 'social worker'], not: /\b(massage|physical|occupational)\b/i, intro: 'Mental health roles, many with telehealth options.' },
   { slug: 'personal-trainer', title: 'Personal Trainer', any: ['personal trainer', 'fitness instructor', 'pilates instructor', 'yoga instructor', 'coach'], not: /\b(manager|director|sales|career|executive)\b/i, intro: 'Training clients one on one and in classes.' },
 ]
@@ -62,9 +62,20 @@ export function roleBySlug(slug: string): RoleDef | null {
 }
 
 /** Does this job title belong to the role? */
+const escape = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const termRes = new Map<string, RegExp>()
+/** Whole words only: "mechanic" is not "Mechanical Engineer", "rn" is not "Western". */
+function termRe(term: string): RegExp {
+  let re = termRes.get(term)
+  if (!re) {
+    re = new RegExp(`(?<![a-z0-9])${escape(term.trim().toLowerCase())}(?![a-z0-9])`, 'i')
+    termRes.set(term, re)
+  }
+  return re
+}
+
 export function titleInRole(title: string, role: RoleDef): boolean {
-  const t = ` ${title.toLowerCase().replace(/\s+/g, ' ')} `
-  return role.any.some((a) => t.includes(a.toLowerCase())) && !(role.not && role.not.test(title))
+  return role.any.some((a) => termRe(a).test(title)) && !(role.not && role.not.test(title))
 }
 
 export interface RoleJob {
@@ -128,7 +139,7 @@ export function summarizeRole(jobs: RoleJob[], newest = 20): RoleSummary {
     if (p.period === 'year' && p.min >= 15_000 && max <= 1_500_000) {
       yearlyLows.push(p.min)
       yearlyHighs.push(max)
-    } else if (p.period === 'hour' && p.min >= 7 && max <= 500) {
+    } else if (p.period === 'hour' && p.min >= 7 && max <= 150) {
       hourlyLows.push(p.min)
       hourlyHighs.push(max)
     }

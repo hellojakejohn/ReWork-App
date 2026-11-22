@@ -5,9 +5,20 @@ import { MIN_ROLE_JOBS, ROLES, roleBySlug, summarizeRole, titleInRole, type Role
 
 const SIX_HOURS = 6 * 3600
 
+/**
+ * A rough pre-filter for the DB; titleInRole decides. Short terms ("rn", "sdr") only where a
+ * word starts, or they'd pull in every "Western" and "Learning" and crowd out the real ones.
+ */
+function dbTerms(role: RoleDef): string[] {
+  return role.any.flatMap((a) => {
+    const t = a.trim()
+    return t.length <= 3 ? [` ${t}`, `(${t}`, `${t} `, `${t},`] : [t]
+  })
+}
+
 async function jobsFor(role: RoleDef): Promise<RoleJob[]> {
   const rows = await prisma.job.findMany({
-    where: { closedAt: null, country: { not: 'other' }, OR: role.any.map((a) => ({ title: { contains: a.trim(), mode: 'insensitive' as const } })) },
+    where: { closedAt: null, country: { not: 'other' }, OR: dbTerms(role).map((t) => ({ title: { contains: t, mode: 'insensitive' as const } })) },
     select: { title: true, company: true, location: true, remote: true, usState: true, payLabel: true, postedAt: true, firstSeenAt: true, url: true },
     orderBy: { firstSeenAt: 'desc' },
     take: 3000,
@@ -35,7 +46,7 @@ async function loadRole(slug: string): Promise<RolePageData | null> {
   }
 }
 
-export const getRolePage = unstable_cache(loadRole, ['role-page-v3'], { revalidate: SIX_HOURS })
+export const getRolePage = unstable_cache(loadRole, ['role-page-v4'], { revalidate: SIX_HOURS })
 
 async function loadIndex(): Promise<{ slug: string; title: string; count: number }[]> {
   // One read of every open title, then each role counted in memory.
@@ -50,4 +61,4 @@ async function loadIndex(): Promise<{ slug: string; title: string; count: number
     .sort((a, b) => b.count - a.count)
 }
 
-export const getRoleIndex = unstable_cache(loadIndex, ['role-index-v2'], { revalidate: SIX_HOURS })
+export const getRoleIndex = unstable_cache(loadIndex, ['role-index-v3'], { revalidate: SIX_HOURS })
