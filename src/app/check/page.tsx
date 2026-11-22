@@ -6,6 +6,7 @@ import { JobCheck } from "@/components/site/job-check"
 import { OG_DEFAULTS, TWITTER_DEFAULTS } from "@/lib/site"
 
 const TITLE = "Is this job real? Free ghost job and scam checker"
+const CARD = { url: "/api/og/check", width: 1200, height: 630, alt: "Is this job real? Free ghost job and scam checker" }
 const DESCRIPTION =
   "Paste a job link or post. We check it for scam signs, ghost-job signs, and whether it's still open on the employer's own job board. Free, no sign-up, nothing saved."
 
@@ -13,8 +14,8 @@ export const metadata: Metadata = {
   title: "Ghost job and job scam checker",
   description: DESCRIPTION,
   alternates: { canonical: "/check" },
-  openGraph: { ...OG_DEFAULTS, title: TITLE, description: DESCRIPTION, url: "/check" },
-  twitter: { ...TWITTER_DEFAULTS, title: TITLE, description: DESCRIPTION },
+  openGraph: { ...OG_DEFAULTS, title: TITLE, description: DESCRIPTION, url: "/check", images: [CARD] },
+  twitter: { ...TWITTER_DEFAULTS, title: TITLE, description: DESCRIPTION, images: [CARD.url] },
 }
 
 const FAQ = [
