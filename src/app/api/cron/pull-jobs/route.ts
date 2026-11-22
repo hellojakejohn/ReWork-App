@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { LIST_BOARDS } from '@/lib/feed/board-list'
 import { closeStaleSearched, pullListBoards, purgeClosedJobs } from '@/lib/feed/sync'
 import { pullAllSmartRecruiters } from '@/lib/feed/smartrecruiters'
+import { pullUsajobs } from '@/lib/feed/usajobs'
 import { track } from '@/lib/track'
 
 export const dynamic = 'force-dynamic'
@@ -17,12 +18,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false }, { status: 401 })
   }
   try {
-    const [pulled, smartRecruiters] = await Promise.all([pullListBoards(prisma, LIST_BOARDS), pullAllSmartRecruiters(prisma)])
+    const [pulled, smartRecruiters, usajobs] = await Promise.all([pullListBoards(prisma, LIST_BOARDS), pullAllSmartRecruiters(prisma), pullUsajobs(prisma)])
     const summary = {
       ...pulled,
-      failed: [...pulled.failed, ...smartRecruiters.failed],
-      listed: pulled.listed + smartRecruiters.listed,
-      added: pulled.added + smartRecruiters.added,
+      failed: [...pulled.failed, ...smartRecruiters.failed, ...(usajobs.failed ? [`usajobs: ${usajobs.failed}`] : [])],
+      listed: pulled.listed + smartRecruiters.listed + usajobs.listed,
+      added: pulled.added + smartRecruiters.added + usajobs.added,
+      usajobs: usajobs.listed,
       closed: pulled.closed + smartRecruiters.closed,
       staleClosed: await closeStaleSearched(prisma),
       purged: await purgeClosedJobs(prisma),

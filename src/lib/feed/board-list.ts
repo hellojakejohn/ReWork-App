@@ -22,6 +22,9 @@ const GREENHOUSE = [
     'carvana', 'axon', 'opentable', 'misfitsmarket', 'thrivemarket', 'weee', 'thefarmersdog',
     'renttherunway', 'tia', 'galileo', 'sezzle', 'oportun', 'missionlane', 'coalition',
     'project44', 'fourkites', 'wikimedia', 'relativity', 'astranis',
+    // Nov 22 (checked live): sales, support and home services roles, open to career changers.
+    'stockx', 'bird', 'lendingtree', 'yotpo', 'attentive', 'klaviyo', 'dialpad', 'five9',
+    'housecall', 'workstream',
 ]
 const LEVER = [
     'palantir', 'spotify', 'zoox', 'gopuff', 'jumpcloud', 'anchorage', 'ro', 'veeva', 'tala',
