@@ -4,7 +4,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
-import { parseShare, shareHeadline, type ShareCard } from '@/lib/share'
+import { parseShare, shareDetail, shareHeadline, type ShareCard } from '@/lib/share'
 
 export const runtime = 'nodejs'
 
@@ -58,12 +58,8 @@ function Card({ card }: { card: ShareCard }) {
         </div>
       </div>
       <div style={{ display: 'flex', marginTop: 46, fontFamily: 'Tinos', fontSize: 86, fontWeight: 700, letterSpacing: -2, lineHeight: 1 }}>{shareHeadline(card)}</div>
-      <div style={{ display: 'flex', marginTop: 18, fontSize: 30, color: SECONDARY }}>
-        {fit
-          ? `${card.fits} fit · ${card.otherWords} in other words · ${card.alterations} need alterations`
-          : `${card.kept} improvements, every one checked against the real resume`}
-      </div>
-      <div style={{ display: 'flex', marginTop: 56 }}>
+      <div style={{ display: 'flex', marginTop: 18, fontSize: 30, lineHeight: 1.3, color: SECONDARY, maxWidth: 1072 }}>{shareDetail(card)}</div>
+      <div style={{ display: 'flex', marginTop: 44 }}>
         <Tape value={fit ? card.score : card.after} from={fit ? undefined : card.before} />
       </div>
       <div style={{ display: 'flex', marginTop: 'auto', fontSize: 28, fontWeight: 700, color: ACCENT }}>

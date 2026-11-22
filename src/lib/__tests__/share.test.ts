@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseShare, shareImagePath, shareText, shareUrl, type ShareCard } from '@/lib/share'
+import { parseShare, shareDetail, shareImagePath, shareText, shareUrl, type ShareCard } from '@/lib/share'
 
 const fit: ShareCard = { kind: 'fit', score: 40, fits: 5, otherWords: 1, alterations: 8 }
 const tailor: ShareCard = { kind: 'tailor', before: 40, after: 63, kept: 9 }
@@ -28,3 +28,11 @@ describe('share cards', () => {
     expect(shareText(fit) + shareText(tailor)).not.toContain('—')
   })
 })
+
+describe('share detail', () => {
+  it('says what the numbers mean', () => {
+    expect(shareDetail(fit)).toBe('The resume already shows 6 of the 14 skills this job asks for. 8 to add or prove.')
+    expect(shareDetail(tailor)).toBe('9 lines rewritten for the job, each checked against the real resume. Nothing made up.')
+  })
+})
+

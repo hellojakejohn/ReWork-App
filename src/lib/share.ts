@@ -65,6 +65,16 @@ export function shareText(card: ShareCard): string {
   return `Tailored my resume for a job: ${card.before}% to ${card.after}% match, and nothing made up.`
 }
 
+/** The line under the headline: plain words, real counts. */
+export function shareDetail(card: ShareCard): string {
+  if (card.kind === 'fit') {
+    const asked = card.fits + card.otherWords + card.alterations
+    const shows = card.fits + card.otherWords
+    return `The resume already shows ${shows} of the ${asked} skills this job asks for. ${card.alterations} to add or prove.`
+  }
+  return `${card.kept} ${card.kept === 1 ? 'line' : 'lines'} rewritten for the job, each checked against the real resume. Nothing made up.`
+}
+
 /** Headline for the card and the /s page. */
 export function shareHeadline(card: ShareCard): string {
   if (card.kind === 'fit') return `A ${card.score}% fit, measured.`
