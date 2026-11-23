@@ -1,6 +1,6 @@
 // POST /api/email/unsubscribe?t=<token>: one click, no sign-in. Gmail and Apple Mail POST
 // here from their own unsubscribe button (List-Unsubscribe-Post, RFC 8058); the
-// /unsubscribe page's button posts here too. Exempt from the middleware's Origin check.
+// /unsubscribe page's button posts here too. Exempt from the proxy's Origin check (src/proxy.ts).
 import { NextRequest, NextResponse } from 'next/server'
 import { readUnsubscribeToken } from '@/lib/email/unsubscribe'
 import { setWeekly } from '@/lib/email/prefs'

@@ -7,8 +7,8 @@ import { SOURCE_COOKIE, SOURCE_COOKIE_DAYS, decodeSource, encodeSource, shouldRe
 // holds an opaque session token, not a JWT. getToken() from next-auth/jwt can't decode
 // it and always returned null, which bounced every hard load of /dashboard to sign-in.
 //
-// Middleware runs on the edge and can't hit Prisma, so it only checks that a session
-// cookie is present to decide on redirects. Real auth happens server-side with
+// The proxy (Next 16's name for middleware) runs before every page and stays light: no
+// Prisma here, so it only checks that a session cookie is present to decide on redirects. Real auth happens server-side with
 // getServerSession (API routes) and useSession (client pages).
 const SESSION_COOKIES = ['__Secure-next-auth.session-token', 'next-auth.session-token']
 
@@ -33,7 +33,7 @@ function isCrossOriginWrite(request: NextRequest): boolean {
   return !!origin && origin !== request.nextUrl.origin
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (isCrossOriginWrite(request)) {
     return NextResponse.json({ error: 'Cross-origin request refused' }, { status: 403 })
   }
@@ -93,7 +93,7 @@ function rememberInvite(request: NextRequest, response: NextResponse) {
   })
 }
 
-// Configure which routes to run middleware on
+// Which routes the proxy runs on
 export const config = {
   matcher: [
     /*
