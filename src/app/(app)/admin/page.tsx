@@ -41,6 +41,19 @@ export default function AdminPage() {
     totalResumes: 0
   })
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users')
+      const data = await response.json()
+      setUsers(data.users)
+      setStats(data.stats)
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     document.title = "Admin · ReWork"
     if (status === 'loading') return
@@ -58,19 +71,6 @@ export default function AdminPage() {
 
     fetchUsers()
   }, [session, status, router])
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch('/api/admin/users')
-      const data = await response.json()
-      setUsers(data.users)
-      setStats(data.stats)
-    } catch (error) {
-      console.error('Error fetching users:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const compPro = async (user: User) => {
     const input = window.prompt(`Comp Pro for ${user.email}. How many days?`, '30')

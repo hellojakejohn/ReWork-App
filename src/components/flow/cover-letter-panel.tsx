@@ -40,7 +40,9 @@ export function CoverLetterPanel({
   const pending = useRef<{ id: string; text: string; tone: CoverLetterTone } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const appRef = useRef(application)
-  appRef.current = application
+  useEffect(() => {
+    appRef.current = application
+  })
 
   // A different application (or a fresh letter) resets the editor.
   useEffect(() => {

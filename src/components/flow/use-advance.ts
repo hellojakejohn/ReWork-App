@@ -6,7 +6,9 @@ import { useEffect, useRef } from "react"
 
 export function useAdvance(enabled: boolean, advance: () => void) {
   const ref = useRef(advance)
-  ref.current = advance
+  useEffect(() => {
+    ref.current = advance
+  })
 
   useEffect(() => {
     if (!enabled) return

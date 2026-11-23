@@ -84,6 +84,17 @@ export function ResumeCard({
     setMode("new")
   }
 
+  const openEvidence = (focus: EvidenceFocus | null) => {
+    if (!isPro) {
+      onLimit("The evidence interview is a Pro feature: it asks for your real numbers and rewrites your weakest bullets with them.")
+      setMode(active ? "summary" : "new")
+      return
+    }
+    setError("")
+    setEvidenceFocus(focus)
+    setMode("evidence")
+  }
+
   useEffect(() => {
     if (!request || mode === "parsing") return
     if (request.mode === "summary") {
@@ -98,16 +109,6 @@ export function ResumeCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request?.nonce])
 
-  const openEvidence = (focus: EvidenceFocus | null) => {
-    if (!isPro) {
-      onLimit("The evidence interview is a Pro feature: it asks for your real numbers and rewrites your weakest bullets with them.")
-      setMode(active ? "summary" : "new")
-      return
-    }
-    setError("")
-    setEvidenceFocus(focus)
-    setMode("evidence")
-  }
 
   const parse = async (input: File | string) => {
     setError("")
