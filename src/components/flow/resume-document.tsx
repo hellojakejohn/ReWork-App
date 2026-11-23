@@ -13,6 +13,32 @@ const INK = "#111827"
 const MUTED = "#4B5563"
 const CHANGED = { backgroundColor: "#E2F0E6", borderRadius: 2 }
 
+type TemplateStyle = (typeof TEMPLATE_STYLE)[TemplateId]
+
+function Heading({ t, children }: { t: TemplateStyle; children: React.ReactNode }) {
+  return (
+    <h3
+      className={`${t.compact ? "mt-2.5 mb-1" : "mt-4 mb-1.5"} pb-0.5 text-sm font-bold uppercase tracking-[0.08em]`}
+      style={{ color: t.accent, borderBottom: `${t.serif ? 1 : 0.75}px solid ${t.rule}` }}
+    >
+      {children}
+    </h3>
+  )
+}
+
+function Bullets({ items, highlight }: { items: string[]; highlight?: Set<string> }) {
+  return (
+    <ul className="mt-0.5 space-y-0.5">
+      {items.map((text, i) => (
+        <li key={i} className="flex gap-2">
+          <span aria-hidden>•</span>
+          <span style={highlight?.has(text) ? CHANGED : undefined}>{text}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function ResumeDocument({
   resume,
   template,
@@ -43,25 +69,6 @@ export function ResumeDocument({
   const t = TEMPLATE_STYLE[template]
   const l = toLayout(resume)
   const font = t.serif ? "'Times New Roman', Times, serif" : "Helvetica, Arial, sans-serif"
-  const Heading = ({ children }: { children: React.ReactNode }) => (
-    <h3
-      className={`${t.compact ? "mt-2.5 mb-1" : "mt-4 mb-1.5"} pb-0.5 text-sm font-bold uppercase tracking-[0.08em]`}
-      style={{ color: t.accent, borderBottom: `${t.serif ? 1 : 0.75}px solid ${t.rule}` }}
-    >
-      {children}
-    </h3>
-  )
-  const Bullets = ({ items }: { items: string[] }) => (
-    <ul className="mt-0.5 space-y-0.5">
-      {items.map((text, i) => (
-        <li key={i} className="flex gap-2">
-          <span aria-hidden>•</span>
-          <span style={highlight?.has(text) ? CHANGED : undefined}>{text}</span>
-        </li>
-      ))}
-    </ul>
-  )
-
   return (
     <div ref={outer} className="w-full overflow-hidden" style={{ height: height * scale }}>
       <div
@@ -77,14 +84,14 @@ export function ResumeDocument({
 
         {l.summary && (
           <section>
-            <Heading>Summary</Heading>
+            <Heading t={t}>Summary</Heading>
             <p style={highlight?.has(l.summary) ? CHANGED : undefined}>{l.summary}</p>
           </section>
         )}
 
         {l.experience.length > 0 && (
           <section>
-            <Heading>Experience</Heading>
+            <Heading t={t}>Experience</Heading>
             {l.experience.map((e) => (
               <div key={e.key} className="mb-2">
                 <div className="flex justify-between gap-4">
@@ -92,7 +99,7 @@ export function ResumeDocument({
                   <span className="shrink-0" style={{ color: MUTED }}>{e.dates}</span>
                 </div>
                 {e.location && <p className="text-xs italic" style={{ color: MUTED }}>{e.location}</p>}
-                <Bullets items={e.bullets} />
+                <Bullets items={e.bullets} highlight={highlight} />
               </div>
             ))}
           </section>
@@ -100,7 +107,7 @@ export function ResumeDocument({
 
         {l.projects.length > 0 && (
           <section>
-            <Heading>Projects</Heading>
+            <Heading t={t}>Projects</Heading>
             {l.projects.map((p) => (
               <div key={p.key} className="mb-2">
                 <div className="flex justify-between gap-4">
@@ -110,7 +117,7 @@ export function ResumeDocument({
                   </span>
                   <span className="shrink-0" style={{ color: MUTED }}>{p.dates}</span>
                 </div>
-                <Bullets items={p.bullets} />
+                <Bullets items={p.bullets} highlight={highlight} />
                 {p.tech && <p className="text-xs italic" style={{ color: MUTED }}>{p.tech}</p>}
               </div>
             ))}
@@ -119,7 +126,7 @@ export function ResumeDocument({
 
         {l.education.length > 0 && (
           <section>
-            <Heading>Education</Heading>
+            <Heading t={t}>Education</Heading>
             {l.education.map((e) => (
               <div key={e.key} className="mb-2">
                 <div className="flex justify-between gap-4">
@@ -127,7 +134,7 @@ export function ResumeDocument({
                   <span className="shrink-0" style={{ color: MUTED }}>{e.dates}</span>
                 </div>
                 {e.credential && <p>{e.credential}</p>}
-                <Bullets items={e.details} />
+                <Bullets items={e.details} highlight={highlight} />
               </div>
             ))}
           </section>
@@ -135,7 +142,7 @@ export function ResumeDocument({
 
         {l.skills.length > 0 && (
           <section>
-            <Heading>Skills</Heading>
+            <Heading t={t}>Skills</Heading>
             {l.skills.map((g, i) => (
               <p key={i}>
                 {g.group && <span className="font-bold">{g.group}: </span>}
@@ -147,15 +154,15 @@ export function ResumeDocument({
 
         {l.certifications.length > 0 && (
           <section>
-            <Heading>Certifications</Heading>
-            <Bullets items={l.certifications} />
+            <Heading t={t}>Certifications</Heading>
+            <Bullets items={l.certifications} highlight={highlight} />
           </section>
         )}
 
         {l.extraSections.map((s, i) => (
           <section key={i}>
-            <Heading>{s.heading}</Heading>
-            <Bullets items={s.items} />
+            <Heading t={t}>{s.heading}</Heading>
+            <Bullets items={s.items} highlight={highlight} />
           </section>
         ))}
       </div>
