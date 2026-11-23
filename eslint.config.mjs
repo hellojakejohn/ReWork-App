@@ -13,14 +13,6 @@ export default defineConfig([
       "react-hooks/exhaustive-deps": "warn",
       "prefer-const": "warn",
       "react/no-unescaped-entities": "warn",
-      // New in eslint-plugin-react-hooks 7 (comes with Next 16), written for the React
-      // Compiler, which this app doesn't use. The code they flag worked before the
-      // upgrade; warn so they show up, and fix them in their own PRs.
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/static-components": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/purity": "warn",
     },
   },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "extension/**", "eval-results/**", "coverage/**",
