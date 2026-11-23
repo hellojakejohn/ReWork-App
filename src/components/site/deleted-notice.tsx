@@ -8,6 +8,7 @@ export function DeletedNotice() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get("deleted") === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL query, only known after mount
       setShow(true)
       window.history.replaceState(null, "", window.location.pathname)
     }

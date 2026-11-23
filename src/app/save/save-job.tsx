@@ -16,6 +16,7 @@ export function SaveJob() {
   useEffect(() => {
     const job = savedJobFromHash(window.location.hash)
     if (job) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL hash, only known after mount
       setHandoff("saving")
       storeSavedJob(job)
       window.location.replace("/dashboard")

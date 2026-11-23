@@ -12,6 +12,7 @@ const ICONS = { light: Sun, dark: Moon, system: Monitor }
 export function useThemeChoice(): ThemeChoice {
   const [choice, setChoice] = useState<ThemeChoice>("system")
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage after mount so SSR and first render agree
     setChoice(readThemeChoice())
     const onChange = () => setChoice(readThemeChoice())
     window.addEventListener(THEME_CHANGE_EVENT, onChange)

@@ -50,6 +50,7 @@ export function AIUsageBanner({ usage }: { usage: AIUsage | null }) {
   const key = usage ? dismissKey(usage) : ""
   const [dismissed, setDismissed] = useState(true)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, only after mount (SSR has none)
     setDismissed(key ? readDismissed(key) : true)
   }, [key])
   if (!usage || !text || dismissed) return null

@@ -113,7 +113,11 @@ function AnswerCard({ applicationId, answer, onAnswers }: { applicationId: strin
   const [text, setText] = useState(answer.answer)
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
-  useEffect(() => setText(answer.answer), [answer.answer])
+  const [syncedAnswer, setSyncedAnswer] = useState(answer.answer)
+  if (answer.answer !== syncedAnswer) {
+    setSyncedAnswer(answer.answer)
+    setText(answer.answer)
+  }
 
   const copy = async () => {
     try {

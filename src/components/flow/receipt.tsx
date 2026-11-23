@@ -113,6 +113,7 @@ export function LeftOutList({
   onMasterSaved?: (master: MasterResumeDTO) => void
 }) {
   const [handled, setHandled] = useState<Record<string, "dismissed" | "added">>({})
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, only after mount (SSR has none)
   useEffect(() => setHandled(readHandled(application.id)), [application.id])
 
   const mark = (key: string, value: "dismissed" | "added") => {

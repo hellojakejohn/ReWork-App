@@ -2,7 +2,7 @@
 
 // The follow-up email for one tracked job: edit it, copy it or open it in the mail app,
 // then "remind me in a week" (sets the follow-up date). Used on Home and on the tracker.
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { toast } from "sonner"
 import { Copy, Mail } from "lucide-react"
@@ -31,12 +31,18 @@ export function FollowUpDialog({
   const [body, setBody] = useState("")
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (!open) return
-    const email = followUpEmail({ jobTitle: app.jobTitle, company: app.company, appliedAt: app.appliedAt, column: columnOf(app.status) }, session?.user?.name ?? "")
-    setSubject(email.subject)
-    setBody(email.body)
-  }, [open, app.jobTitle, app.company, app.appliedAt, app.status, session?.user?.name])
+  // Opening (or the job changing while open) fills in a fresh draft. Starts unset so a
+  // dialog that mounts open fills it on the first render.
+  const draftKey = JSON.stringify([open, app.jobTitle, app.company, app.appliedAt, app.status, session?.user?.name])
+  const [syncedDraft, setSyncedDraft] = useState<string | null>(null)
+  if (draftKey !== syncedDraft) {
+    setSyncedDraft(draftKey)
+    if (open) {
+      const email = followUpEmail({ jobTitle: app.jobTitle, company: app.company, appliedAt: app.appliedAt, column: columnOf(app.status) }, session?.user?.name ?? "")
+      setSubject(email.subject)
+      setBody(email.body)
+    }
+  }
 
   const copy = async () => {
     try {

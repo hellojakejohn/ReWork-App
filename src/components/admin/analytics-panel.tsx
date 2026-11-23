@@ -36,7 +36,6 @@ export function AnalyticsPanel() {
 
   useEffect(() => {
     let cancelled = false
-    setError("")
     fetch(`/api/admin/analytics?days=${days}`)
       .then(async (res) => {
         const data = await res.json()
@@ -57,7 +56,11 @@ export function AnalyticsPanel() {
       <div className="flex items-center gap-3">
         <h2 className="font-serif text-2xl font-semibold text-text">Analytics</h2>
         {([7, 30] as const).map((d) => (
-          <Button key={d} size="sm" variant={days === d ? "inverse" : "secondary"} aria-pressed={days === d} onClick={() => setDays(d)}>
+          <Button key={d} size="sm" variant={days === d ? "inverse" : "secondary"} aria-pressed={days === d} onClick={() => {
+              if (d === days) return
+              setError("")
+              setDays(d)
+            }}>
             Last {d} days
           </Button>
         ))}

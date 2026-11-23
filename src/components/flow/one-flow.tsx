@@ -172,6 +172,7 @@ export function OneFlow() {
 
   useEffect(() => {
     document.title = "ReWork"
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first load reads the URL, localStorage and the API after mount
     void load()
   }, [load])
 
@@ -262,6 +263,9 @@ export function OneFlow() {
       setActiveId(application.resumeId)
       writeStored(ACTIVE_MASTER_KEY, application.resumeId)
     }
+    // Event handler (the Changes tab button), not render; the rule reads it as render because
+    // it is called from inside renderChangeExtra.
+    // eslint-disable-next-line react-hooks/purity
     setResumeRequest({ mode: "evidence", focus: { entryId, bullet }, nonce: Date.now() })
     go(0)
   }

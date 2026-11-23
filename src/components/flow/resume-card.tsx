@@ -73,9 +73,7 @@ export function ResumeCard({
   // Set when the interview was opened for one bullet (from the Result card's Changes tab).
   const [evidenceFocus, setEvidenceFocus] = useState<EvidenceFocus | null>(null)
 
-  useEffect(() => {
-    if (!active && mode === "summary") setMode("new")
-  }, [active, mode])
+  if (!active && mode === "summary") setMode("new")
 
   const openNew = (replace: boolean) => {
     setError("")
@@ -83,20 +81,6 @@ export function ResumeCard({
     setReplacing(replace && active ? active.id : null)
     setMode("new")
   }
-
-  useEffect(() => {
-    if (!request || mode === "parsing") return
-    if (request.mode === "summary") {
-      setReplacing(null)
-      setMode(active ? "summary" : "new")
-    } else if (request.mode === "evidence") {
-      if (active) openEvidence(request.focus ?? null)
-    } else {
-      openNew(request.mode === "replace")
-    }
-    // Only react to a new request, not to active/mode changing underneath it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request?.nonce])
 
   const openEvidence = (focus: EvidenceFocus | null) => {
     if (!isPro) {
@@ -108,6 +92,22 @@ export function ResumeCard({
     setEvidenceFocus(focus)
     setMode("evidence")
   }
+
+  useEffect(() => {
+    if (!request || mode === "parsing") return
+    if (request.mode === "summary") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- openEvidence can call the parent's onLimit, which can't run during render
+      setReplacing(null)
+      setMode(active ? "summary" : "new")
+    } else if (request.mode === "evidence") {
+      if (active) openEvidence(request.focus ?? null)
+    } else {
+      openNew(request.mode === "replace")
+    }
+    // Only react to a new request, not to active/mode changing underneath it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request?.nonce])
+
 
   const parse = async (input: File | string) => {
     setError("")
