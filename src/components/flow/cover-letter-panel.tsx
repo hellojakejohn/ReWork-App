@@ -45,13 +45,15 @@ export function CoverLetterPanel({
   })
 
   // A different application (or a fresh letter) resets the editor.
-  useEffect(() => {
+  const letterKey = `${application.id}|${application.coverLetter?.generatedAt ?? ""}`
+  const [syncedLetter, setSyncedLetter] = useState(letterKey)
+  if (letterKey !== syncedLetter) {
+    setSyncedLetter(letterKey)
     setText(application.coverLetter?.text ?? "")
     setTone(application.coverLetter?.tone ?? "professional")
     setSave("idle")
     setError("")
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [application.id, application.coverLetter?.generatedAt])
+  }
 
   const flush = async () => {
     if (timer.current) clearTimeout(timer.current)

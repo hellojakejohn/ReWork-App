@@ -57,6 +57,7 @@ export function AppHeader({
     const query = params.toString()
     window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`)
     if (isSettingsTab(tab)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the URL query, only known after mount
       setSettingsTab(tab)
       setSettingsOpen(true)
     }

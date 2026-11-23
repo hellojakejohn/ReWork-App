@@ -86,6 +86,7 @@ export function TrackerView() {
 
   useEffect(() => {
     document.title = "Tracker · ReWork"
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, only after mount (SSR has none)
     setTemplate(readTemplate())
     void load()
   }, [load])

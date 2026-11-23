@@ -55,6 +55,7 @@ export function useFit(master: MasterResumeDTO | null, job: JobDraft | null, ena
 
   useEffect(() => {
     if (!key) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs with the module-level fit cache and starts the fetch
       setFit(null)
       return
     }

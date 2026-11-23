@@ -38,6 +38,7 @@ function CountUp({ to, ms = 600 }: { to: number; ms?: number }) {
       setN(Math.round(to * (1 - Math.pow(1 - p, 3))))
       if (p < 1) raf = requestAnimationFrame(tick)
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restarts the requestAnimationFrame count-up
     setN(0)
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
@@ -63,6 +64,7 @@ const SEARCH_STAGES = [
 function useSearchStage(running: boolean): string | null {
   const [stage, setStage] = useState<string | null>(null)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the stage follows a timer while the search runs
     if (!running) return setStage(null)
     const started = Date.now()
     const tick = () => {
@@ -140,10 +142,17 @@ export function MatchesPanel({
     [resumeId]
   )
 
-  useEffect(() => {
-    let live = true
+  // A different resume (or layout) starts from an empty feed while it loads.
+  const feedKey = `${resumeId}|${compact}`
+  const [syncedFeedKey, setSyncedFeedKey] = useState(feedKey)
+  if (feedKey !== syncedFeedKey) {
+    setSyncedFeedKey(feedKey)
     setFeed(null)
     setLoadFailed(false)
+  }
+
+  useEffect(() => {
+    let live = true
     void loadFeed(resumeId).then((r) => {
       if (!live) return
       if (!r.ok) return setLoadFailed(true)

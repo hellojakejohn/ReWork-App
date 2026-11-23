@@ -172,6 +172,7 @@ export function OneFlow() {
 
   useEffect(() => {
     document.title = "ReWork"
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- first load reads the URL, localStorage and the API after mount
     void load()
   }, [load])
 

@@ -60,13 +60,14 @@ export function JobCard({
   const request = useRef(0)
   // Matches load (and refresh) once this step has been opened, not while it sits off-screen.
   const [opened, setOpened] = useState(isActiveStep)
-  useEffect(() => {
-    if (isActiveStep) setOpened(true)
-  }, [isActiveStep])
+  if (isActiveStep && !opened) setOpened(true)
 
   // Follow the parent: "Tailor for another job" clears the job (start over at the URL
-  // box); reopening a tailored resume from Recent sets it.
-  useEffect(() => {
+  // box); reopening a tailored resume from Recent sets it. Starts unset so the first render
+  // applies it too (a preview job opens in paste mode).
+  const [syncedJob, setSyncedJob] = useState<JobDraft | null | undefined>(undefined)
+  if (job !== syncedJob) {
+    setSyncedJob(job)
     setEditing(false)
     setError("")
     setPasteNote("")
@@ -83,7 +84,7 @@ export function JobCard({
       setDraft(job)
       setMode("fetched")
     }
-  }, [job])
+  }
 
   const fetchUrl = async (raw: string) => {
     const url = raw.trim()

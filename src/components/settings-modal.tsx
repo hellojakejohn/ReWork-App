@@ -38,9 +38,12 @@ const TABS = [
 export function SettingsModal({ isOpen, onClose, initialTab = "account" }: SettingsModalProps) {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState<TabType>(initialTab)
-  useEffect(() => {
+  // Opening (or a new initialTab while open) jumps to that tab.
+  const [synced, setSynced] = useState({ isOpen, initialTab })
+  if (synced.isOpen !== isOpen || synced.initialTab !== initialTab) {
+    setSynced({ isOpen, initialTab })
     if (isOpen) setActiveTab(initialTab)
-  }, [isOpen, initialTab])
+  }
   const access = session?.user?.access ?? NO_ACCESS
   const isPro = access.isPro
 

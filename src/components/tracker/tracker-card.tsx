@@ -3,7 +3,7 @@
 // One application on the tracker: what it is, where it stands, links back into the flow,
 // downloads, notes and a follow-up date.
 import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { CalendarClock, ChevronDown, Download, ExternalLink, FileText, Mail, MessageCircleQuestion, MoreHorizontal, StickyNote, Trash2, Wand2 } from "lucide-react"
 import { followUpDue } from "@/lib/follow-up"
@@ -51,7 +51,11 @@ export function TrackerCard({
 }) {
   const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState(app.notes)
-  useEffect(() => setNotes(app.notes), [app.notes])
+  const [syncedNotes, setSyncedNotes] = useState(app.notes)
+  if (app.notes !== syncedNotes) {
+    setSyncedNotes(app.notes)
+    setNotes(app.notes)
+  }
 
   const [writing, setWriting] = useState(false)
   const nudge = followUpDue(app)

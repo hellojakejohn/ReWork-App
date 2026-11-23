@@ -69,6 +69,7 @@ export default function AdminPage() {
       return
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads from the API once the session says admin
     fetchUsers()
   }, [session, status, router])
 

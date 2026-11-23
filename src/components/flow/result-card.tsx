@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { ArrowLeft, ArrowRight, Check, ListChecks, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -71,17 +71,21 @@ function Result({
   requestedTab,
 }: React.ComponentProps<typeof ResultCard> & { application: ApplicationDetailDTO }) {
   const [tab, setTab] = useState<Tab>(requestedTab?.tab ?? "preview")
-  useEffect(() => {
+  const [syncedTab, setSyncedTab] = useState(requestedTab)
+  if (requestedTab !== syncedTab) {
+    setSyncedTab(requestedTab)
     if (requestedTab) setTab(requestedTab.tab)
-  }, [requestedTab])
+  }
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [checking, setChecking] = useState(false)
   const [added, setAdded] = useState(0)
-  useEffect(() => {
+  const [syncedAppId, setSyncedAppId] = useState(application.id)
+  if (application.id !== syncedAppId) {
+    setSyncedAppId(application.id)
     setChecking(false)
     setAdded(0)
-  }, [application.id])
+  }
   const receipt = useReceipt(application)
   const pay = useMemo(() => payFromText(application.jobDescription)?.label ?? null, [application.jobDescription])
 

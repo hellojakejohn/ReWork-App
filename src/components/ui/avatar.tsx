@@ -48,6 +48,7 @@ export function UserAvatar({ userId, className = "", size = 'md', name }: UserAv
       // Load saved color from localStorage
       const stored = localStorage.getItem(`avatar-color-${userId}`)
       if (stored && avatarColors.includes(stored as AvatarColor)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, only after mount (SSR has none)
         setSelectedColor(stored as AvatarColor)
       } else {
         // Default to first color
@@ -79,6 +80,7 @@ export function AvatarColorPicker({ userId }: { userId?: string }) {
     if (userId && typeof window !== 'undefined') {
       const stored = localStorage.getItem(`avatar-color-${userId}`)
       if (stored && avatarColors.includes(stored as AvatarColor)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, only after mount (SSR has none)
         setSelectedColor(stored as AvatarColor)
       }
     }
