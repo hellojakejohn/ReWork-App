@@ -10,6 +10,9 @@
 export const LANDING_EXAMPLE = {
   person: 'Marcus, restaurant general manager',
   job: 'Operations Coordinator at a property management company',
+  // Job match before and after, from the real tailor on this sample (eval on the production
+  // path, Nov 22, PR #89; see STATE.md). Change it only with a new eval run.
+  match: { before: 40, after: 66 },
   summary: {
     before: 'Restaurant GM, 6 years running a busy dining room. Good with people, fast on my feet, keep costs down.',
     after:
