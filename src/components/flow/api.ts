@@ -457,6 +457,12 @@ export interface FeedMatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
+  /** Why it's a match: title, skills, level. */
+  why?: {
+    title: { fit: "close" | "partly" | "different"; wanted: string | null }
+    skills: { have: number; other: number; of: number }
+    level: { fits: boolean; note: string }
+  }
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 export interface FeedDTO {

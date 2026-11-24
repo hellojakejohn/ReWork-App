@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { checkRateLimit, rateLimitResponseBody } from '@/lib/rate-limit'
 import { listMatches, loadPrefs, matchForResume, matchLimit, readPrefs, savePrefs } from '@/lib/feed/feed-server'
 import { searchTitles } from '@/lib/feed/match'
+import { yearsOf } from '@/lib/feed/prefilter'
 import { masterToParsed } from '@/lib/master-resume'
 
 export const runtime = 'nodejs'
@@ -25,9 +26,11 @@ async function context(resumeId: unknown) {
 
 async function body(userId: string, resume: Awaited<ReturnType<typeof prisma.resume.findFirst>> & object) {
   const [saved, { isPro, limit }] = await Promise.all([loadPrefs(resume.id), matchLimit(userId)])
-  const { matches, total } = await listMatches(prisma, userId, resume.id, limit)
+  const parsed = masterToParsed(resume)
+  const wanted = searchTitles(parsed, { targetTitles: saved?.targetTitles ?? [], workplace: 'both' })
+  const { matches, total } = await listMatches(prisma, userId, resume.id, limit, { wanted, years: yearsOf(parsed) })
   // Never asked yet: suggest their latest title, so one tap confirms it.
-  const suggested = searchTitles(masterToParsed(resume), { targetTitles: [], workplace: 'both' })
+  const suggested = searchTitles(parsed, { targetTitles: [], workplace: 'both' })
   return {
     success: true,
     prefs: saved ? { targetTitles: saved.targetTitles, workplace: saved.workplace } : null,

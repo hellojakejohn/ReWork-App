@@ -160,6 +160,15 @@ describe('listMatches reach', () => {
     expect('keywords' in matches[0].job).toBe(false)
   })
 
+  it('adds why when it knows the resume', async () => {
+    const { listMatches } = await import('@/lib/feed/match')
+    const row = { id: 'm1', jobId: 'j1', score: 50, present: ['Excel'], related: [], missing: ['Concur'], savedAt: null, applicationId: null, seenAt: null, job: { title: 'Executive Assistant', company: 'Acme', location: 'Remote', remote: true, payLabel: null, postedAt: null, url: 'https://x', keywords: ['Excel', 'Concur'] } }
+    const db = { jobMatch: { findMany: async () => [row], count: async () => 1 } }
+    const { matches } = await listMatches(db as never, 'u', 'r', 10, { wanted: ['Executive Assistant'], years: 4 })
+    expect(matches[0].why).toEqual({ title: { fit: 'close', wanted: 'Executive Assistant' }, skills: { have: 1, other: 0, of: 2 }, level: { fits: true, note: 'No level in the title' } })
+    expect((await listMatches(db as never, 'u', 'r', 10)).matches[0].why).toBeUndefined()
+  })
+
   it('leaves out matches that share nothing with the resume, unless saved', async () => {
     const { listMatches } = await import('@/lib/feed/match')
     let seen: Row = {}

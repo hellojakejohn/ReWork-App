@@ -63,8 +63,8 @@ const ROLE_WORDS = new Set([
 // of "Software Engineer", which shares only "engineer" with it. Designer is: a Product
 // Designer job is no match for "Instructional Designer".
 // Senior titles a person with fewer years is unlikely to land (they still see them lower).
-const SENIOR_RE = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|vice president|chief)\b/i
-const JUNIOR_RE = /\b(intern|internship|new grad|junior|jr\.?|entry[- ]level|apprentice)\b/i
+export const SENIOR_RE = /\b(senior|sr\.?|staff|principal|lead|head of|director|vp|vice president|chief)\b/i
+export const JUNIOR_RE = /\b(intern|internship|new grad|junior|jr\.?|entry[- ]level|apprentice)\b/i
 
 export function titleWords(title: string): string[] {
   return title
@@ -148,7 +148,7 @@ export function locationCountry(location: string): 'us' | 'other' | 'unknown' {
   return rest ? 'other' : 'unknown'
 }
 
-function yearsOf(resume: ParsedResume, now = new Date()): number {
+export function yearsOf(resume: ParsedResume, now = new Date()): number {
   let months = 0
   for (const e of resume.experience) {
     const start = e.startDate.match(/(\d{4})(?:-(\d{2}))?/)
