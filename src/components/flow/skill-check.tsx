@@ -7,7 +7,7 @@
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { Check, ListChecks } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, skillLabel } from "@/lib/utils"
 import { weightedScore } from "@/lib/keyword-coverage"
 import { LOW_FIT_SCORE, MAX_SKILL_NOTE, MAX_SKILL_QUESTIONS, type FitCoverage, type SkillAddition, type SkillAnswer, type SkillLevel } from "@/lib/skill-check-shared"
 import { applySkillAnswers, checkFit, placeSkillAnswers, type JobDraft, type MasterResumeDTO } from "./api"
@@ -204,7 +204,7 @@ export function SkillCheck({
               return (
                 <li key={keyword} className="rounded-card border border-border bg-surface-raised p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-text">{keyword}</span>
+                    <span className="text-sm font-medium text-text">{skillLabel(keyword)}</span>
                     <div role="radiogroup" aria-label={`Have you done ${keyword}?`} className="flex rounded-full border border-border p-0.5">
                       {LEVELS.map((l) => (
                         <button

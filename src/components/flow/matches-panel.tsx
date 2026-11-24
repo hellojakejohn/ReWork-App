@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { Banknote, Bookmark, BookmarkCheck, Clock, Loader2, MapPin, RefreshCw, Search, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Segmented } from "@/components/ui/segmented"
-import { cn } from "@/lib/utils"
+import { cn, skillLabel } from "@/lib/utils"
 import { usState } from "@/lib/feed/prefilter"
 import { matchAgeNote } from "@/lib/job-checks"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
@@ -437,7 +437,7 @@ export function MatchesPanel({
                       A tailor takes this to {m.reach}%
                     </p>
                   )}
-                  {!compact && m.missing.length > 0 && <p className="mt-1 text-xs text-text-muted">Missing: {m.missing.slice(0, 4).join(", ")}</p>}
+                  {!compact && m.missing.length > 0 && <p className="mt-1 text-xs text-text-muted">Missing: {m.missing.slice(0, 4).map(skillLabel).join(", ")}</p>}
                 </div>
               </div>
               <div className="mt-2 flex items-center gap-1">

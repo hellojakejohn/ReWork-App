@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { loadGapPlans, type GapPlanDTO } from "./api"
 import { ErrorNote } from "./ui"
 import { skillDemand } from "@/lib/skill-demand"
+import { skillLabel } from "@/lib/utils"
 
 export function GapPlans({ resumeId, skills, className }: { resumeId: string; skills: string[]; className?: string }) {
   const [state, setState] = useState<{ phase: "idle" | "loading" } | { phase: "done"; plans: GapPlanDTO[]; partner: boolean } | { phase: "error"; error: string }>({ phase: "idle" })
@@ -43,7 +44,7 @@ export function GapPlans({ resumeId, skills, className }: { resumeId: string; sk
         {state.plans.map((p) => (
           <li key={p.skill} className="rounded-card border border-border bg-surface-raised p-3 text-sm">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span className="font-medium text-text">{p.skill}</span>
+              <span className="font-medium text-text">{skillLabel(p.skill)}</span>
               <span className={p.closeable ? "text-xs text-text-muted" : "text-xs font-medium text-warn"}>{p.time}</span>
             </div>
             <p className="mt-1 text-text-secondary">{p.learn}</p>
@@ -87,7 +88,7 @@ export function SkillDemandCard({ resumeId, matches }: { resumeId: string; match
       <ul className="mt-3 flex flex-wrap gap-1.5">
         {demand.map((d) => (
           <li key={d.skill} className="rounded-full bg-surface px-2.5 py-0.5 text-xs text-text">
-            {d.skill} <span className="text-text-muted">· {d.jobs} jobs</span>
+            {skillLabel(d.skill)} <span className="text-text-muted">· {d.jobs} jobs</span>
           </li>
         ))}
       </ul>
