@@ -16,6 +16,7 @@ import { CONTACT_EMAIL, FAIR_USE, FREE_FEED_MATCHES, FREE_PLAN_SHORT, FREE_TAILO
 import { showPoweredBy } from "@/lib/ai/routing"
 import { jobsTicker } from "@/lib/feed/public-stats"
 import { JobsTicker } from "@/components/site/jobs-ticker"
+import { TapeMeasure } from "@/components/ui/tailor"
 
 // The jobs ticker reads the database; rebuild the page at most once an hour.
 export const revalidate = 3600
@@ -341,13 +342,27 @@ function JobWords({ text, words }: { text: string; words: string[] }) {
 function HeroReceipt() {
   const b = EX.bullets[0]
   return (
-    <figure className="flex flex-col gap-5 rounded-panel bg-surface p-6 shadow-float sm:p-8">
+    // The border is `stitchedEdge` from ui/tailor, written out: that file is a client module,
+    // so a server page can't read its constants.
+    <figure className="flex flex-col gap-5 rounded-panel border-2 border-dashed border-text/20 bg-surface p-6 shadow-float sm:p-8">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-serif text-2xl font-semibold text-text">Operations Coordinator</p>
           <p className="mt-1 text-sm text-text-muted">Tailoring a restaurant manager&apos;s resume</p>
         </div>
         <span className="mt-1.5 shrink-0 rounded-full bg-success-tint px-2.5 py-1 text-xs font-bold text-success">Invented: 0</span>
+      </div>
+
+      <div>
+        <p className="flex items-baseline justify-between gap-3 text-sm">
+          <span className="font-semibold text-text-muted">Job match</span>
+          <span className="tabular-nums text-text-muted">
+            {EX.match.before}% <ArrowRight className="inline h-3.5 w-3.5 align-[-2px]" aria-hidden />
+            <span className="sr-only"> to </span>{" "}
+            <strong className="font-serif text-xl font-semibold text-text">{EX.match.after}%</strong>
+          </span>
+        </p>
+        <TapeMeasure value={EX.match.after} from={EX.match.before} size="sm" className="mt-2" />
       </div>
 
       <div className="flex flex-col gap-2">
