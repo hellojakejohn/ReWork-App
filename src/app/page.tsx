@@ -17,6 +17,7 @@ import { showPoweredBy } from "@/lib/ai/routing"
 import { jobsTicker } from "@/lib/feed/public-stats"
 import { JobsTicker } from "@/components/site/jobs-ticker"
 import { TapeMeasure } from "@/components/ui/tailor"
+import { AUDIENCES } from "@/lib/audiences"
 
 // The jobs ticker reads the database; rebuild the page at most once an hour.
 export const revalidate = 3600
@@ -53,7 +54,17 @@ const STEPS = [
 
 const FAQ: { q: string; a: React.ReactNode }[] = [
   {
-    q: "Is anything made up?",
+    q: "Can't I just use ChatGPT?",
+    a: (
+      <>
+        You can, and it will often add a tool you never used or a number you never hit, and leave you to catch it. ReWork checks every rewrite
+        against your real resume in code before you see it, shows your job match before and after, finds open jobs that fit, and keeps every
+        application in one tracker.
+      </>
+    ),
+  },
+  {
+    q: "Won't it make stuff up?",
     a: (
       <>
         No. After every rewrite a fact guard compares the result with your resume: numbers, employers, titles, dates, tools and credentials. Anything
@@ -63,7 +74,17 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Does it work with applicant tracking systems (ATS)?",
+    q: "Everyone stretches the truth to get an interview. Why shouldn't I?",
+    a: (
+      <>
+        Because the interview is where it comes apart. A tool you can&apos;t talk about or a number you can&apos;t explain costs you the job, and
+        background checks catch titles and dates. Most resumes undersell real work far more than they need to. ReWork makes the true version as
+        strong as it gets, in the words each job uses.
+      </>
+    ),
+  },
+  {
+    q: "Will it get past the robots (ATS)?",
     a: (
       <>
         The templates are single-column with standard section headings, and PDFs contain real, selectable text. Pro adds Word downloads built from
@@ -73,7 +94,7 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "What happens to my data?",
+    q: "What do you do with my resume?",
     a: (
       <>
         Your resumes and results are stored in our database so they&apos;re there when you come back. Resume and job text is sent to Anthropic&apos;s
@@ -83,18 +104,17 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Which job sites work?",
+    q: "I found the job on LinkedIn or Indeed. Does that work?",
     a: (
       <>
-        Your matches come straight from employers&apos; own job boards (Greenhouse, Lever, Ashby, SmartRecruiters and Workday), checked daily so closed jobs drop
-        off. You can also paste any link: Greenhouse, Lever, Ashby, Workday, SmartRecruiters, Workable and most company career pages fill in
-        automatically. We don&apos;t read LinkedIn pages, and Indeed, Glassdoor and ZipRecruiter block apps from reading theirs, so for those use
-        our Save to ReWork button or paste the description.
+        Yes, with the Save to ReWork button or by pasting the description: we don&apos;t read LinkedIn pages, and Indeed, Glassdoor and ZipRecruiter
+        block apps from reading theirs. Your matches come straight from employers&apos; own job boards (Greenhouse, Lever, Ashby, SmartRecruiters and
+        Workday), checked daily so closed jobs drop off, and most other job links fill in automatically.
       </>
     ),
   },
   {
-    q: "Does ReWork apply for me?",
+    q: "Will it apply for me?",
     a: (
       <>
         No, and that&apos;s on purpose. You apply on the employer&apos;s own site with your tailored resume, cover letter and answers ready
@@ -103,12 +123,12 @@ const FAQ: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Can I cancel anytime? What about refunds?",
+    q: "What if I want my money back?",
     a: (
       <>
-        Yes. {PRICING.monthly.name} cancels in one click from the billing portal, and you keep Pro until the end of the month you paid for. The{" "}
-        {PRICING.pass.name} never renews, so there&apos;s nothing to cancel. Refunds: ask within 7 days of any payment and we&apos;ll refund it, except
-        a {PRICING.pass.name} you&apos;ve already used. See the <Link href="/terms">terms</Link> or email {CONTACT_EMAIL}.
+        Ask within 7 days of any payment and we&apos;ll refund it, except a {PRICING.pass.name} you&apos;ve already used. {PRICING.monthly.name} cancels
+        in one click from the billing portal, and you keep Pro until the end of the month you paid for. The {PRICING.pass.name} never renews, so
+        there&apos;s nothing to cancel. See the <Link href="/terms">terms</Link> or email {CONTACT_EMAIL}.
       </>
     ),
   },
@@ -191,6 +211,25 @@ export default async function HomePage() {
               </li>
             ))}
           </ol>
+        </section>
+
+        {/* Who's job hunting: one page per group */}
+        <section id="who" className={`${container} scroll-mt-8 py-16 sm:py-20`}>
+          <h2 className={h2}>Who&apos;s job hunting?</h2>
+          <p className="mt-3 max-w-2xl text-text-secondary">Pick the one that sounds like you. See what&apos;s hard about your search and how ReWork handles it.</p>
+          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {AUDIENCES.map((a) => (
+              <li key={a.slug}>
+                <Link href={`/for/${a.slug}`} className={`${card} group flex h-full flex-col gap-2 border border-transparent hover:border-border`}>
+                  <h3 className="text-lg font-bold text-text">{a.label}</h3>
+                  <p className="text-sm leading-relaxed text-text-secondary">{a.hook}</p>
+                  <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-semibold text-accent-strong group-hover:underline">
+                    See how <ArrowRight className="h-4 w-4" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* Before / after */}

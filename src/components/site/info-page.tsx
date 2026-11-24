@@ -67,7 +67,7 @@ export function VisaCta() {
     <div className="rounded-card border border-border bg-surface p-5">
       <p className="font-semibold text-text">See which of your matches could sponsor you</p>
       <p className="mt-1 text-sm text-text-secondary">
-        Upload your resume and ReWork shows the open jobs that fit it. Tick &ldquo;I&apos;ll need visa sponsorship&rdquo; and each match shows what the post says about sponsorship and the employer&apos;s H-1B record. Free.
+        Upload your resume and ReWork shows the open jobs that fit it. Turn on &ldquo;I&apos;ll need visa sponsorship&rdquo; in Settings and each match shows what the post says about sponsorship and the employer&apos;s H-1B record. Free.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button asChild>
