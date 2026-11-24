@@ -457,6 +457,8 @@ export interface FeedMatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
+  /** Visa sponsorship: what the post says, and the employer's H-1B record (null = no data). */
+  visa?: { post: "no" | "yes" | null; h1b: { approvals: number; years: string } | null }
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 export interface FeedDTO {

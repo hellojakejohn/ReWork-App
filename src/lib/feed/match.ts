@@ -5,6 +5,8 @@
 //   3. For the top jobs: fetch the full text when we only have a title (Workday), and the
 //      Job match keywords when the job has none yet (one model call per job, ever, shared).
 //   4. The real Job match (src/lib/keyword-coverage.ts) decides the score, never the prefilter.
+import { h1bRecord, type H1bRecord } from '@/lib/visa/h1b'
+import { postSponsorship, type PostSponsorship } from '@/lib/visa/post-sponsorship'
 import type { PrismaClient } from '@prisma/client'
 import { matchAtsUrl, parseAtsResponse } from '@/lib/job-resolve/ats'
 import { extractJobKeywords, fitCoverage } from '@/lib/skill-check'
@@ -255,6 +257,8 @@ export interface MatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
+  /** Visa sponsorship signals: what the post says, and the employer's H-1B record. */
+  visa: { post: PostSponsorship; h1b: H1bRecord | null }
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 
@@ -275,13 +279,13 @@ export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: st
       where,
       orderBy: [{ rank: 'desc' }, { score: 'desc' }, { prescore: 'desc' }],
       take,
-      include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true, keywords: true, source: true } } },
+      include: { job: { select: { title: true, company: true, location: true, remote: true, payLabel: true, postedAt: true, url: true, keywords: true, source: true, description: true } } },
     }),
     db.jobMatch.count({ where }),
   ])
   return {
     total,
-    matches: rows.map(({ job: { keywords, source, ...job }, ...m }) => ({
+    matches: rows.map(({ job: { keywords, source, description, ...job }, ...m }) => ({
       id: m.id,
       jobId: m.jobId,
       score: m.score,
@@ -292,6 +296,7 @@ export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: st
       savedAt: m.savedAt?.toISOString() ?? null,
       applicationId: m.applicationId,
       isNew: !m.seenAt,
+      visa: { post: postSponsorship(description ?? ''), h1b: h1bRecord(job.company) },
       // Ads found through a job search engine say where they came from (Adzuna's terms).
       job: { ...job, postedAt: job.postedAt?.toISOString() ?? null, via: source === 'adzuna' ? 'Adzuna' : null },
     })),

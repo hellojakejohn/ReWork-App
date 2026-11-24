@@ -49,3 +49,6 @@ next-env.d.ts
 # Chrome extension build (scripts/build-extension.ts)
 /extension-dist/
 /extension-dist.zip
+
+# Raw USCIS H-1B CSVs (scripts/build-h1b.ts); the built lookup is committed
+/scripts/data/

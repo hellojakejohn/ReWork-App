@@ -4,7 +4,7 @@
 // resume, best real match first. Tailor fills the Job card with the full post: no link to
 // paste. Shown on the Job card (the step right after the upload) and, shorter, on Home.
 import { ADZUNA_HOME, ADZUNA_LABEL, ADZUNA_LABEL_MIN } from '@/lib/feed/adzuna-label'
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 import { Banknote, Bookmark, BookmarkCheck, Clock, Loader2, MapPin, RefreshCw, Search, Sparkles, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -91,6 +91,58 @@ function placeLabel(workplace: Workplace, home: string): string {
   return workplace === "remote" ? "Remote" : workplace === "near" ? near : `Remote or ${near}`
 }
 
+// Visa sponsorship: shown only to people who say they'll need it (kept on this device).
+const VISA_KEY = "rework:needs-sponsorship"
+const VISA_ONLY_KEY = "rework:sponsor-only"
+const readFlag = (k: string) => {
+  try {
+    return window.localStorage.getItem(k) === "1"
+  } catch {
+    return false
+  }
+}
+const writeFlag = (k: string, on: boolean) => {
+  try {
+    if (on) window.localStorage.setItem(k, "1")
+    else window.localStorage.removeItem(k)
+  } catch {}
+}
+
+/** Hidden by "possible sponsors only": the post rules it out, or the employer has no H-1B record. */
+export function rulesOutSponsor(m: Pick<FeedMatchDTO, "visa">): boolean {
+  if (!m.visa) return false
+  if (m.visa.post === "no") return true
+  if (m.visa.post === "yes") return false
+  return m.visa.h1b?.approvals === 0
+}
+
+/** "FY2021-FY2023" -> "FY21-23". */
+const shortYears = (y: string) => y.replace(/FY20(\d\d)-FY20(\d\d)/, "FY$1-$2").replace(/^FY20(\d\d)$/, "FY$1")
+
+function VisaLine({ visa }: { visa: NonNullable<FeedMatchDTO["visa"]> }) {
+  const parts: ReactNode[] = []
+  if (visa.post === "no") parts.push(<span key="p" className="font-medium text-warn">The post says no visa sponsorship</span>)
+  if (visa.post === "yes") parts.push(<span key="p" className="font-medium text-success">The post offers visa sponsorship</span>)
+  if (visa.h1b && visa.h1b.approvals > 0)
+    parts.push(
+      <span key="h" title={`From USCIS's public H-1B data: workers this employer got approved, ${visa.h1b.years}. Past filings, not a promise that this job sponsors.`}>
+        H-1B: {visa.h1b.approvals.toLocaleString("en-US")} approved ({shortYears(visa.h1b.years)})
+      </span>
+    )
+  else if (visa.h1b && visa.post !== "yes")
+    parts.push(
+      <span key="h" title="None in USCIS's H-1B data under this name. Some companies file under a different legal name, so check before you rule it out.">
+        No H-1B record found
+      </span>
+    )
+  if (!parts.length) return null
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
+      {parts.flatMap((p, i) => (i ? [<span key={`d${i}`} aria-hidden>·</span>, p] : [p]))}
+    </p>
+  )
+}
+
 function scoreTone(score: number): string {
   if (score >= 45) return "bg-success-tint text-text"
   if (score >= 25) return "bg-surface-raised text-text"
@@ -124,6 +176,21 @@ export function MatchesPanel({
   const [error, setError] = useState("")
   const [opening, setOpening] = useState<string | null>(null)
   const refreshed = useRef<string | null>(null)
+  const [needsVisa, setNeedsVisa] = useState(false)
+  const [sponsorOnly, setSponsorOnly] = useState(false)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage after mount so SSR and first render agree
+    setNeedsVisa(readFlag(VISA_KEY))
+    setSponsorOnly(readFlag(VISA_ONLY_KEY))
+  }, [])
+  const changeNeedsVisa = (on: boolean) => {
+    setNeedsVisa(on)
+    writeFlag(VISA_KEY, on)
+  }
+  const changeSponsorOnly = (on: boolean) => {
+    setSponsorOnly(on)
+    writeFlag(VISA_ONLY_KEY, on)
+  }
 
   const run = useCallback(
     async (titles: string[], place: Workplace, quiet = false) => {
@@ -254,7 +321,9 @@ export function MatchesPanel({
   if (compact && !feed.prefs) return null
 
   // ---------- the list ----------
-  const shown = compact ? feed.matches.slice(0, 3) : feed.matches
+  const visible = needsVisa && sponsorOnly ? feed.matches.filter((m) => !rulesOutSponsor(m)) : feed.matches
+  const shown = compact ? visible.slice(0, 3) : visible
+  const visaHidden = feed.matches.length - visible.length
   const hidden = feed.total - feed.matches.length
   const looking = feed.prefs ? `${feed.prefs.targetTitles.join(", ") || "Your kind of job"} · ${placeLabel(feed.prefs.workplace, home)}` : ""
 
@@ -276,6 +345,20 @@ export function MatchesPanel({
           </span>
         )}
       </div>
+      {!compact && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" className="h-3.5 w-3.5 accent-[rgb(var(--text))]" checked={needsVisa} onChange={(e) => changeNeedsVisa(e.currentTarget.checked)} />
+            I&apos;ll need visa sponsorship
+          </label>
+          {needsVisa && (
+            <label className="flex items-center gap-1.5" title="Hides jobs whose post rules sponsorship out, and employers with no H-1B approvals on record">
+              <input type="checkbox" className="h-3.5 w-3.5 accent-[rgb(var(--text))]" checked={sponsorOnly} onChange={(e) => changeSponsorOnly(e.currentTarget.checked)} />
+              Possible sponsors only{sponsorOnly && visaHidden > 0 ? ` (${visaHidden} hidden)` : ""}
+            </label>
+          )}
+        </div>
+      )}
       {running && !compact && (
         <p className="flex items-center gap-2 text-xs text-text-muted" aria-live="polite">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking for new jobs...
@@ -284,7 +367,12 @@ export function MatchesPanel({
       {error && <ErrorNote>{error}</ErrorNote>}
 
       {shown.length === 0 ? (
-        !running && (
+        !running && visaHidden > 0 ? (
+          <div className="rounded-card border border-dashed border-border p-4 text-sm text-text-muted">
+            <p className="font-medium text-text">All {visaHidden} matches are hidden by &ldquo;Possible sponsors only&rdquo;.</p>
+            <p className="mt-1">Their posts rule sponsorship out, or their employers have no H-1B approvals on record. Try a broader title, or turn the filter off to see them.</p>
+          </div>
+        ) : !running && (
           <div className="rounded-card border border-dashed border-border p-4 text-sm text-text-muted">
             <p className="font-medium text-text">Nothing good yet.</p>
             <p className="mt-1">
@@ -339,6 +427,7 @@ export function MatchesPanel({
                       </span>
                     )}
                   </p>
+                  {!compact && needsVisa && m.visa && <VisaLine visa={m.visa} />}
                   {m.reach >= m.score + 5 && (
                     <p className="mt-1 flex items-center gap-2 text-xs font-medium text-success" title="Your resume already shows more of this job's skills in other words. Tailoring puts them in the job's words.">
                       <ReachBar score={m.score} reach={m.reach} />
