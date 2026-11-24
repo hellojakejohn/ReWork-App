@@ -146,6 +146,13 @@ describe('the emails', () => {
     expect(e.html).not.toContain('follow-up')
     expect(e.html).toContain('Hi,')
   })
+  it('names the skill that would open the most jobs, only when given', () => {
+    const base = { firstName: null, jobs: [JOB], checked: 900, followUpsDue: 0, trackerUrl: 't', dashboardUrl: 'https://d' }
+    const e = weeklyEmail({ ...base, topGap: { skill: 'SQL & Python', jobs: 14, of: 40 } }, FOOTER)
+    expect(e.html).toContain('SQL &amp; Python would open the most doors: 14 of your 40 matches ask for it.')
+    expect(e.text).toContain('See what it would take: https://d')
+    expect(weeklyEmail(base, FOOTER).html).not.toContain('open the most doors')
+  })
   it('welcome: three steps, free tailors, footer', () => {
     const e = welcomeEmail({ firstName: 'Jake', dashboardUrl: 'https://d', freeTailors: 3 }, FOOTER)
     expect(e.subject).toBe('Welcome to ReWork')

@@ -105,6 +105,8 @@ export interface WeeklyData {
   followUpsDue: number
   trackerUrl: string
   dashboardUrl: string
+  /** The skill missing from the most of their open matches (src/lib/skill-demand.ts). */
+  topGap?: { skill: string; jobs: number; of: number } | null
 }
 
 const place = (j: WeeklyJob) => (j.remote && !/remote/i.test(j.location) ? `${j.location ? `${j.location}, ` : ''}Remote` : j.location)
@@ -147,9 +149,15 @@ ${button(j.tailorUrl, 'Tailor for this job')}
       ? `<tr><td style="padding:4px 4px 12px;font-family:${SANS};font-size:14px;color:${C.forest};"><strong>${d.followUpsDue} follow-up${d.followUpsDue === 1 ? '' : 's'} due.</strong> <a href="${esc(d.trackerUrl)}" style="color:${C.accent};">Open your tracker</a></td></tr>`
       : ''
 
+  const gapLine = d.topGap ? `${d.topGap.skill} would open the most doors: ${d.topGap.jobs} of your ${d.topGap.of} matches ask for it.` : ''
+  const gap = gapLine
+    ? `<tr><td style="padding:4px 4px 12px;font-family:${SANS};font-size:14px;line-height:21px;color:${C.forest};"><strong>${esc(gapLine)}</strong> <a href="${esc(d.dashboardUrl)}" style="color:${C.accent};">See what it would take</a></td></tr>`
+    : ''
+
   const body = `<tr><td style="padding:0 4px 16px;font-family:${SANS};font-size:15px;line-height:22px;color:${C.forest};">${esc(hello)}<br>${esc(intro)}</td></tr>
 ${followUps}
 ${cards}
+${gap}
 <tr><td style="padding:4px 4px 0;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted};">The % is how many of the job's own words your resume already uses. Every tailor is checked against your resume: nothing invented. <a href="${esc(d.dashboardUrl)}" style="color:${C.accent};">See all your matches</a></td></tr>`
 
   const text =
@@ -158,6 +166,7 @@ ${cards}
     d.jobs
       .map((j) => `${j.title}\n${[j.company, place(j), j.payLabel].filter(Boolean).join(' / ')}\nMatch: ${j.score}%${j.present.length ? ` (you show ${j.present.slice(0, 4).join(', ')})` : ''}\nTailor for this job: ${j.tailorUrl}\n`)
       .join('\n') +
+    (gapLine ? `\n${gapLine} See what it would take: ${d.dashboardUrl}\n` : '') +
     `\nSee all your matches: ${d.dashboardUrl}\n` +
     textFooter(f)
 
