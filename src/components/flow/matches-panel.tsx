@@ -15,6 +15,7 @@ import { matchAgeNote } from "@/lib/job-checks"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
 import { ErrorNote, StageList, inputClass } from "./ui"
 import { TapeMeasure } from "@/components/ui/tailor"
+import { SkillDemandCard } from "./gap-plans"
 import { VISA_EVENT, VISA_KEY, VISA_ONLY_KEY, readFlag, writeFlag } from "@/lib/visa/visa-pref"
 
 const STALE_MS = 20 * 60 * 60 * 1000
@@ -473,6 +474,7 @@ export function MatchesPanel({
           {hidden} more {hidden === 1 ? "match" : "matches"} with Pro
         </button>
       )}
+      {!compact && <SkillDemandCard resumeId={resumeId} matches={visible} />}
     </section>
   )
 }

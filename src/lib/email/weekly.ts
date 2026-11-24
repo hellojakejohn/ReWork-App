@@ -10,6 +10,7 @@ import { isAdminEmail } from '@/lib/admin'
 import { SITE_URL } from '@/lib/site'
 import { track } from '@/lib/track'
 import { weightedScore } from '@/lib/keyword-coverage'
+import { skillDemand } from '@/lib/skill-demand'
 import { matchForResume } from '@/lib/feed/feed-server'
 import { isWorkplace } from '@/lib/feed/match'
 import { mailingAddress, weeklyMode, type WeeklyMode } from './config'
@@ -81,10 +82,15 @@ export async function buildWeekly(userId: string, resumeId: string, name: string
   })
   const picked = pickWeeklyJobs(matches, since, WEEKLY_JOBS)
   if (picked.length === 0) return null
-  const [checked, followUpsDue] = await Promise.all([
+  const [checked, followUpsDue, open] = await Promise.all([
     prisma.job.count({ where: { closedAt: null } }),
     prisma.jobApplication.count({ where: { userId, status: 'APPLIED', followUpAt: { lte: now } } }).catch(() => 0),
+    prisma.jobMatch
+      .findMany({ where: { userId, resumeId, dismissedAt: null, job: { closedAt: null } }, orderBy: [{ rank: 'desc' }], take: 50, select: { missing: true, score: true } })
+      .catch(() => [] as { missing: string[]; score: number }[]),
   ])
+  // Only worth a line when one skill blocks several jobs.
+  const gap = skillDemand(open.map((m) => ({ missing: m.missing ?? [], score: m.score ?? 0 })), 1, 3)[0] ?? null
   const utm = `utm_source=email&utm_medium=${cadence}`
   const jobs: WeeklyJob[] = picked.map((m) => ({
     title: m.job.title,
@@ -99,7 +105,7 @@ export async function buildWeekly(userId: string, resumeId: string, name: string
     tailorUrl: `${SITE_URL}/dashboard?match=${encodeURIComponent(m.id)}&${utm}`,
   }))
   const content = weeklyEmail(
-    { daily: cadence === 'daily', firstName: firstName(name), jobs, checked, followUpsDue, trackerUrl: `${SITE_URL}/dashboard/tracker?${utm}`, dashboardUrl: `${SITE_URL}/dashboard?${utm}` },
+    { daily: cadence === 'daily', firstName: firstName(name), jobs, checked, followUpsDue, trackerUrl: `${SITE_URL}/dashboard/tracker?${utm}`, dashboardUrl: `${SITE_URL}/dashboard?${utm}`, topGap: gap },
     footerFor(userId, whyFor(cadence))
   )
   return { content, jobs: jobs.length }

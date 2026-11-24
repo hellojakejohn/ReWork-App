@@ -3,11 +3,12 @@
 // Close the gap: what it would take to really gain the skills a job wants and the resume
 // doesn't show. Nothing goes on the resume from here; once they've done it, the skill
 // check's "Yes" adds what they say.
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { ExternalLink, Route } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { loadGapPlans, type GapPlanDTO } from "./api"
 import { ErrorNote } from "./ui"
+import { skillDemand } from "@/lib/skill-demand"
 
 export function GapPlans({ resumeId, skills, className }: { resumeId: string; skills: string[]; className?: string }) {
   const [state, setState] = useState<{ phase: "idle" | "loading" } | { phase: "done"; plans: GapPlanDTO[]; partner: boolean } | { phase: "error"; error: string }>({ phase: "idle" })
@@ -71,6 +72,26 @@ export function GapPlans({ resumeId, skills, className }: { resumeId: string; sk
         ))}
       </ul>
       {state.partner && <p className="mt-2 text-xs text-text-muted">Some course links earn ReWork a small commission. It never changes what we suggest.</p>}
+    </div>
+  )
+}
+
+/** Under the matches: the skills missing from the most of them, and what it would take. */
+export function SkillDemandCard({ resumeId, matches }: { resumeId: string; matches: { missing: string[]; score: number }[] }) {
+  const demand = useMemo(() => (matches.length >= 3 ? skillDemand(matches) : []), [matches])
+  if (demand.length === 0) return null
+  return (
+    <div className="rounded-card border border-border bg-surface-raised p-4">
+      <p className="text-sm font-medium text-text">Skills that would open the most jobs</p>
+      <p className="mt-0.5 text-xs text-text-muted">Missing from your resume, counted across these {matches.length} matches.</p>
+      <ul className="mt-3 flex flex-wrap gap-1.5">
+        {demand.map((d) => (
+          <li key={d.skill} className="rounded-full bg-surface px-2.5 py-0.5 text-xs text-text">
+            {d.skill} <span className="text-text-muted">· {d.jobs} jobs</span>
+          </li>
+        ))}
+      </ul>
+      <GapPlans key={demand.map((d) => d.skill).join("|")} resumeId={resumeId} skills={demand.map((d) => d.skill)} className="mt-3" />
     </div>
   )
 }
