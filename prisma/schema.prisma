@@ -417,3 +417,14 @@ model FeedPrefs {
   @@index([userId])
   @@map("feed_prefs")
 }
+
+// Close the gap: one plan per skill name, shared by everyone (no user data in it).
+model SkillGap {
+  key       String   @id
+  skill     String
+  plan      Json
+  model     String
+  createdAt DateTime @default(now())
+
+  @@map("skill_gaps")
+}

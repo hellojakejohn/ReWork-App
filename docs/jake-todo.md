@@ -55,6 +55,16 @@ Tick them off here or just tell Claude "done with N".
   3. `EMAIL_WEEKLY=admins`: next Monday only you get it, for real.
   4. `EMAIL_WEEKLY=live` and `EMAIL_WELCOME=1`: everyone.
 
+## Close the gap (course links, optional money)
+
+1. Paste `docs/sql/paste-2026-11-24-skill-gaps.sql` in the Supabase SQL editor (caches one
+   plan per skill so each costs once; works without it, just uncached).
+2. Optional, affiliate links: join Coursera's program (on Impact) and Udemy's (on Impact or
+   Rakuten). Each gives a deep-link format. In Vercel, add `AFFILIATE_COURSERA` and/or
+   `AFFILIATE_UDEMY` as that link with `{url}` where the target goes, e.g.
+   `https://your-network-link/...?u={url}`. Must start with https. Unset = plain search
+   links, no commission. A disclosure line shows automatically when a tagged link is shown.
+
 ## Read when you have 10 minutes
 
 - `docs/audit-2026-11-14.md`: the full audit (what was fixed, what's still open).

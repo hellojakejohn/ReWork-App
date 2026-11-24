@@ -9,6 +9,7 @@ import type { BulletChange } from "@/types/tailor"
 import type { CoverLetterTone, StoredCoverLetter } from "@/lib/cover-letter-shared"
 import type { EvidenceAnswer, EvidenceItem, EvidenceRewrite } from "@/lib/evidence-shared"
 import type { FitCoverage, SkillAddition, SkillAnswer } from "@/lib/skill-check-shared"
+import type { GapLink, GapPlan } from "@/lib/gap-plan"
 import type { JobFacts } from "@/lib/job-checks"
 import type { AnswerLength, StoredAnswer } from "@/lib/app-answers-shared"
 import type { StoredInterviewPrep } from "@/lib/interview-prep-shared"
@@ -345,6 +346,20 @@ export async function checkFit(resumeId: string, job: JobDraft): Promise<{ ok: t
     if (!res.ok) return failure(res, "Couldn't check this job's keywords.")
     const data = await res.json()
     return { ok: true, keywords: data.keywords ?? [], coverage: data.coverage }
+  } catch {
+    return NETWORK
+  }
+}
+
+export type GapPlanDTO = GapPlan & { links: GapLink[] }
+
+/** What it would take to gain each missing skill (cached per skill, free). */
+export async function loadGapPlans(resumeId: string, skills: string[]): Promise<{ ok: true; plans: GapPlanDTO[]; partnerLinks: boolean } | Failure> {
+  try {
+    const res = await postJson(`/api/resumes/${resumeId}/gap-plan`, { skills })
+    if (!res.ok) return failure(res, "Couldn't work out a plan. Please try again.")
+    const data = await res.json()
+    return { ok: true, plans: data.plans ?? [], partnerLinks: !!data.partnerLinks }
   } catch {
     return NETWORK
   }

@@ -16,6 +16,7 @@ import { DownloadMenu } from "./download-menu"
 import { ApplyBox } from "./apply-box"
 import { LeftOutList, ReceiptCard, useReceipt } from "./receipt"
 import { missingNudge } from "@/lib/receipt"
+import { GapPlans } from "./gap-plans"
 import { payFromText } from "@/lib/pay"
 import { Card, CardHeader, ErrorNote } from "./ui"
 import { TapeMeasure } from "@/components/ui/tailor"
@@ -214,6 +215,7 @@ function Result({
               ))}
             </div>
             <p className="mt-2 text-xs text-text-muted">These aren&apos;t in your resume, so we didn&apos;t add them.</p>
+            {!checking && <GapPlans resumeId={application.resumeId} skills={keywords.missing} className="mt-3" />}
           </div>
         )}
         {added > 0 ? (

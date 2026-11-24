@@ -15,7 +15,7 @@ export type EventName =
   | 'cover_letter_generated' // { ms, tone } + usage
   | 'evidence_started' // { ok } one evidence interview run (questions generated); the daily ceiling counts these
   | 'evidence_completed' // { applied }
-  | 'skill_check' // { step: keywords | place, ok } one model call; the daily ceiling counts these
+  | 'skill_check' // { step: keywords | place | gap, ok } one model call; the daily ceiling counts these
   | 'skill_check_applied' // { applied, kinds }
   | 'application_answer' // { ms, length, needsYou } + usage; the daily ceiling and FREE's monthly count read these
   | 'interview_prep' // { ms, questions } + usage; same
