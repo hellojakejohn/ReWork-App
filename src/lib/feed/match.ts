@@ -12,6 +12,7 @@ import { weightedScore } from '@/lib/keyword-coverage'
 import type { ParsedResume } from '@/types/parsed-resume'
 import { parseWorkdaySearch, roleKey, workdaySearchRequest, type WorkdayBoard } from './boards'
 import { WORKDAY_BOARDS } from './board-list'
+import { matchWhy, type MatchWhy } from './match-reasons'
 import { prescore, resumeProfile, stateName, titleFit, titleRelevant, usState } from './prefilter'
 import { syncBoard, toJobRow } from './sync'
 import { payFromText } from '@/lib/pay'
@@ -255,6 +256,8 @@ export interface MatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
+  /** Title, skills and level, in short (when the list knows the resume). */
+  why?: MatchWhy
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 
@@ -262,7 +265,13 @@ export interface MatchDTO {
  * This resume's matches, best first (matchRank): open jobs only, dismissed ones hidden, and
  * none that share nothing with the resume (0% and nothing in other words), unless saved.
  */
-export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: string, resumeId: string, take: number): Promise<{ matches: MatchDTO[]; total: number }> {
+export async function listMatches(
+  db: Pick<PrismaClient, 'jobMatch'>,
+  userId: string,
+  resumeId: string,
+  take: number,
+  who?: { wanted: string[]; years: number }
+): Promise<{ matches: MatchDTO[]; total: number }> {
   const where = {
     userId,
     resumeId,
@@ -292,6 +301,7 @@ export async function listMatches(db: Pick<PrismaClient, 'jobMatch'>, userId: st
       savedAt: m.savedAt?.toISOString() ?? null,
       applicationId: m.applicationId,
       isNew: !m.seenAt,
+      ...(who ? { why: matchWhy(job.title, m, who.wanted, who.years) } : {}),
       // Ads found through a job search engine say where they came from (Adzuna's terms).
       job: { ...job, postedAt: job.postedAt?.toISOString() ?? null, via: source === 'adzuna' ? 'Adzuna' : null },
     })),
