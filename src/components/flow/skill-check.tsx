@@ -12,6 +12,7 @@ import { weightedScore } from "@/lib/keyword-coverage"
 import { LOW_FIT_SCORE, MAX_SKILL_NOTE, MAX_SKILL_QUESTIONS, type FitCoverage, type SkillAddition, type SkillAnswer, type SkillLevel } from "@/lib/skill-check-shared"
 import { applySkillAnswers, checkFit, placeSkillAnswers, type JobDraft, type MasterResumeDTO } from "./api"
 import { ErrorNote, inputClass } from "./ui"
+import { GapPlans } from "./gap-plans"
 import { Stitching, TapeMeasure } from "@/components/ui/tailor"
 import { PILES, VERDICT_WORDS, verdictFor } from "@/lib/fit-words"
 
@@ -239,6 +240,7 @@ export function SkillCheck({
               )
             })}
           </ul>
+          <GapPlans resumeId={resumeId} skills={missing.filter((k) => (answers[k]?.level ?? "no") === "no")} />
           {error && <ErrorNote>{error}</ErrorNote>}
           <div className="flex items-center justify-end gap-2">
             <Button variant="text" onClick={onClose} disabled={phase === "placing"}>
