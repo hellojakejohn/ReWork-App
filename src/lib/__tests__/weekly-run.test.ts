@@ -114,6 +114,31 @@ describe('runWeekly', () => {
     expect(h.send).not.toHaveBeenCalled()
   })
 
+  it('the weekly run leaves daily people to the daily brief, and the other way round', async () => {
+    h.db.emailPrefs.findUnique.mockImplementation(async ({ where, select }: { where: { userId: string }; select: Record<string, boolean> }) =>
+      where.userId === 'u1' ? (select.daily ? { daily: true } : { weekly: true, lastWeeklyAt: null, unsubscribedAt: null }) : null
+    )
+    const weekly = await runWeekly({ now: NOW, mode: 'live' })
+    expect(weekly).toMatchObject({ sent: 1, skipped: { gets_daily: 1 } })
+    vi.clearAllMocks()
+    const daily = await runWeekly({ now: NOW, mode: 'live', cadence: 'daily' })
+    expect(daily).toMatchObject({ cadence: 'daily', sent: 1, skipped: { gets_weekly: 1 } })
+    const mail = (h.send.mock.calls[0] as unknown as [{ to: string; subject: string; tag: string }])[0]
+    expect(mail).toMatchObject({ to: 'jake@example.com', subject: 'Your measurements today: 2 new jobs that fit', tag: 'daily' })
+    // Being on the other run is not worth an event row.
+    expect(h.track).not.toHaveBeenCalledWith('weekly_email', expect.objectContaining({ reason: 'gets_weekly' }), expect.anything())
+  })
+
+  it('before the daily SQL is pasted, everyone stays weekly', async () => {
+    h.db.emailPrefs.findUnique.mockImplementation(async ({ select }: { select: Record<string, boolean> }) => {
+      if (select.daily) throw new Error('column "daily" does not exist')
+      return { weekly: true, lastWeeklyAt: null, unsubscribedAt: null }
+    })
+    expect((await runWeekly({ now: NOW, mode: 'live' })).sent).toBe(2)
+    vi.clearAllMocks()
+    expect((await runWeekly({ now: NOW, mode: 'live', cadence: 'daily' })).sent).toBe(0)
+  })
+
   it('stops starting people near the deadline', async () => {
     const s = await runWeekly({ now: NOW, mode: 'live', deadline: Date.now() + 10_000 })
     expect(s.outOfTime).toBe(true)
