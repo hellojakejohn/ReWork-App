@@ -27,6 +27,8 @@ describe('h1bRecord', () => {
     expect(h1bRecord('Google', d)).toEqual({ approvals: 9000, years: 'FY2021-FY2023' })
     expect(h1bRecord('Stripe, Inc.', d)?.approvals).toBe(120)
     expect(h1bRecord('Tiny Bakery', d)?.approvals).toBe(0)
+    expect(h1bRecord('Walmart', { years: 'FY2023', employers: { 'wal mart': 30 } })?.approvals).toBe(30)
+    expect(employerKey('TATA CONSULTANCY SVCS LTD')).toBe(employerKey('Tata Consultancy Services'))
     expect(h1bRecord('Google', { years: '', employers: {} })).toBeNull()
     expect(h1bRecord(' ', d)).toBeNull()
   })

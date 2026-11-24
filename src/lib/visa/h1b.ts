@@ -16,7 +16,7 @@ const H1B = data as H1bData
 // Legal endings, always dropped from the end of a name.
 const LEGAL = new Set(['llc', 'inc', 'incorporated', 'corp', 'corporation', 'co', 'company', 'ltd', 'limited', 'lp', 'llp', 'pc', 'pllc', 'plc', 'na', 'pa', 'sa', 'ag', 'gmbh', 'bv', 'us', 'usa'])
 // Generic endings, dropped while a real name is left ("Amazon.com Services" -> "amazon").
-const GENERIC = new Set(['services', 'service', 'technologies', 'technology', 'solutions', 'systems', 'international', 'intl', 'global', 'holdings', 'holding', 'group', 'labs', 'software', 'com', 'online', 'enterprises', 'worldwide'])
+const GENERIC = new Set(['services', 'service', 'svcs', 'svc', 'associates', 'technologies', 'technology', 'solutions', 'systems', 'international', 'intl', 'global', 'holdings', 'holding', 'group', 'labs', 'software', 'com', 'online', 'enterprises', 'worldwide'])
 
 /** The name we match on: "Amazon.com Services LLC" and "Amazon" both give "amazon". */
 export function employerKey(name: string): string {
@@ -50,9 +50,26 @@ export interface H1bRecord {
   years: string
 }
 
+const compact = new WeakMap<H1bData, Map<string, number>>()
+/** Employers by their name without spaces (largest count wins), built once per data set. */
+function compactIndex(d: H1bData): Map<string, number> {
+  let m = compact.get(d)
+  if (!m) {
+    m = new Map()
+    for (const [k, n] of Object.entries(d.employers)) {
+      const c = k.replace(/ /g, '')
+      if (n > (m.get(c) ?? 0)) m.set(c, n)
+    }
+    compact.set(d, m)
+  }
+  return m
+}
+
 /** This company's H-1B record, or null when the data isn't built (nothing to say). */
 export function h1bRecord(company: string, d: H1bData = H1B): H1bRecord | null {
   if (!d.years || !company.trim()) return null
-  const approvals = Math.max(0, ...employerKeys(company).map((k) => d.employers[k] ?? 0))
+  const keys = employerKeys(company)
+  // "Wal Mart" on file, "Walmart" on the board: fall back to the name without spaces.
+  const approvals = Math.max(0, ...keys.map((k) => d.employers[k] ?? compactIndex(d).get(k.replace(/ /g, '')) ?? 0))
   return { approvals, years: d.years }
 }
