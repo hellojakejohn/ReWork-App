@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { ArrowLeft, ArrowRight, Check, ListChecks, RotateCcw } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, skillLabel } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Segmented } from "@/components/ui/segmented"
 import { TEMPLATES, type TemplateId } from "@/lib/resume-templates"
@@ -183,7 +183,7 @@ function Result({
             <div className="flex flex-wrap gap-1.5">
               {keywords.presentAfter.map((k) => (
                 <span key={k} className={cn("rounded-full px-2.5 py-0.5 text-xs", newlyCovered.includes(k) ? "bg-success-tint font-semibold text-text" : "bg-surface-raised text-text-secondary")}>
-                  {k}
+                  {skillLabel(k)}
                   {newlyCovered.includes(k) && <span className="sr-only"> (added)</span>}
                   {newlyCovered.includes(k) && <span aria-hidden> ↑</span>}
                 </span>
@@ -197,7 +197,7 @@ function Result({
             <div className="flex flex-wrap gap-1.5">
               {keywords.related.map((k) => (
                 <span key={k} className="rounded-full bg-surface-raised px-2.5 py-0.5 text-xs text-text-secondary">
-                  {k}
+                  {skillLabel(k)}
                 </span>
               ))}
             </div>
@@ -210,7 +210,7 @@ function Result({
             <div className="flex flex-wrap gap-1.5">
               {keywords.missing.map((k) => (
                 <span key={k} className="rounded-full bg-removed px-2.5 py-0.5 text-xs text-text">
-                  {k}
+                  {skillLabel(k)}
                 </span>
               ))}
             </div>
