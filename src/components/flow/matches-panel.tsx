@@ -15,6 +15,7 @@ import { matchAgeNote } from "@/lib/job-checks"
 import { findMatches, loadFeed, markMatch, openMatch, type FeedDTO, type FeedMatchDTO, type JobDraft, type Workplace } from "./api"
 import { ErrorNote, StageList, inputClass } from "./ui"
 import { TapeMeasure } from "@/components/ui/tailor"
+import { VISA_EVENT, VISA_KEY, VISA_ONLY_KEY, readFlag, writeFlag } from "@/lib/visa/visa-pref"
 
 const STALE_MS = 20 * 60 * 60 * 1000
 
@@ -91,22 +92,6 @@ function placeLabel(workplace: Workplace, home: string): string {
   return workplace === "remote" ? "Remote" : workplace === "near" ? near : `Remote or ${near}`
 }
 
-// Visa sponsorship: shown only to people who say they'll need it (kept on this device).
-const VISA_KEY = "rework:needs-sponsorship"
-const VISA_ONLY_KEY = "rework:sponsor-only"
-const readFlag = (k: string) => {
-  try {
-    return window.localStorage.getItem(k) === "1"
-  } catch {
-    return false
-  }
-}
-const writeFlag = (k: string, on: boolean) => {
-  try {
-    if (on) window.localStorage.setItem(k, "1")
-    else window.localStorage.removeItem(k)
-  } catch {}
-}
 
 /** Hidden by "possible sponsors only": the post rules it out, or the employer has no H-1B record. */
 export function rulesOutSponsor(m: Pick<FeedMatchDTO, "visa">): boolean {
@@ -179,14 +164,14 @@ export function MatchesPanel({
   const [needsVisa, setNeedsVisa] = useState(false)
   const [sponsorOnly, setSponsorOnly] = useState(false)
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage after mount so SSR and first render agree
-    setNeedsVisa(readFlag(VISA_KEY))
-    setSponsorOnly(readFlag(VISA_ONLY_KEY))
+    const sync = () => {
+      setNeedsVisa(readFlag(VISA_KEY))
+      setSponsorOnly(readFlag(VISA_ONLY_KEY))
+    }
+    sync()
+    window.addEventListener(VISA_EVENT, sync)
+    return () => window.removeEventListener(VISA_EVENT, sync)
   }, [])
-  const changeNeedsVisa = (on: boolean) => {
-    setNeedsVisa(on)
-    writeFlag(VISA_KEY, on)
-  }
   const changeSponsorOnly = (on: boolean) => {
     setSponsorOnly(on)
     writeFlag(VISA_ONLY_KEY, on)
@@ -345,18 +330,12 @@ export function MatchesPanel({
           </span>
         )}
       </div>
-      {!compact && (
+      {!compact && needsVisa && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
-          <label className="flex items-center gap-1.5">
-            <input type="checkbox" className="h-3.5 w-3.5 accent-[rgb(var(--text))]" checked={needsVisa} onChange={(e) => changeNeedsVisa(e.currentTarget.checked)} />
-            I&apos;ll need visa sponsorship
+          <label className="flex items-center gap-1.5" title="Hides jobs whose post rules sponsorship out, and employers with no H-1B approvals on record">
+            <input type="checkbox" className="h-3.5 w-3.5 accent-[rgb(var(--text))]" checked={sponsorOnly} onChange={(e) => changeSponsorOnly(e.currentTarget.checked)} />
+            Possible sponsors only{sponsorOnly && visaHidden > 0 ? ` (${visaHidden} hidden)` : ""}
           </label>
-          {needsVisa && (
-            <label className="flex items-center gap-1.5" title="Hides jobs whose post rules sponsorship out, and employers with no H-1B approvals on record">
-              <input type="checkbox" className="h-3.5 w-3.5 accent-[rgb(var(--text))]" checked={sponsorOnly} onChange={(e) => changeSponsorOnly(e.currentTarget.checked)} />
-              Possible sponsors only{sponsorOnly && visaHidden > 0 ? ` (${visaHidden} hidden)` : ""}
-            </label>
-          )}
         </div>
       )}
       {running && !compact && (
