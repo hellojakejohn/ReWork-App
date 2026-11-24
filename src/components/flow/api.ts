@@ -457,6 +457,8 @@ export interface FeedMatchDTO {
   savedAt: string | null
   applicationId: string | null
   isNew: boolean
+  /** Visa sponsorship: what the post says, and the employer's H-1B record (null = no data). */
+  visa?: { post: "no" | "yes" | null; h1b: { approvals: number; years: string } | null }
   /** Why it's a match: title, skills, level. */
   why?: {
     title: { fit: "close" | "partly" | "different"; wanted: string | null }

@@ -16,6 +16,7 @@ import { CONTACT_EMAIL, FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 import { NO_ACCESS } from "@/lib/entitlement-rules"
 import { AccessSummary, OfferCards } from "@/components/billing/offer-cards"
 import { AvatarColorPicker } from "@/components/ui/avatar"
+import { VISA_KEY, VISA_ONLY_KEY, readFlag, writeFlag } from "@/lib/visa/visa-pref"
 
 interface SettingsModalProps {
   isOpen: boolean
@@ -117,6 +118,8 @@ export function SettingsModal({ isOpen, onClose, initialTab = "account" }: Setti
                   <h3 className="text-lg font-semibold text-text mb-4">Avatar color</h3>
                   <AvatarColorPicker userId={session?.user?.id} />
                 </div>
+                <Separator />
+                <JobSearchPrefs />
               </div>
             )}
 
@@ -173,6 +176,34 @@ interface ReferralInfo {
   pendingForMe?: boolean
   days?: number
   monthlyCap?: number
+}
+
+// Off by default: only people who turn it on see visa lines and the sponsor filter on matches.
+function JobSearchPrefs() {
+  const [needsVisa, setNeedsVisa] = useState(false)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage after mount so SSR and first render agree
+    setNeedsVisa(readFlag(VISA_KEY))
+  }, [])
+  const change = (on: boolean) => {
+    setNeedsVisa(on)
+    writeFlag(VISA_KEY, on)
+    if (!on) writeFlag(VISA_ONLY_KEY, false)
+  }
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-text mb-4">Job search</h3>
+      <label className="flex items-start gap-3 rounded-card bg-surface-raised p-4">
+        <input type="checkbox" className="mt-1 h-4 w-4 accent-[rgb(var(--text))]" checked={needsVisa} onChange={(e) => change(e.currentTarget.checked)} />
+        <span>
+          <span className="block font-medium text-text">I&apos;ll need visa sponsorship</span>
+          <span className="block text-sm text-text-muted">
+            Your matches show which employers have sponsored H-1B workers and which posts rule it out, with a filter for possible sponsors. Saved on this device only.
+          </span>
+        </span>
+      </label>
+    </div>
+  )
 }
 
 type EmailFrequency = "off" | "weekly" | "daily"

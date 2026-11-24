@@ -15,7 +15,8 @@
     "feed:spike": "tsx --tsconfig tsconfig.json scripts/feed-spike.ts",
     "feed:check": "tsx --tsconfig tsconfig.json scripts/feed-check.ts",
     "smoke:answers": "tsx --tsconfig tsconfig.json scripts/smoke-answers.ts",
-    "backup": "tsx --tsconfig tsconfig.json scripts/backup-db.ts"
+    "backup": "tsx --tsconfig tsconfig.json scripts/backup-db.ts",
+    "visa:h1b": "tsx --tsconfig tsconfig.json scripts/build-h1b.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
