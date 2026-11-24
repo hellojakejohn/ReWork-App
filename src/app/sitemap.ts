@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { SITE_URL } from '@/lib/site'
 import { ROLES } from '@/lib/role-pages'
+import { AUDIENCES } from '@/lib/audiences'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -9,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/check`, changeFrequency: 'monthly', priority: 0.9 },
     { url: `${SITE_URL}/jobs`, changeFrequency: 'daily', priority: 0.8 },
     ...ROLES.map((r) => ({ url: `${SITE_URL}/jobs/${r.slug}`, changeFrequency: 'daily' as const, priority: 0.7 })),
+    ...AUDIENCES.map((a) => ({ url: `${SITE_URL}/for/${a.slug}`, changeFrequency: 'monthly' as const, priority: 0.7 })),
     { url: `${SITE_URL}/visa-sponsorship-jobs`, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE_URL}/opt-unemployment-days`, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.8 },
