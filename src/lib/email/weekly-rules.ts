@@ -5,29 +5,41 @@ export const WEEKLY_JOBS = 5
 export const WEEKLY_GAP_DAYS = 6
 /** Only people who used ReWork in this many days. */
 export const ACTIVE_DAYS = 90
+/** The daily brief: at most once in this many hours (the cron runs a few times each morning). */
+export const DAILY_GAP_HOURS = 20
 const DAY = 86_400_000
+const HOUR = 3_600_000
 
-export type SkipReason = 'off' | 'unsubscribed' | 'no_email' | 'inactive' | 'recent' | 'prefs_unreadable'
+/** Who a run is for: the Monday weekly email, or the daily brief. */
+export type Cadence = 'weekly' | 'daily'
+
+export type SkipReason = 'off' | 'unsubscribed' | 'no_email' | 'inactive' | 'recent' | 'prefs_unreadable' | 'gets_daily' | 'gets_weekly'
+/** Skips not worth an event row: the person is just on the other run, or already sent. */
+export const QUIET_SKIPS = new Set(['recent', 'not_admin', 'gets_daily', 'gets_weekly'])
 
 export function weeklySkipReason(
-  u: { email: string | null; prefs: { weekly: boolean; lastWeeklyAt: Date | null; unsubscribedAt: Date | null } | null; lastActiveAt: Date | null },
-  now: Date
+  u: { email: string | null; prefs: { weekly: boolean; daily?: boolean; lastWeeklyAt: Date | null; unsubscribedAt: Date | null } | null; lastActiveAt: Date | null },
+  now: Date,
+  cadence: Cadence = 'weekly'
 ): SkipReason | null {
   if (!u.email) return 'no_email'
   if (!u.prefs) return 'prefs_unreadable'
   if (u.prefs.unsubscribedAt) return 'unsubscribed'
   if (!u.prefs.weekly) return 'off'
+  if (cadence === 'weekly' && u.prefs.daily) return 'gets_daily'
+  if (cadence === 'daily' && !u.prefs.daily) return 'gets_weekly'
   if (!u.lastActiveAt || now.getTime() - u.lastActiveAt.getTime() > ACTIVE_DAYS * DAY) return 'inactive'
-  if (u.prefs.lastWeeklyAt && now.getTime() - u.prefs.lastWeeklyAt.getTime() < WEEKLY_GAP_DAYS * DAY) return 'recent'
+  if (u.prefs.lastWeeklyAt && u.prefs.lastWeeklyAt > sendCutoff(now, cadence)) return 'recent'
   return null
 }
 
-/** Jobs new since `since` (their last email, else a week ago). */
-export function weeklySince(lastWeeklyAt: Date | null, now: Date): Date {
-  return lastWeeklyAt ?? new Date(now.getTime() - 7 * DAY)
+/** Jobs new since `since` (their last email, else a week or a day ago). */
+export function weeklySince(lastWeeklyAt: Date | null, now: Date, cadence: Cadence = 'weekly'): Date {
+  return lastWeeklyAt ?? new Date(now.getTime() - (cadence === 'daily' ? DAY : 7 * DAY))
 }
 
-export const sendCutoff = (now: Date) => new Date(now.getTime() - WEEKLY_GAP_DAYS * DAY)
+/** A send before this is old enough to send again. */
+export const sendCutoff = (now: Date, cadence: Cadence = 'weekly') => new Date(now.getTime() - (cadence === 'daily' ? DAILY_GAP_HOURS * HOUR : WEEKLY_GAP_DAYS * DAY))
 
 export interface CandidateMatch {
   id: string

@@ -5,6 +5,7 @@ import { signOut, useSession } from "next-auth/react"
 import Link from "next/link"
 import { Copy, Crown, CreditCard, Download, Gift, Mail, Settings, Shield, Trash2, User } from "lucide-react"
 import { toast } from "sonner"
+import { Segmented } from "@/components/ui/segmented"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -174,8 +175,15 @@ interface ReferralInfo {
   monthlyCap?: number
 }
 
+type EmailFrequency = "off" | "weekly" | "daily"
+const FREQUENCY_SAVED: Record<EmailFrequency, string> = {
+  off: "Job emails are off.",
+  weekly: "Weekly job emails are on.",
+  daily: "The daily brief is on.",
+}
+
 function EmailTab() {
-  const [weekly, setWeekly] = useState<boolean | null>(null)
+  const [frequency, setFrequency] = useState<EmailFrequency | null>(null)
   const [unavailable, setUnavailable] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -183,10 +191,10 @@ function EmailTab() {
     let live = true
     fetch("/api/email/prefs")
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
-      .then((data: { available: boolean; weekly?: boolean }) => {
+      .then((data: { available: boolean; weekly?: boolean; frequency?: EmailFrequency }) => {
         if (!live) return
         if (!data.available) setUnavailable(true)
-        else setWeekly(!!data.weekly)
+        else setFrequency(data.frequency ?? (data.weekly ? "weekly" : "off"))
       })
       .catch(() => live && setUnavailable(true))
     return () => {
@@ -194,16 +202,17 @@ function EmailTab() {
     }
   }, [])
 
-  const change = async (on: boolean) => {
-    const before = weekly
-    setWeekly(on)
+  const change = async (next: EmailFrequency) => {
+    const before = frequency
+    if (next === before) return
+    setFrequency(next)
     setSaving(true)
     try {
-      const res = await fetch("/api/email/prefs", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ weekly: on }) })
+      const res = await fetch("/api/email/prefs", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ frequency: next }) })
       if (!res.ok) throw new Error(String(res.status))
-      toast.success(on ? "Weekly job emails are on." : "Weekly job emails are off.")
+      toast.success(FREQUENCY_SAVED[next])
     } catch {
-      setWeekly(before)
+      setFrequency(before)
       toast.error("Couldn't save that. Try again in a minute.")
     } finally {
       setSaving(false)
@@ -215,25 +224,28 @@ function EmailTab() {
       <div>
         <h3 className="text-lg font-semibold text-text mb-2">Email</h3>
         <p className="text-sm text-text-secondary">
-          On Mondays we send the best new jobs for your resume, each with its match and one tap to tailor. Nothing new that week, no email.
+          We send the best new jobs for your resume, each with its match and one tap to tailor: on Mondays, or each morning with the daily brief. Nothing new, no email.
         </p>
       </div>
       {unavailable && <p className="text-sm text-text-muted">Email settings aren&apos;t available right now. Check back soon.</p>}
-      {!unavailable && weekly === null && <p className="text-sm text-text-muted">Loading...</p>}
-      {!unavailable && weekly !== null && (
-        <label className="flex items-start gap-3 rounded-card bg-surface-raised p-4">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4 accent-[rgb(var(--text))]"
-            checked={weekly}
+      {!unavailable && frequency === null && <p className="text-sm text-text-muted">Loading...</p>}
+      {!unavailable && frequency !== null && (
+        <div className="space-y-3 rounded-card bg-surface-raised p-4">
+          <span className="block font-medium text-text">Job matches by email</span>
+          <Segmented
+            label="Job match emails"
+            value={frequency}
             disabled={saving}
-            onChange={(e) => void change(e.currentTarget.checked)}
+            onChange={(f) => void change(f)}
+            className="bg-surface"
+            options={[
+              { id: "off", label: "Off" },
+              { id: "weekly", label: "Weekly" },
+              { id: "daily", label: "Daily" },
+            ]}
           />
-          <span>
-            <span className="block font-medium text-text">Weekly job matches</span>
-            <span className="block text-sm text-text-muted">Jobs and match numbers only, never your resume text. Every email has a one-click unsubscribe.</span>
-          </span>
-        </label>
+          <span className="block text-sm text-text-muted">Jobs and match numbers only, never your resume text. Every email has a one-click unsubscribe.</span>
+        </div>
       )}
       <p className="text-xs text-text-muted">Receipts and account emails (like a deleted account) still come when they need to.</p>
     </div>
