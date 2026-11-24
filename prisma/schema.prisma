@@ -281,6 +281,8 @@ model Referral {
 model EmailPrefs {
   userId         String    @id
   weekly         Boolean   @default(true)
+  // The daily brief instead of the weekly email (docs/sql/paste-2026-11-24.sql).
+  daily          Boolean   @default(false)
   lastWeeklyAt   DateTime?
   unsubscribedAt DateTime?
   updatedAt      DateTime  @default(now()) @updatedAt

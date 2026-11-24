@@ -459,6 +459,12 @@ export interface FeedMatchDTO {
   isNew: boolean
   /** Visa sponsorship: what the post says, and the employer's H-1B record (null = no data). */
   visa?: { post: "no" | "yes" | null; h1b: { approvals: number; years: string } | null }
+  /** Why it's a match: title, skills, level. */
+  why?: {
+    title: { fit: "close" | "partly" | "different"; wanted: string | null }
+    skills: { have: number; other: number; of: number }
+    level: { fits: boolean; note: string }
+  }
   job: { title: string; company: string; location: string; remote: boolean; payLabel: string | null; postedAt: string | null; url: string; via: string | null }
 }
 export interface FeedDTO {

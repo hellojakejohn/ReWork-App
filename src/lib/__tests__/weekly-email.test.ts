@@ -44,6 +44,25 @@ describe('who gets the weekly email', () => {
     expect(weeklySince(null, NOW)).toEqual(ago(7))
     expect(sendCutoff(NOW)).toEqual(ago(6))
   })
+  it('splits people between the weekly email and the daily brief', () => {
+    const daily = { ...on, daily: true }
+    expect(weeklySkipReason({ email: 'a@b.c', prefs: daily, lastActiveAt: ago(1) }, NOW)).toBe('gets_daily')
+    expect(weeklySkipReason({ email: 'a@b.c', prefs: on, lastActiveAt: ago(1) }, NOW, 'daily')).toBe('gets_weekly')
+    expect(weeklySkipReason({ email: 'a@b.c', prefs: daily, lastActiveAt: ago(1) }, NOW, 'daily')).toBeNull()
+    // Daily: yesterday's send is old enough, this morning's is not.
+    expect(weeklySkipReason({ email: 'a@b.c', prefs: { ...daily, lastWeeklyAt: ago(1) }, lastActiveAt: ago(1) }, NOW, 'daily')).toBeNull()
+    expect(weeklySkipReason({ email: 'a@b.c', prefs: { ...daily, lastWeeklyAt: ago(0.5) }, lastActiveAt: ago(1) }, NOW, 'daily')).toBe('recent')
+    // Off wins over daily.
+    expect(weeklySkipReason({ email: 'a@b.c', prefs: { ...daily, weekly: false }, lastActiveAt: ago(1) }, NOW, 'daily')).toBe('off')
+  })
+  it('the daily brief looks back a day and waits 20 hours', () => {
+    expect(weeklySince(null, NOW, 'daily')).toEqual(ago(1))
+    expect(sendCutoff(NOW, 'daily')).toEqual(new Date(NOW.getTime() - 20 * 3_600_000))
+  })
+  it('the daily brief says today, not this week', () => {
+    expect(weeklySubject(1, true)).toBe('Your measurements today: 1 new job that fit')
+    expect(weeklySubject(3)).toBe('Your measurements this week: 3 new jobs that fit')
+  })
   it('reads a first name, or none', () => {
     expect(firstName('Jakob Johnson')).toBe('Jakob')
     expect(firstName('  ')).toBeNull()

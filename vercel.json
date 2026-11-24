@@ -20,6 +20,10 @@
       "schedule": "0,20,40 13-16 * * 1"
     },
     {
+      "path": "/api/cron/daily-email",
+      "schedule": "0,20,40 13 * * *"
+    },
+    {
       "path": "/api/cron/admin-digest",
       "schedule": "45 14 * * *"
     }

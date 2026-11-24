@@ -96,6 +96,8 @@ export interface WeeklyJob {
 }
 
 export interface WeeklyData {
+  /** The daily brief says "today" and "since yesterday" instead of "this week". */
+  daily?: boolean
   firstName: string | null
   jobs: WeeklyJob[]
   /** Open jobs we checked, for the opening line. */
@@ -108,8 +110,8 @@ export interface WeeklyData {
 const place = (j: WeeklyJob) => (j.remote && !/remote/i.test(j.location) ? `${j.location ? `${j.location}, ` : ''}Remote` : j.location)
 const roundDown = (n: number) => (n >= 10_000 ? `${Math.floor(n / 1000).toLocaleString('en-US')},000` : n.toLocaleString('en-US'))
 
-export function weeklySubject(count: number): string {
-  return `Your measurements this week: ${count} new ${count === 1 ? 'job' : 'jobs'} that fit`
+export function weeklySubject(count: number, daily = false): string {
+  return `Your measurements ${daily ? 'today' : 'this week'}: ${count} new ${count === 1 ? 'job' : 'jobs'} that fit`
 }
 
 /** Adzuna's required label: the word Adzuna, at least 116 x 23 px, linked to their site. */
@@ -119,11 +121,11 @@ function adzunaLabel(): string {
 
 export function weeklyEmail(d: WeeklyData, f: Footer): EmailContent {
   const n = d.jobs.length
-  const subject = weeklySubject(n)
+  const subject = weeklySubject(n, d.daily)
   const top = d.jobs[0]
   const preheader = top ? `${top.title} at ${top.company}, ${top.score}% match, and ${n - 1} more.`.replace(', and 0 more.', '.') : 'New jobs that fit your resume.'
   const hello = d.firstName ? `Hi ${d.firstName},` : 'Hi,'
-  const intro = `We checked ${roundDown(d.checked)} open jobs against your resume. These are the best new ones this week.`
+  const intro = `We checked ${roundDown(d.checked)} open jobs against your resume. These are the best new ones ${d.daily ? 'since yesterday' : 'this week'}.`
 
   const cards = d.jobs
     .map((j) => {

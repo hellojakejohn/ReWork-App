@@ -128,6 +128,28 @@ function VisaLine({ visa }: { visa: NonNullable<FeedMatchDTO["visa"]> }) {
   )
 }
 
+const TITLE_FIT = { close: "Title matches", partly: "Title partly matches", different: "Different title" } as const
+
+/** Why it's a match, in one line: title, skills, level. */
+function MatchWhyLine({ why }: { why: NonNullable<FeedMatchDTO["why"]> }) {
+  const { title, skills, level } = why
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
+      <span title={title.wanted ? `Compared with ${title.wanted}` : undefined}>{TITLE_FIT[title.fit]}</span>
+      {skills.of > 0 && (
+        <>
+          <span aria-hidden>·</span>
+          <span title="The job's key skills your resume shows in its words, and in other words">
+            {skills.have} of {skills.of} key skills{skills.other > 0 ? `, ${skills.other} more in other words` : ""}
+          </span>
+        </>
+      )}
+      <span aria-hidden>·</span>
+      <span className={level.fits ? undefined : "font-medium text-warn"}>{level.note}</span>
+    </p>
+  )
+}
+
 function scoreTone(score: number): string {
   if (score >= 45) return "bg-success-tint text-text"
   if (score >= 25) return "bg-surface-raised text-text"
@@ -407,6 +429,7 @@ export function MatchesPanel({
                     )}
                   </p>
                   {!compact && needsVisa && m.visa && <VisaLine visa={m.visa} />}
+                  {!compact && m.why && <MatchWhyLine why={m.why} />}
                   {m.reach >= m.score + 5 && (
                     <p className="mt-1 flex items-center gap-2 text-xs font-medium text-success" title="Your resume already shows more of this job's skills in other words. Tailoring puts them in the job's words.">
                       <ReachBar score={m.score} reach={m.reach} />

@@ -4,6 +4,15 @@ Every Monday morning: the best new jobs for each person's resume this week, each
 fit on a tape measure and one tap to tailor. The reason to come back, and to stay Pro
 between searches.
 
+## Daily brief (Nov 24)
+
+Settings > Email picks **Off / Weekly / Daily**. Daily people get the same email each
+morning (`/api/cron/daily-email`, 13:00 UTC, three passes 20 minutes apart, after the 12:30
+job pull), with "today" and "since yesterday" in the wording, at most once per 20 hours.
+Nothing new since yesterday = no email. The Monday weekly run skips them. Same
+`EMAIL_WEEKLY` switch, same unsubscribe. Needs `docs/sql/paste-2026-11-24.sql` (one
+column, `email_prefs.daily`); until then everyone stays weekly.
+
 ## What the email says
 
 Subject: **Your measurements this week: 5 new jobs that fit**
