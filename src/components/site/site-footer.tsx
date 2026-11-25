@@ -15,6 +15,7 @@ export function SiteFooter() {
             <Link href="/jobs" className="underline-offset-4 hover:text-text hover:underline">Jobs by role</Link>
             <Link href="/#who" className="underline-offset-4 hover:text-text hover:underline">Who it&apos;s for</Link>
             <Link href="/proof" className="underline-offset-4 hover:text-text hover:underline">Proof</Link>
+            <Link href="/featured" className="underline-offset-4 hover:text-text hover:underline">As seen on</Link>
             <Link href="/privacy" className="underline-offset-4 hover:text-text hover:underline">Privacy</Link>
             <Link href="/terms" className="underline-offset-4 hover:text-text hover:underline">Terms</Link>
             <a href={`mailto:${CONTACT_EMAIL}`} className="underline-offset-4 hover:text-text hover:underline">Contact</a>
