@@ -12,6 +12,10 @@ const EVENT_ORDER = [
   "tailored",
   "feed_match",
   "feed_pull",
+  "job_check_public",
+  "fit_check_public",
+  "lead_captured",
+  "lead_email",
   "cover_letter_generated",
   "evidence_completed",
   "download",
@@ -92,6 +96,69 @@ export function AnalyticsPanel() {
               <div className="text-2xl font-bold">{usd(report.spendTotalUsd)}</div>
               <div className="text-sm text-text-muted">AI spend estimate, {report.days} days</div>
             </div>
+          </div>
+
+          <div className={box}>
+            <h3 className="mb-1 text-sm font-semibold">Completed: first 100</h3>
+            <p className="mb-3 text-xs text-text-muted">Finished results, not page loads. 7 days and all time, whatever the window above.</p>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {(
+                [
+                  ["Job checks (/check)", report.completions.checks],
+                  ["Fit checks (/fit)", report.completions.fits],
+                  ["Tailors", report.completions.tailors],
+                  [
+                    "All three",
+                    {
+                      d7: report.completions.checks.d7 + report.completions.fits.d7 + report.completions.tailors.d7,
+                      all: report.completions.checks.all + report.completions.fits.all + report.completions.tailors.all,
+                    },
+                  ],
+                ] as const
+              ).map(([label, n]) => (
+                <div key={label}>
+                  <div className="text-2xl font-bold">
+                    {n.d7.toLocaleString()} <span className="text-base font-normal text-text-muted">/ {n.all.toLocaleString()}</span>
+                  </div>
+                  <div className="text-sm text-text-muted">{label}, 7d / all</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto rounded-card bg-surface">
+            <table className="w-full">
+              <caption className="px-3 pt-3 text-left text-sm font-semibold">
+                {report.leads
+                  ? `Emails from /check and /fit: ${report.leads.total} all time, ${report.leads.inWindow} in ${report.days} days, ${report.leads.unsubscribed} unsubscribed`
+                  : "Emails from /check and /fit: leads table missing (paste docs/sql/paste-2026-11-25-leads.sql)"}
+              </caption>
+              <thead className="bg-surface-raised">
+                <tr>
+                  <th className={th}>Tool</th>
+                  <th className={th}>Ref</th>
+                  <th className={th}>All time</th>
+                  <th className={th}>{report.days} days</th>
+                  <th className={th}>Unsubscribed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {(!report.leads || report.leads.rows.length === 0) && (
+                  <tr>
+                    <td className={td} colSpan={5}>No emails yet.</td>
+                  </tr>
+                )}
+                {report.leads?.rows.map((row) => (
+                  <tr key={`${row.source}:${row.ref}`}>
+                    <td className={td}>{row.source}</td>
+                    <td className={`${td} font-mono`}>{row.ref}</td>
+                    <td className={td}>{row.leads}</td>
+                    <td className={td}>{row.inWindow}</td>
+                    <td className={td}>{row.unsubscribed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {report.feed && (
