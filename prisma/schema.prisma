@@ -291,6 +291,24 @@ model EmailPrefs {
   @@map("email_prefs")
 }
 
+// Optional emails from the free tools (/check, /fit), given under the result. No account,
+// never merged with users. Only the email, which tool, the ?ref= tag and the landing path:
+// never the job or resume (docs/sql/paste-2026-11-25-leads.sql, src/lib/leads.ts).
+model Lead {
+  id             String    @id @default(cuid())
+  email          String // lowercased
+  source         String // check | fit
+  ref            String    @default("direct")
+  landing        String?
+  consentVersion String
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([email, source])
+  @@index([createdAt])
+  @@map("leads")
+}
+
 // Processed Stripe webhook events, for idempotency.
 model StripeEvent {
   id          String   @id

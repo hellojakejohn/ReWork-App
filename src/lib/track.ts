@@ -44,6 +44,9 @@ export type EventName =
   | 'welcome_email' // { status: sent | failed, resendId?, error? }
   | 'email_prefs' // { weekly, via: settings | unsubscribe }
   | 'admin_digest' // { status: sent | dry | failed, alerts, to?, error? } the daily admin email (src/lib/email/admin-digest.ts)
+  | 'lead_captured' // { source: check | fit, ref } a new email from the card under a free-tool result (src/lib/leads.ts)
+  | 'lead_email' // { source, status: sent | dry | off | failed, resendId?, error? } the one email that lead asked for
+  | 'lead_unsubscribed' // { source }
   | 'feed_pull' // { boards, ok, failed, failedBoards, skipped, listed, added, usajobs, closed, staleClosed, purged, ms } the daily job pull (src/lib/feed/sync.ts)
 
 export type EventProps = Record<string, string | number | boolean | null | undefined>
