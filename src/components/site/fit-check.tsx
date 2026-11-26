@@ -12,6 +12,7 @@ import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 import { PILES, VERDICT_WORDS, type FitVerdict } from "@/lib/fit-words"
 import { Stitching, TapeMeasure, stitchedEdge } from "@/components/ui/tailor"
 import { ShareButtons } from "@/components/ui/share-button"
+import { LeadCard } from "@/components/site/lead-card"
 
 interface FitResult {
   score: number
@@ -150,6 +151,7 @@ export function FitCheck({ startingJob }: { startingJob?: StartingJob | null } =
       {result && (
         <div ref={resultRef} className="mt-12 scroll-mt-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
           <Result result={result} />
+          <LeadCard source="fit" missing={result.missing} className="mt-6" />
         </div>
       )}
     </div>
