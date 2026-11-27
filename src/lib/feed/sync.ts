@@ -85,6 +85,9 @@ export interface PullSummary {
  * `deadlineMs` (the cron has 300 s). Boards not reached just wait for tomorrow: nothing is
  * closed for a board that wasn't read.
  */
+
+/** Longest wait for one board's full list (the biggest is about 46 MB). */
+export const BOARD_TIMEOUT_MS = 90_000
 export async function pullListBoards(
   db: Db,
   boards: Board[],
@@ -104,7 +107,12 @@ export async function pullListBoards(
       }
       const id = boardId(board)
       try {
-        const res = await fetchFn(boardListUrl(board), { headers: { accept: 'application/json', 'user-agent': 'ReWork job feed' }, signal: AbortSignal.timeout(30_000) })
+        // Big boards are big: Anduril's full list is about 46 MB and timed out daily at 30s
+        // (Nov 20 to 27). Give each board up to 90s, but never past deadline + 30s, so the
+        // route still finishes inside its 300s.
+        const left = deadlineMs + 30_000 - (Date.now() - started)
+        const timeoutMs = Math.max(10_000, Math.min(BOARD_TIMEOUT_MS, left))
+        const res = await fetchFn(boardListUrl(board), { headers: { accept: 'application/json', 'user-agent': 'ReWork job feed' }, signal: AbortSignal.timeout(timeoutMs) })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const jobs = parseBoardList(board, await res.json())
         // An empty answer from a board that had jobs is more likely a hiccup than every job
