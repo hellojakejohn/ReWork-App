@@ -29,6 +29,81 @@ export interface AnalyticsReport {
   pro: { activeUsers: number; subscriptions: number; passes: number; comps: number; mrrUsd: number; passRevenue30dUsd: number }
   /** Matches on upload. Null until the feed tables exist. */
   feed: FeedStats | null
+  /** Completed /check, /fit and tailors, last 7 days and all time (the first-100 count). */
+  completions: CompletionStats
+  /** Emails from the card under /check and /fit results. Null until the leads table exists. */
+  leads: LeadStats | null
+}
+
+export interface CompletionStats {
+  checks: { d7: number; all: number }
+  fits: { d7: number; all: number }
+  tailors: { d7: number; all: number }
+}
+
+/** A finished result, not a page load: /check counts ok:true only; /fit and tailors only fire on a result. */
+export async function completionStats(now = new Date()): Promise<CompletionStats> {
+  const d7 = { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) }
+  const okCheck = { name: 'job_check_public', props: { path: ['ok'], equals: true } } satisfies Prisma.EventWhereInput
+  const [c7, cAll, f7, fAll, t7, tAll] = await Promise.all([
+    prisma.event.count({ where: { ...okCheck, createdAt: d7 } }),
+    prisma.event.count({ where: okCheck }),
+    prisma.event.count({ where: { name: 'fit_check_public', createdAt: d7 } }),
+    prisma.event.count({ where: { name: 'fit_check_public' } }),
+    prisma.event.count({ where: { name: 'tailored', createdAt: d7 } }),
+    prisma.event.count({ where: { name: 'tailored' } }),
+  ])
+  return { checks: { d7: c7, all: cAll }, fits: { d7: f7, all: fAll }, tailors: { d7: t7, all: tAll } }
+}
+
+export interface LeadRow {
+  source: string
+  ref: string
+  leads: number
+  inWindow: number
+  unsubscribed: number
+}
+
+export interface LeadStats {
+  total: number
+  inWindow: number
+  unsubscribed: number
+  rows: LeadRow[]
+}
+
+/** Pure: lead counts by tool and ?ref= tag, biggest first. */
+export function leadRows(all: { source: string; ref: string; n: number; unsub: number }[], recent: { source: string; ref: string; n: number }[]): LeadRow[] {
+  const rows = new Map<string, LeadRow>()
+  const key = (r: { source: string; ref: string }) => `${r.source}\u0000${r.ref}`
+  for (const r of all) rows.set(key(r), { source: r.source, ref: r.ref, leads: r.n, inWindow: 0, unsubscribed: r.unsub })
+  for (const r of recent) {
+    const row = rows.get(key(r))
+    if (row) row.inWindow = r.n
+  }
+  return [...rows.values()].sort((a, b) => b.leads - a.leads || a.source.localeCompare(b.source) || a.ref.localeCompare(b.ref))
+}
+
+export async function leadStats(since: Date): Promise<LeadStats | null> {
+  try {
+    const [all, unsub, recent] = await Promise.all([
+      prisma.lead.groupBy({ by: ['source', 'ref'], _count: { _all: true } }),
+      prisma.lead.groupBy({ by: ['source', 'ref'], where: { unsubscribedAt: { not: null } }, _count: { _all: true } }),
+      prisma.lead.groupBy({ by: ['source', 'ref'], where: { createdAt: { gte: since } }, _count: { _all: true } }),
+    ])
+    const unsubBy = new Map(unsub.map((u) => [`${u.source}\u0000${u.ref}`, u._count._all]))
+    const rows = leadRows(
+      all.map((g) => ({ source: g.source, ref: g.ref, n: g._count._all, unsub: unsubBy.get(`${g.source}\u0000${g.ref}`) ?? 0 })),
+      recent.map((g) => ({ source: g.source, ref: g.ref, n: g._count._all }))
+    )
+    return {
+      total: rows.reduce((n, r) => n + r.leads, 0),
+      inWindow: rows.reduce((n, r) => n + r.inWindow, 0),
+      unsubscribed: rows.reduce((n, r) => n + r.unsubscribed, 0),
+      rows,
+    }
+  } catch {
+    return null
+  }
 }
 
 export interface SourceRow {
@@ -239,5 +314,7 @@ export async function analyticsReport(days: WindowDays, now = new Date()): Promi
       passRevenue30dUsd: passesSold30d * PRICING.pass.priceUsd,
     },
     feed: await feedStats(since),
+    completions: await completionStats(now),
+    leads: await leadStats(since),
   }
 }

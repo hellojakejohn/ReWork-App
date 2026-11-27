@@ -25,6 +25,7 @@ export function esc(s: string): string {
 export interface Footer {
   siteUrl: string
   unsubscribeUrl: string
+  /** Empty for people without an account (free-tool leads): no settings link. */
   settingsUrl: string
   mailingAddress: string
   /** One line on why this person gets this email. */
@@ -50,14 +51,14 @@ function shell(preheader: string, body: string, f: Footer): string {
 ${body}
 <tr><td style="padding:24px 4px 0;font-family:${SANS};font-size:12px;line-height:18px;color:${C.faint};">
 ${esc(f.why)}<br>
-<a href="${esc(f.unsubscribeUrl)}" style="color:${C.faint};">Unsubscribe</a> &middot; <a href="${esc(f.settingsUrl)}" style="color:${C.faint};">Email settings</a> &middot; <a href="mailto:support@rework.careers" style="color:${C.faint};">support@rework.careers</a><br>
+<a href="${esc(f.unsubscribeUrl)}" style="color:${C.faint};">Unsubscribe</a> &middot; ${f.settingsUrl ? `<a href="${esc(f.settingsUrl)}" style="color:${C.faint};">Email settings</a> &middot; ` : ''}<a href="mailto:support@rework.careers" style="color:${C.faint};">support@rework.careers</a><br>
 ReWork &middot; ${esc(f.mailingAddress)}
 </td></tr>
 </table></td></tr></table></body></html>`
 }
 
 function textFooter(f: Footer): string {
-  return `\n--\n${f.why}\nUnsubscribe: ${f.unsubscribeUrl}\nEmail settings: ${f.settingsUrl}\nReWork, ${f.mailingAddress}\n`
+  return `\n--\n${f.why}\nUnsubscribe: ${f.unsubscribeUrl}\n${f.settingsUrl ? `Email settings: ${f.settingsUrl}\n` : ''}ReWork, ${f.mailingAddress}\n`
 }
 
 function button(href: string, label: string): string {
@@ -205,6 +206,109 @@ ${steps
     `${hello}\nThanks for trying ReWork. Here's the whole thing in three steps:\n\n` +
     steps.map(([h, p], i) => `${i + 1}. ${h} ${p}`).join('\n') +
     `\n\nStart with your resume: ${d.dashboardUrl}\n\nFree covers ${d.freeTailors} tailors a month. On Mondays we'll email you the best new jobs for your resume; turn that off any time. Questions or something broke? Just reply.\n\nJake, who builds ReWork\n` +
+    textFooter(f)
+  return { subject, preheader, html: shell(preheader, body, f), text }
+}
+
+// ---------- free-tool leads (src/lib/leads.ts) ----------
+
+/** The ghost-job red flags checklist promised on /check. Plain facts, no verdicts. */
+export const GHOST_CHECKLIST: [string, string][] = [
+  ['It is not on the employer\'s own careers page.', 'Search the company site for the title. If it is only on job boards, ask the recruiter for the direct link.'],
+  ['It was posted 30+ days ago.', 'Older ads are more often filled, paused or left up by mistake. Apply, but do not wait on it.'],
+  ['It keeps getting reposted.', 'Some roles are reposted for months without a hire. A note to the hiring team helps you find out.'],
+  ['It talks about "future openings" or a "talent pool".', 'There may be no open role right now, just a list of candidates.'],
+  ['The employer is not named.', 'Recruiting agencies often post this way. Ask who the client is before you send your resume.'],
+  ['No pay range is listed.', 'It is fair to ask for the range before you interview.'],
+  ['Hundreds of people already applied.', 'Apply early, and pair it with a referral or a short note to the hiring manager.'],
+]
+export const SCAM_CHECKLIST: string[] = [
+  'They ask you to pay for training, equipment or a background check.',
+  'They move you to a chat app (Telegram, WhatsApp, Signal) for the "interview".',
+  'They send a check and ask you to send part of it back.',
+  'They ask for your SSN or bank details before an offer in writing.',
+  'They ask you to run code from their repo as a "test".',
+]
+
+export interface LeadCheckData {
+  checkUrl: string
+  signupUrl: string
+}
+
+export function leadCheckEmail(d: LeadCheckData, f: Footer): EmailContent {
+  const subject = 'Your ghost-job red flags checklist'
+  const preheader = 'Seven signs a job ad may not lead to a hire, and five that mean walk away.'
+  const ghost = GHOST_CHECKLIST.map(
+    ([h, p], i) =>
+      `<div style="padding:${i ? '12px' : '0'} 0 0;font-family:${SANS};font-size:14px;line-height:21px;color:${C.forest};"><strong>${esc(h)}</strong><br><span style="color:${C.muted};">${esc(p)}</span></div>`
+  ).join('\n')
+  const scam = SCAM_CHECKLIST.map((x) => `<li style="padding:0 0 6px;">${esc(x)}</li>`).join('')
+  const body = `<tr><td style="padding:0 4px 16px;font-family:${SANS};font-size:15px;line-height:22px;color:${C.forest};">Here's the checklist you asked for. Keep it handy before you spend an evening on an application.</td></tr>
+<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.card};border:1px solid ${C.border};border-radius:12px;"><tr><td style="padding:16px;">
+<div style="font-family:${SERIF};font-size:18px;color:${C.forest};padding:0 0 10px;">Ghost-job signs</div>
+${ghost}
+</td></tr></table></td></tr>
+<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.card};border:1px solid ${C.border};border-radius:12px;"><tr><td style="padding:16px;font-family:${SANS};font-size:14px;line-height:21px;color:${C.forest};">
+<div style="font-family:${SERIF};font-size:18px;color:${C.accent};padding:0 0 10px;">Scam signs: walk away</div>
+<ul style="margin:0;padding:0 0 0 18px;">${scam}</ul>
+</td></tr></table></td></tr>
+<tr><td style="padding:0 4px 16px;">${button(d.checkUrl, 'Check another job')}</td></tr>
+<tr><td style="padding:0 4px;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted};">We'll write when we add a new check. Found a real one worth applying to? ReWork tailors your resume to it from your real experience only: <a href="${esc(d.signupUrl)}" style="color:${C.forest};">try it free</a>.<br><br>Jake, who builds ReWork</td></tr>`
+  const text =
+    `Here's the checklist you asked for.\n\nGhost-job signs\n` +
+    GHOST_CHECKLIST.map(([h, p]) => `- ${h} ${p}`).join('\n') +
+    `\n\nScam signs: walk away\n` +
+    SCAM_CHECKLIST.map((x) => `- ${x}`).join('\n') +
+    `\n\nCheck another job: ${d.checkUrl}\n\nWe'll write when we add a new check. Found a real one? ReWork tailors your resume to it from your real experience only: ${d.signupUrl}\n\nJake, who builds ReWork\n` +
+    textFooter(f)
+  return { subject, preheader, html: shell(preheader, body, f), text }
+}
+
+export interface LeadFitTip {
+  skill: string
+  time: string
+  learn: string
+  build: string
+}
+
+export interface LeadFitData {
+  missing: string[]
+  tips: LeadFitTip[]
+  fitUrl: string
+  signupUrl: string
+}
+
+export function leadFitEmail(d: LeadFitData, f: Footer): EmailContent {
+  const subject = d.missing.length ? `Your ${d.missing.length} missing keyword${d.missing.length === 1 ? '' : 's'}` : 'Your fit check keywords'
+  const preheader = 'What the job asks for that your resume does not show yet, and how to close the gap.'
+  const chips = d.missing.length
+    ? d.missing.map((w) => `<span style="display:inline-block;margin:0 6px 6px 0;padding:4px 10px;border:1px dashed ${C.accent};border-radius:999px;font-family:${SANS};font-size:13px;color:${C.forest};">${esc(w)}</span>`).join('')
+    : `<span style="font-family:${SANS};font-size:14px;color:${C.muted};">None. Your resume already shows every keyword we found.</span>`
+  const tips = d.tips
+    .map(
+      (t, i) =>
+        `<div style="padding:${i ? '14px' : '0'} 0 0;font-family:${SANS};font-size:14px;line-height:21px;color:${C.forest};"><strong>${esc(t.skill)}</strong> <span style="color:${C.faint};">(${esc(t.time)})</span><br><span style="color:${C.muted};">Learn: ${esc(t.learn)}<br>Build: ${esc(t.build)}</span></div>`
+    )
+    .join('\n')
+  const body = `<tr><td style="padding:0 4px 16px;font-family:${SANS};font-size:15px;line-height:22px;color:${C.forest};">Here are the keywords from the job that your resume doesn't show yet. If you already have one of these, say it in the job's own words. If you don't, the tips below are a start.</td></tr>
+<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.card};border:1px solid ${C.border};border-radius:12px;"><tr><td style="padding:16px;">
+<div style="font-family:${SERIF};font-size:18px;color:${C.forest};padding:0 0 10px;">Needs alterations</div>
+${chips}
+</td></tr></table></td></tr>
+${
+  tips
+    ? `<tr><td style="padding:0 0 16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.card};border:1px solid ${C.border};border-radius:12px;"><tr><td style="padding:16px;">
+<div style="font-family:${SERIF};font-size:18px;color:${C.forest};padding:0 0 10px;">Close the gap</div>
+${tips}
+</td></tr></table></td></tr>`
+    : ''
+}
+<tr><td style="padding:0 4px 16px;">${button(d.signupUrl, 'Tailor my resume free')}</td></tr>
+<tr><td style="padding:0 4px;font-family:${SANS};font-size:13px;line-height:20px;color:${C.muted};">Same you. Better fit. ReWork rewrites your resume in the job's words from your real experience only, and never adds a skill you don't have. <a href="${esc(d.fitUrl)}" style="color:${C.forest};">Measure another job</a>.<br><br>Jake, who builds ReWork</td></tr>`
+  const text =
+    `Here are the keywords from the job that your resume doesn't show yet.\n\nNeeds alterations: ${d.missing.join(', ') || 'none'}\n` +
+    (d.tips.length ? `\nClose the gap\n` + d.tips.map((t) => `- ${t.skill} (${t.time}). Learn: ${t.learn} Build: ${t.build}`).join('\n') + '\n' : '') +
+    `\nTailor my resume free: ${d.signupUrl}\nMeasure another job: ${d.fitUrl}\n\nJake, who builds ReWork\n` +
     textFooter(f)
   return { subject, preheader, html: shell(preheader, body, f), text }
 }
