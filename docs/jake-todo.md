@@ -3,6 +3,26 @@
 Things only Jake can do (dashboards, money, secrets). Top to bottom is the order.
 Tick them off here or just tell Claude "done with N".
 
+## Now (found in the Nov 27 check, most urgent first)
+
+A. [x] (Verified Nov 27.) **Verify the domain contact by Sun Nov 30.** Vercel Domain Services emailed Nov 15
+   ("[ACTION REQUIRED] Verify Your Domain Contact Information"): ICANN needs the email
+   verified within 15 days or rework.careers is temporarily disabled (site, sign-in,
+   support email, all of it). Click the button in that email, or Vercel > Domains >
+   rework.careers. The domain is fine today (not on hold, paid to Nov 15, 2027). Tell Claude
+   "verified".
+B. [ ] **Add a bank account in Stripe** (Settings > Payouts) when you're ready for payouts.
+   Until then payouts wait, which is fine. Stripe's Nov 20 "[Action required]" email is
+   about a $1.02 negative balance (fees from the $29 test refund) it had nowhere to take
+   from; it's settled from the first sale or the bank once added. Customers can pay as normal.
+C. [x] (Merged Nov 27.) **Merge the open PRs:** 123 (email card on /check and /fit; its SQL is already
+   pasted), 122 (reply kit, docs only), and the Nov 27 health-check PR (Anduril board fix).
+D. [x] (Done Nov 27; check it answers 308 once Vercel picks it up.) Optional, 1 minute: Vercel > Domains > www.rework.careers redirect: switch 307 to
+   308 (permanent). Google flagged "Page with redirect" Nov 26; that's www and http
+   variants redirecting, which is normal, and every sitemap page answers 200.
+E. Ignore: ImprovMX "Setup rework.solutions" and the expired confirm link. That's the old
+   domain; rework.careers forwarding (MX and SPF) is live.
+
 ## Launch (the last gate)
 
 1. [x] **The $29 test.** (passed and refunded Nov 19) On rework.careers, signed in as Stevie: Upgrade, Get 3 months for
@@ -28,8 +48,10 @@ Tick them off here or just tell Claude "done with N".
    and writes the listing. When approved, Claude adds the install link and turns the copy on.
 8. [ ] Vercel failed-deployment email alert (Settings, Notifications).
 9. [x] Google Search Console (Nov 22): domain verified, sitemap submitted.
-10. [ ] Mon Nov 23 (any time): /admin, check `feed_pull` shows `usajobs` jobs (first nightly federal
-   pull, 6:30am CT) and the weekly email dry-run log. Tell Claude what you see.
+10. [x] (checked by Claude Nov 27) `feed_pull` shows about 8,300 USAJOBS jobs a day. The
+   Nov 23 weekly dry run skipped everyone with "no new jobs": a dry run only reads saved
+   matches (no refresh, no spend), so it can't preview a real Monday. Next real test is
+   step 3 of the weekly email below (`EMAIL_WEEKLY=admins`).
 11. [ ] Tue Nov 24: launch posts on X and LinkedIn (`docs/launch-posts.md`), links with `?ref=x` / `?ref=linkedin`.
 12. [ ] This week: first 5 partner emails (`docs/marketing/partners.md`, CareerForce Saint Paul first).
 13. [ ] Any time: daily numbers email. In Vercel (Production) add `EMAIL_ADMIN_DIGEST=dry`, redeploy,
@@ -57,8 +79,7 @@ Tick them off here or just tell Claude "done with N".
 
 ## Close the gap (course links, optional money)
 
-1. Paste `docs/sql/paste-2026-11-24-skill-gaps.sql` in the Supabase SQL editor (caches one
-   plan per skill so each costs once; works without it, just uncached).
+1. [x] Paste `docs/sql/paste-2026-11-24-skill-gaps.sql` (done: 369 plans cached, checked Nov 27).
 2. Optional, affiliate links: join Coursera's program (on Impact) and Udemy's (on Impact or
    Rakuten). Each gives a deep-link format. In Vercel, add `AFFILIATE_COURSERA` and/or
    `AFFILIATE_UDEMY` as that link with `{url}` where the target goes, e.g.
