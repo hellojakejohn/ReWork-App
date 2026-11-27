@@ -5,7 +5,7 @@ Tick them off here or just tell Claude "done with N".
 
 ## Now (found in the Nov 27 check, most urgent first)
 
-A. [ ] **Verify the domain contact by Sun Nov 30.** Vercel Domain Services emailed Nov 15
+A. [x] (Verified Nov 27.) **Verify the domain contact by Sun Nov 30.** Vercel Domain Services emailed Nov 15
    ("[ACTION REQUIRED] Verify Your Domain Contact Information"): ICANN needs the email
    verified within 15 days or rework.careers is temporarily disabled (site, sign-in,
    support email, all of it). Click the button in that email, or Vercel > Domains >
