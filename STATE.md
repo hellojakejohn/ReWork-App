@@ -270,9 +270,10 @@ Tuning ideas not done yet:
   "Tailoring can lift this to N%" when reach is 5+ points higher.
 - Audit and what's still open: `docs/audit-2026-11-14.md`.
 
-## Next session (handoff Nov 23): `docs/handoff-2026-11-23.md`
+## Next session (health check Nov 27): `docs/handoff-2026-11-27.md`; before that `docs/handoff-2026-11-23.md`
 Live and launch-ready since Nov 19 ($29 test passed and refunded). PRs 54 to 82 merged.
-Jake's hand steps: `docs/jake-todo.md`. SQL to paste: `docs/sql/paste-2026-11-23.sql`
-(referrals and email settings; both fail soft until pasted).
+Jake's hand steps: `docs/jake-todo.md` (Nov 27: verify the domain contact by Nov 30; Stripe
+payouts paused on a $1.02 negative balance). SQL: every file in `docs/sql/` is pasted (11-23, 11-24, 11-24 skill gaps,
+11-25 leads; checked Nov 27).
 Stripe: Managed Payments on (merchant of record, 3.5%); products need tax code
 txcd_10103000 or checkout 400s. Local shell defaults to Node 18; use Node 22 (`.nvmrc`).
