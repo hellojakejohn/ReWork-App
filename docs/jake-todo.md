@@ -11,13 +11,13 @@ A. [x] (Verified Nov 27.) **Verify the domain contact by Sun Nov 30.** Vercel Do
    support email, all of it). Click the button in that email, or Vercel > Domains >
    rework.careers. The domain is fine today (not on hold, paid to Nov 15, 2027). Tell Claude
    "verified".
-B. [ ] **Stripe payouts are paused.** Stripe emailed Nov 20: ReWork has a negative balance
-   of $1.02 (fees from the $29 test refund) that it couldn't take from the bank account.
-   Stripe > Settings > Payouts: fix or re-add the bank account (or add funds). Payouts
-   resume after. Customers can still pay; only payouts to you are stuck.
-C. [ ] **Merge the open PRs:** 123 (email card on /check and /fit; its SQL is already
+B. [ ] **Add a bank account in Stripe** (Settings > Payouts) when you're ready for payouts.
+   Until then payouts wait, which is fine. Stripe's Nov 20 "[Action required]" email is
+   about a $1.02 negative balance (fees from the $29 test refund) it had nowhere to take
+   from; it's settled from the first sale or the bank once added. Customers can pay as normal.
+C. [x] (Merged Nov 27.) **Merge the open PRs:** 123 (email card on /check and /fit; its SQL is already
    pasted), 122 (reply kit, docs only), and the Nov 27 health-check PR (Anduril board fix).
-D. [ ] Optional, 1 minute: Vercel > Domains > www.rework.careers redirect: switch 307 to
+D. [x] (Done Nov 27; check it answers 308 once Vercel picks it up.) Optional, 1 minute: Vercel > Domains > www.rework.careers redirect: switch 307 to
    308 (permanent). Google flagged "Page with redirect" Nov 26; that's www and http
    variants redirecting, which is normal, and every sitemap page answers 200.
 E. Ignore: ImprovMX "Setup rework.solutions" and the expired confirm link. That's the old

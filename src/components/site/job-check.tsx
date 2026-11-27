@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { FREE_TAILORS_PER_MONTH } from "@/lib/plans"
 import { SCAM_SAFETY_TIP } from "@/lib/job-checks"
+import { LeadCard } from "@/components/site/lead-card"
 
 interface Signal {
   id: string
@@ -164,6 +165,8 @@ export function JobCheck() {
               </Link>
             </Button>
           </div>
+
+          <LeadCard source="check" className="mt-6" />
         </section>
       )}
     </div>

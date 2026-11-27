@@ -7,6 +7,9 @@
 //   EMAIL_WEEKLY            off (default) | dry (log who would get what, send nothing)
 //                           | admins (send only to ADMIN_EMAILS / Jake) | live (everyone)
 //   EMAIL_WELCOME           1 to send the welcome email on sign-up
+//   EMAIL_LEADS             off (default: store free-tool leads, send nothing) | dry (log
+//                           and track what would send) | on: the one email a /check or /fit
+//                           lead asked for (src/lib/leads.ts)
 //   EMAIL_ADMIN_DIGEST      off (default) | dry | on: the daily numbers email to ADMIN_EMAILS
 //                           (src/lib/email/admin-digest.ts)
 export type WeeklyMode = 'off' | 'dry' | 'admins' | 'live'
@@ -16,6 +19,12 @@ const env = (n: string) => process.env[n]?.trim() || ''
 export function weeklyMode(): WeeklyMode {
   const m = env('EMAIL_WEEKLY').toLowerCase()
   return m === 'dry' || m === 'admins' || m === 'live' ? m : 'off'
+}
+
+export type LeadsMode = 'off' | 'dry' | 'on'
+export function leadsMode(): LeadsMode {
+  const m = env('EMAIL_LEADS').toLowerCase()
+  return m === 'dry' || m === 'on' ? m : 'off'
 }
 
 export const welcomeOn = () => /^(1|true|yes|on)$/i.test(env('EMAIL_WELCOME'))

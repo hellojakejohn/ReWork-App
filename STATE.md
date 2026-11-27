@@ -254,6 +254,27 @@ Tuning ideas not done yet:
   an Email tab; `/dashboard?settings=email` opens it, `/dashboard?match=<id>` opens a match.
 - `/admin` > Emails: preview both emails from your own account, send yourself a test.
 
+## Free-tool leads (/check, /fit email card, Nov 25)
+- Under a finished /check or /fit result (never before it, never a modal): one email field,
+  "Send it", "No spam. One-click unsubscribe.", an x to dismiss. Dismissed or sent is
+  remembered per browser (`rw_lead_check` / `rw_lead_fit` in localStorage). Ignoring it
+  changes nothing. Copy and show/hide rules: `src/lib/leads-shared.ts`; card:
+  `src/components/site/lead-card.tsx`.
+- `POST /api/leads` (`src/lib/leads.ts`): zod, IP speed bump (10 per 10 min), honeypot
+  `website`, always `{ ok: true }` for a valid email (never says if it was already there).
+  `leads` table: email (lowercased), source check|fit, ref (the `rw_src` cookie's tag or
+  "direct"), landing path, consentVersion, unsubscribedAt. Unique (email, source). Never the
+  job, link or resume; /fit's missing keywords are used for the one email and not kept.
+- Email: one per new lead (/check: ghost-job and scam checklist; /fit: missing keywords plus
+  cached "close the gap" plans from `skill_gaps`, no model call). `EMAIL_LEADS` off
+  (default, store only) | dry | on; also needs `RESEND_API_KEY` and `EMAIL_MAILING_ADDRESS`.
+  Unsubscribe: `/unsubscribe/lead?t=` page and one-click POST `/api/leads/unsubscribe`
+  (token scope `lead-unsub`, never valid for a user's weekly email).
+- Events: `lead_captured` { source, ref }, `lead_email` { source, status }, `lead_unsubscribed`.
+- `/admin` Analytics: "Completed: first 100" (ok /check results, /fit results, tailors; 7d
+  and all time) and leads by tool and ref. Table SQL: `docs/sql/paste-2026-11-25-leads.sql`
+  (until pasted, saving answers "couldn't save that" and /admin says the table is missing).
+
 ## Job feed (matches on upload, live Nov 14)
 - Upload a resume, see the jobs that fit (`src/lib/feed/`, plan in `docs/job-feed-plan.md`).
 - Daily pull at 6:30am CT (`/api/cron/pull-jobs`): Greenhouse, Lever, Ashby boards
@@ -270,10 +291,10 @@ Tuning ideas not done yet:
   "Tailoring can lift this to N%" when reach is 5+ points higher.
 - Audit and what's still open: `docs/audit-2026-11-14.md`.
 
-## Next session (health check Nov 27): `docs/handoff-2026-11-27.md`; before that `docs/handoff-2026-11-23.md`
-Live and launch-ready since Nov 19 ($29 test passed and refunded). PRs 54 to 82 merged.
-Jake's hand steps: `docs/jake-todo.md` (Nov 27: Stripe payouts paused on a $1.02 negative
-balance; domain contact verified). SQL: every file in `docs/sql/` is pasted (11-23, 11-24, 11-24 skill gaps,
+## Next session (health check Nov 27): `docs/handoff-2026-11-27.md`; leads `docs/handoff-2026-11-25.md`; before that `docs/handoff-2026-11-23.md`
+Live and launch-ready since Nov 19 ($29 test passed and refunded). PRs 54 to 124 merged.
+Jake's hand steps: `docs/jake-todo.md` (Nov 27: no bank account in Stripe yet, so payouts wait
+and the $1.02 refund-fee balance is settled when one is added; domain contact verified). SQL: every file in `docs/sql/` is pasted (11-23, 11-24, 11-24 skill gaps,
 11-25 leads; checked Nov 27).
 Stripe: Managed Payments on (merchant of record, 3.5%); products need tax code
 txcd_10103000 or checkout 400s. Local shell defaults to Node 18; use Node 22 (`.nvmrc`).
